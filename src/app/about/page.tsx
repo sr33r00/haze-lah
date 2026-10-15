@@ -1,8 +1,11 @@
 import Link from "next/link";
 import { GROUP_LABEL, LEVEL_COLOR, LEVEL_NAME, NEA_ADVICE, type Group } from "@/lib/bands";
+import AccuracyTable from "@/components/AccuracyTable";
+import { fetchAccuracy } from "@/lib/accuracy";
 import { FORECAST_METHOD } from "@/lib/forecast";
 
 export const metadata = { title: "How it works · Haze SG" };
+export const revalidate = 3600;
 
 const PSI_RANGES = ["0–50", "51–100", "101–200", "201–300", "Above 300"];
 
@@ -16,7 +19,8 @@ const SOURCES = [
   ["MyCMAQ (MetMalaysia)", "Malaysian air-quality forecast maps (reference)", "https://mycmaq.met.gov.my"],
 ];
 
-export default function About() {
+export default async function About() {
+  const accuracy = await fetchAccuracy(1);
   const groups = Object.keys(GROUP_LABEL) as Group[];
   return (
     <main className="mx-auto max-w-lg space-y-5 px-4 pb-16 pt-4 text-sm leading-relaxed">
@@ -82,6 +86,25 @@ export default function About() {
           24-hour mean). During haze, PM2.5 almost always sets the PSI. Forecasts are estimates and can be wrong, especially when wind
           shifts suddenly or fires flare up.
         </p>
+      </section>
+
+      <section id="accuracy" className="space-y-2">
+        <h2 className="text-lg font-semibold">Measured accuracy</h2>
+        <p>
+          Every hour the forecast is saved as issued, then compared with what NEA actually measured. Numbers are the average miss in
+          µg/m³ (lower is better), next to the raw Copernicus model and the simplest guess, &ldquo;same as now&rdquo;. An alert counts as
+          caught when we forecast PM2.5 above 55 and it happened.
+        </p>
+        {accuracy ? (
+          <>
+            <AccuracyTable a={accuracy} />
+            <p className="text-xs text-muted">
+              {accuracy.forecasts} forecasts since {accuracy.from?.slice(0, 10)}. Raw data is public in the project repository.
+            </p>
+          </>
+        ) : (
+          <p className="text-muted">Scores appear once enough forecasts have been checked against real readings.</p>
+        )}
       </section>
 
       <section>

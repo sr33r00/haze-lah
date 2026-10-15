@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo } from "react";
 import { pm25ToLevel, psiLevel } from "@/lib/bands";
 import { ago, fmtTime } from "@/lib/format";
+import type { LeadScore } from "@/lib/accuracy";
 import type { ForecastPoint, HazeData } from "@/lib/types";
 import Chart from "./Chart";
 import Neighbours from "./Neighbours";
@@ -26,7 +27,7 @@ function cleanestHour(hourly: ForecastPoint[]): ForecastPoint | null {
   return Math.max(...day.map((p) => p.pm25)) - min.pm25 >= 15 ? min : null;
 }
 
-export default function Dashboard({ data }: { data: HazeData }) {
+export default function Dashboard({ data, skill24 }: { data: HazeData; skill24: LeadScore | null }) {
   const { region, setRegion, group, setGroup, locating, locate } = usePrefs();
 
   const latest = data.history?.regions[region].at(-1) ?? null;
@@ -56,6 +57,14 @@ export default function Dashboard({ data }: { data: HazeData }) {
           <Chart observed={data.history.island} forecast={data.forecast.hourly.slice(0, 48)} />
         ) : (
           <p className="text-sm text-muted">Readings unavailable right now.</p>
+        )}
+        {skill24 && (
+          <p className="mt-2 text-xs text-muted">
+            Track record: 24 h ahead, off by {skill24.ours.mae} µg/m³ on average (assuming &ldquo;same as now&rdquo;: {skill24.persistence.mae}).{" "}
+            <Link href="/about#accuracy" className="text-sky-600">
+              Details
+            </Link>
+          </p>
         )}
       </Card>
 
