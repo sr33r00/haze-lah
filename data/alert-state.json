@@ -1,4 +1,7 @@
 {
   "psiLevel": 3,
-  "neaUrl": "https://www.nea.gov.sg/media/news/advisories/index/haze-situation-update-15-october-2026"
+  "pm25Band": 2,
+  "neaUrl": "https://www.nea.gov.sg/media/news/advisories/index/haze-situation-update-15-october-2026",
+  "briefDate": "2026-10-16",
+  "outlookDate": null
 }
