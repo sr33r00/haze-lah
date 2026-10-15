@@ -19,9 +19,42 @@ export default function Advice({ items }: { items: Tip[] }) {
           <span className="mt-0.5 shrink-0 text-muted" aria-hidden>
             {ICON[t.kind]}
           </span>
-          <span className={t.kind === "help" ? "font-semibold" : ""}>{t.text}</span>
+          <span className="min-w-0">
+            <span className={t.kind === "help" ? "font-semibold" : ""}>{t.text}</span>
+            {t.more &&
+              (t.more.points.length > 0 ? (
+                <details className="mt-1 text-[14px] text-muted">
+                  <summary className="cursor-pointer">{t.more.label}</summary>
+                  <ul className="mt-1 list-disc space-y-0.5 pl-5">
+                    {t.more.points.map((p) => (
+                      <li key={p}>{p}</li>
+                    ))}
+                  </ul>
+                  <Sources list={t.more.sources} />
+                </details>
+              ) : (
+                <Sources list={t.more.sources} />
+              ))}
+          </span>
         </li>
       ))}
     </ul>
+  );
+}
+
+/** "Source: NEA, MOH" links; shown inline when a tip has nothing else to expand. */
+function Sources({ list }: { list: [string, string][] }) {
+  return (
+    <p className="mt-1 text-[13px] text-muted">
+      Source:{" "}
+      {list.map(([name, url], i) => (
+        <span key={url}>
+          {i > 0 && ", "}
+          <a href={url} target="_blank" rel="noreferrer" className="text-accent underline">
+            {name}
+          </a>
+        </span>
+      ))}
+    </p>
   );
 }
