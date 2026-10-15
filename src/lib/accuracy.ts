@@ -17,7 +17,9 @@ export const EVENT_THRESHOLD = 55; // µg/m³, top of NEA 1-hr PM2.5 Band I (Nor
 type Stats = { n: number; mae: number | null; rmse: number | null; bias: number | null };
 type Event = { n: number; precision: number | null; recall: number | null; f1: number | null };
 export type LeadScore = { lead: number; ours: Stats; cams: Stats; persistence: Stats; event: Event };
-export type Accuracy = { updated: string; forecasts: number; from: string | null; to: string | null; leads: LeadScore[] };
+/** Night-before call: will tomorrow's peak 1-hr PM2.5 go above the threshold? */
+export type HazyDays = { days: number; hazy: number; ours: { hits: number; clearRight: number }; persistence: { hits: number; clearRight: number } };
+export type Accuracy = { updated: string; forecasts: number; from: string | null; to: string | null; leads: LeadScore[]; hazyDays: HazyDays };
 
 function stats(errs: number[]): Stats {
   const n = errs.length;
@@ -63,7 +65,49 @@ export function scoreArchive(records: ArchiveRecord[]): Accuracy {
     return { lead, ours: stats(e.ours), cams: stats(e.cams), persistence: stats(e.persistence), event: event(ev) };
   });
   const issued = records.map((r) => r.issued).sort();
-  return { updated: new Date().toISOString(), forecasts: records.length, from: issued[0] ?? null, to: issued.at(-1) ?? null, leads };
+  return {
+    updated: new Date().toISOString(),
+    forecasts: records.length,
+    from: issued[0] ?? null,
+    to: issued.at(-1) ?? null,
+    leads,
+    hazyDays: scoreHazyDays(records, observed),
+  };
+}
+
+const SGT = 8 * 3600_000;
+const sgDay = (t: number) => new Date(t + SGT).toISOString().slice(0, 10);
+const sgHour = (t: number) => new Date(t + SGT).getUTCHours();
+
+/** Score the forecast issued closest to 11pm SGT each night against the next day's observed peak. */
+export function scoreHazyDays(records: ArchiveRecord[], observed: Map<number, number>): HazyDays {
+  const nightly = new Map<string, ArchiveRecord>();
+  for (const r of records) {
+    const t = Date.parse(r.issued);
+    if (sgHour(t) < 21) continue;
+    const prev = nightly.get(sgDay(t));
+    if (!prev || Math.abs(sgHour(t) - 23) < Math.abs(sgHour(Date.parse(prev.issued)) - 23)) nightly.set(sgDay(t), r);
+  }
+  const out: HazyDays = { days: 0, hazy: 0, ours: { hits: 0, clearRight: 0 }, persistence: { hits: 0, clearRight: 0 } };
+  for (const r of nightly.values()) {
+    const t0 = Date.parse(r.issued);
+    const target = sgDay(t0 + 24 * 3600_000);
+    const inTarget = (lead: number) => sgDay(t0 + lead * 3600_000) === target;
+    const fcPeak = Math.max(...r.fc.filter(([l]) => inTarget(l)).map(([, v]) => v));
+    const obsDay = [...observed].filter(([t]) => sgDay(t) === target).map(([, v]) => v);
+    const now = observed.get(t0);
+    if (obsDay.length < 18 || !isFinite(fcPeak) || now == null) continue;
+    const hazy = Math.max(...obsDay) > EVENT_THRESHOLD;
+    const call = (predHazy: boolean, s: { hits: number; clearRight: number }) => {
+      if (hazy && predHazy) s.hits++;
+      if (!hazy && !predHazy) s.clearRight++;
+    };
+    out.days++;
+    if (hazy) out.hazy++;
+    call(fcPeak > EVENT_THRESHOLD, out.ours);
+    call(now > EVENT_THRESHOLD, out.persistence);
+  }
+  return out;
 }
 
 const ACCURACY_URL =

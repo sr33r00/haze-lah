@@ -39,6 +39,22 @@ export function usePrefs() {
   const [group, setGroup] = useStored<Group>("group", GROUPS, "healthy");
   const [locating, setLocating] = useState(false);
 
+  // A shared link (?region=west) wins over the remembered region.
+  useEffect(() => {
+    const r = new URLSearchParams(location.search).get("region") as Region | null;
+    if (r && REGIONS.includes(r)) setRegion(r);
+  }, [setRegion]);
+
+  const pickRegion = useCallback(
+    (r: Region) => {
+      setRegion(r);
+      const url = new URL(location.href);
+      url.searchParams.set("region", r);
+      history.replaceState(null, "", url);
+    },
+    [setRegion],
+  );
+
   const locate = useCallback(() => {
     if (!navigator.geolocation) return;
     setLocating(true);
@@ -46,12 +62,12 @@ export function usePrefs() {
       ({ coords }) => {
         setLocating(false);
         const inSingapore = Math.abs(coords.latitude - SG.lat) < 0.3 && Math.abs(coords.longitude - SG.lon) < 0.4;
-        if (inSingapore) setRegion(nearestRegion(coords.latitude, coords.longitude));
+        if (inSingapore) pickRegion(nearestRegion(coords.latitude, coords.longitude));
       },
       () => setLocating(false),
       { timeout: 8000, maximumAge: 600_000 },
     );
-  }, [setRegion]);
+  }, [pickRegion]);
 
-  return { region, setRegion, group, setGroup, locating, locate };
+  return { region, setRegion: pickRegion, group, setGroup, locating, locate };
 }

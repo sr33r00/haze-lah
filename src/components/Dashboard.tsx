@@ -6,7 +6,9 @@ import { pm25ToLevel, psiLevel } from "@/lib/bands";
 import { ago, fmtTime } from "@/lib/format";
 import type { LeadScore } from "@/lib/accuracy";
 import type { HazeData } from "@/lib/types";
+import { tips } from "@/lib/advice";
 import AirDetail from "./AirDetail";
+import Advice from "./Advice";
 import BottomNav from "./BottomNav";
 import Chart from "./Chart";
 import Drivers from "./Drivers";
@@ -14,6 +16,7 @@ import Hero from "./Hero";
 import Neighbours from "./Neighbours";
 import Outlook from "./Outlook";
 import RegionChips from "./RegionChips";
+import ShareButton from "./ShareButton";
 import { Section, cap } from "./ui";
 import { usePrefs } from "./usePrefs";
 
@@ -35,8 +38,11 @@ export default function Dashboard({ data, skill24 }: { data: HazeData; skill24: 
     <div className="pb-24">
       <main className="mx-auto max-w-lg">
         <header className="flex items-center justify-between px-4 pb-3 pt-4">
-          <span className="text-[19px] font-extrabold tracking-tight">Haze SG</span>
-          <span className="text-[13px] text-muted">{latest ? `NEA reading at ${fmtTime(latest.time)}` : "Waiting for NEA"}</span>
+          <div>
+            <span className="block text-[19px] font-extrabold leading-tight tracking-tight">Haze SG</span>
+            <span className="text-[13px] text-muted">{latest ? `NEA reading at ${fmtTime(latest.time)}` : "Waiting for NEA"}</span>
+          </div>
+          <ShareButton />
         </header>
         {data.mock && <p className="mx-4 mb-3 rounded-xl bg-[var(--lv2)]/15 px-3 py-2 text-[13px]">Demo data. These are not real readings.</p>}
 
@@ -51,6 +57,12 @@ export default function Dashboard({ data, skill24 }: { data: HazeData; skill24: 
           onGroup={setGroup}
           next={data.forecast.hourly.slice(0, 6)}
         />
+
+        {level != null && (
+          <Section title="What to do">
+            <Advice items={tips(level, group)} />
+          </Section>
+        )}
 
         <Section id="forecast" title="Next 48 hours" aside="PM2.5 µg/m³, island-wide">
           {data.history ? (
