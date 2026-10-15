@@ -21,7 +21,9 @@ const NO_FIRES: FireSummary = { available: false, days: 2, sumatra: 0, borneo: 0
 
 function settled<T>(r: PromiseSettledResult<T>, label: string, errors: string[]): T | null {
   if (r.status === "fulfilled") return r.value;
-  errors.push(`${label}: ${r.reason instanceof Error ? r.reason.message : String(r.reason)}`);
+  // Details stay in server logs; the public payload only names the source.
+  console.error(`[haze] ${label}:`, r.reason);
+  errors.push(label);
   return null;
 }
 
@@ -51,7 +53,7 @@ export async function getHazeData(): Promise<HazeData> {
   const mock = process.env.HAZE_MOCK === "1";
   const { cams, ...inp } = mock ? mockInputs() : await fetchInputs();
   const fc = inp.history ? buildForecast(inp.history.island, cams) : null;
-  if (!fc && inp.history) inp.errors.push("Forecast: not enough overlap between NEA and CAMS");
+  if (!fc && inp.history) inp.errors.push("Forecast");
   return {
     ...inp,
     generatedAt: new Date().toISOString(),

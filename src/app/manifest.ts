@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Haze SG",
-    short_name: "Haze SG",
+    name: "Haze Lah",
+    short_name: "Haze Lah",
     description: "Is it safe to go out? Live haze levels and forecast for Singapore.",
     start_url: "/",
     display: "standalone",

@@ -39,7 +39,7 @@ export default function Dashboard({ data, skill24 }: { data: HazeData; skill24: 
       <main className="mx-auto max-w-lg">
         <header className="flex items-center justify-between px-4 pb-3 pt-4">
           <div>
-            <span className="block text-[19px] font-extrabold leading-tight tracking-tight">Haze SG</span>
+            <span className="block text-[19px] font-extrabold leading-tight tracking-tight">Haze Lah</span>
             <span className="text-[13px] text-muted">{latest ? `NEA reading at ${fmtTime(latest.time)}` : "Waiting for NEA"}</span>
           </div>
           <ShareButton />
@@ -123,7 +123,7 @@ export default function Dashboard({ data, skill24 }: { data: HazeData; skill24: 
               How the forecast works
             </Link>
           </p>
-          {data.errors.length > 0 && <p style={{ color: "var(--lv3)" }}>Not loading right now: {data.errors.map((e) => e.split(":")[0]).join(", ")}.</p>}
+          {data.errors.length > 0 && <p style={{ color: "var(--lv3)" }}>Not loading right now: {data.errors.join(", ")}.</p>}
         </footer>
       </main>
       <BottomNav />
