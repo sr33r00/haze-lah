@@ -22,6 +22,7 @@ import PlanDay from "./PlanDay";
 import PsiWeek from "./PsiWeek";
 import RegionChips from "./RegionChips";
 import ShareButton from "./ShareButton";
+import SupportLinks from "./SupportLinks";
 import { Section, cap } from "./ui";
 import { usePrefs } from "./usePrefs";
 import WindDial from "./WindDial";
@@ -129,6 +130,7 @@ export default function Dashboard({ data, skill24 }: { data: HazeData; skill24: 
         </Section>
 
         <footer className="mt-12 space-y-3 px-6 text-center text-[13px] leading-relaxed text-muted">
+          <SupportLinks />
           <p suppressHydrationWarning>
             Readings from NEA via data.gov.sg and Malaysia&apos;s Department of Environment. Fires from NASA FIRMS. Forecast from Copernicus CAMS and
             ECMWF via Open-Meteo. News from NEA and the Meteorological Service Singapore. Page updated {ago(data.generatedAt)}.
