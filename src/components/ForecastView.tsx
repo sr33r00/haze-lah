@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import type { LeadScore } from "@/lib/accuracy";
+import { HISTORY_URL, sinceWhen } from "@/lib/history";
 import type { DayOutlook, DayPsi, ForecastPoint, NeaPm25History } from "@/lib/types";
 import Chart from "./Chart";
 import Outlook from "./Outlook";
@@ -19,6 +20,8 @@ export default function ForecastView(props: {
 }) {
   const { group } = usePrefs();
   const { skill24 } = props;
+  const weekPeak = Math.max(0, ...props.psiDaily.map((d) => d.max));
+  const since = sinceWhen(weekPeak);
   return (
     <>
       <Section title="Next 48 hours" aside="PM2.5 µg/m³, island-wide">
@@ -43,6 +46,14 @@ export default function ForecastView(props: {
 
       <Section title="Last 7 days" aside="Peak 24-hr PSI">
         <PsiWeek days={props.psiDaily} />
+        {since && (
+          <p className="mt-2 px-4 text-[13px] text-muted">
+            This week&apos;s peak {weekPeak} is the {since[0].toLowerCase() + since.slice(1)}.{" "}
+            <a href={HISTORY_URL} target="_blank" rel="noreferrer" className="underline">
+              NEA data
+            </a>
+          </p>
+        )}
       </Section>
     </>
   );

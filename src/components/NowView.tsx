@@ -2,6 +2,7 @@
 
 import { tips } from "@/lib/advice";
 import { trend3h } from "@/lib/format";
+import { psiLevel } from "@/lib/bands";
 import { currentReading } from "@/lib/situation";
 import type { ForecastPoint, NeaNow, NeaPm25History } from "@/lib/types";
 import AirDetail from "./AirDetail";
@@ -38,7 +39,7 @@ export default function NowView({ history, nea, hourly }: { history: NeaPm25Hist
 
       {level != null && (
         <Section title="What to do">
-          <Advice items={tips(level, group)} />
+          <Advice items={tips(level, group, psi != null ? psiLevel(psi) : null)} />
         </Section>
       )}
 

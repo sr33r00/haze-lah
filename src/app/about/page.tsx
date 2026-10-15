@@ -13,6 +13,7 @@ const PSI_RANGES = ["0–50", "51–100", "101–200", "201–300", "Above 300"]
 const SOURCES = [
   ["NEA via data.gov.sg", "Live 1-hr PM2.5 and 24-hr PSI for 5 regions", "https://data.gov.sg"],
   ["NEA news RSS", "Haze situation updates and announcements", "https://www.nea.gov.sg/media/news/advisories"],
+  ["NEA historical PSI", "Hourly 24-hr PSI since April 2014, used to compare this week's peak with past years", "https://data.gov.sg/datasets/d_b4cf557f8750260d229c49fd768e11ed/view"],
   ["Meteorological Service Singapore", "24-hour weather forecast", "https://www.weather.gov.sg/weather-forecast-24hrs/"],
   ["Malaysia DOE APIMS", "Live Air Pollutant Index for Malaysian stations", "https://eqms.doe.gov.my/APIMS/main"],
   ["NASA FIRMS (VIIRS)", "Satellite-detected fires in Sumatra, Borneo and Malaysia", "https://firms.modaps.eosdis.nasa.gov"],
