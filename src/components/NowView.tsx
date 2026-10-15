@@ -6,6 +6,7 @@ import { trend3h } from "@/lib/format";
 import type { ForecastPoint, NeaNow, NeaPm25History } from "@/lib/types";
 import AirDetail from "./AirDetail";
 import Advice from "./Advice";
+import CigaretteCard from "./CigaretteCard";
 import Hero from "./Hero";
 import PlanDay from "./PlanDay";
 import RegionChips from "./RegionChips";
@@ -36,6 +37,8 @@ export default function NowView({ history, nea, hourly }: { history: NeaPm25Hist
         onGroup={setGroup}
         next={hourly.slice(0, 6)}
       />
+
+      <CigaretteCard region={region} pm25={nea?.pm25_24h[region]} />
 
       {level != null && (
         <Section title="What to do">
