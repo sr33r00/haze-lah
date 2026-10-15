@@ -31,8 +31,8 @@ export default function ThemeToggle() {
 
   const Icon = ICON[mode];
   return (
-    <button onClick={next} aria-label={`Theme: ${mode[0].toUpperCase()}${mode.slice(1)}`} className="flex h-8 w-8 items-center justify-center rounded-full border border-line bg-surface">
-      <Icon size={15} aria-hidden />
+    <button onClick={next} aria-label={`Theme: ${mode[0].toUpperCase()}${mode.slice(1)}`} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-line bg-surface">
+      <Icon size={18} aria-hidden />
     </button>
   );
 }

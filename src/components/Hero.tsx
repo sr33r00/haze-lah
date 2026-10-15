@@ -1,4 +1,5 @@
-import { Info } from "lucide-react";
+import { Info, Maximize2 } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 import { GROUP_LABEL, LEVEL_COLOR, LEVEL_NAME, NEA_ADVICE, TONE_COLOR, pm25Band, pm25Color, psiLevel, verdict, type Group, type Level } from "@/lib/bands";
 import { fmtHour } from "@/lib/format";
@@ -40,7 +41,10 @@ export default function Hero(props: {
       className="relative mt-3 overflow-hidden rounded-b-[32px] px-5 pb-6 pt-5"
       style={{ background: bg, color: ink }}
     >
-      <p className="text-[15px]" style={{ color: soft }}>
+      <Link href="/glance" aria-label="Big screen view" className="absolute right-3 top-3 flex h-10 w-10 items-center justify-center" style={{ color: soft }}>
+        <Maximize2 size={20} aria-hidden />
+      </Link>
+      <p className="pr-8 text-[15px]" style={{ color: soft }}>
         {cap(props.region)}
         {props.readingTime ? `, ${fmtHour(props.readingTime)}` : ""}. Should I go out?
       </p>

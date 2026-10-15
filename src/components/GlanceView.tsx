@@ -6,6 +6,7 @@ import { fmtTime } from "@/lib/format";
 import { currentReading } from "@/lib/situation";
 import type { HazeData } from "@/lib/types";
 import Freshness from "./Freshness";
+import Logo from "./Logo";
 import { cap } from "./ui";
 import { usePrefs } from "./usePrefs";
 
@@ -20,7 +21,8 @@ export default function GlanceView({ data }: { data: HazeData }) {
       className="flex min-h-dvh flex-col justify-between px-6 py-5"
       style={tone ? { background: tone.bg, color: tone.fg } : { background: "var(--surface)", color: "var(--fg)" }}
     >
-      <Link href="/" className="text-[15px] font-extrabold tracking-tight">
+      <Link href="/" className="flex items-center gap-2 text-[15px] font-extrabold tracking-tight">
+        <Logo size={28} />
         Haze Lah
       </Link>
       <div>
