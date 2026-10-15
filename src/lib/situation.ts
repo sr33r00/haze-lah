@@ -1,6 +1,6 @@
-import { REGIONS, pm25Band, psiLevel, type Region } from "./bands";
+import { REGIONS, pm25Band, pm25ToLevel, psiLevel, type Level, type Region } from "./bands";
 import { cap, fmtHour } from "./format";
-import type { DayPsi, HazeData, NewsItem } from "./types";
+import type { DayPsi, HazeData, HourPoint, NewsItem } from "./types";
 import { sgDate } from "./util";
 
 export type TimelineItem = {
@@ -91,3 +91,12 @@ export function unhealthyStreak(days: DayPsi[]): number {
 
 /** Time of the newest timeline item that has already happened, or null. */
 export const newestTime = (data: HazeData): number | null => buildTimeline(data).find((i) => i.time <= Date.now())?.time ?? null;
+
+/** Latest 1-hr PM2.5 reading, 24-hr PSI and advisory level for a region. NEA: 1-hr PM2.5 guides immediate activities; fall back to 24-hr PSI. */
+export function currentReading(data: Pick<HazeData, "history" | "nea">, region: Region): { latest: HourPoint | null; psi: number | null; level: Level | null } {
+  const latest = data.history?.regions[region].at(-1) ?? null;
+  const rawPsi = data.nea?.psi24[region];
+  const psi = rawPsi != null && !isNaN(rawPsi) ? rawPsi : null;
+  const level = latest ? pm25ToLevel(latest.value) : psi != null ? psiLevel(psi) : null;
+  return { latest, psi, level };
+}
