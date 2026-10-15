@@ -55,6 +55,58 @@
   --font-sans: "Atkinson Hyperlegible Next Variable", ui-sans-serif, system-ui, sans-serif;
 }
 
+/* Motion: transform and opacity only. Each says something: rise = new content, grow = a value, pop = a count, ring = look here. */
+@theme {
+  --animate-rise: rise 450ms ease-out both;
+  --animate-grow: grow 600ms ease-out both;
+  --animate-grow-x: grow-x 600ms ease-out both;
+  --animate-pop: pop 350ms ease-out both;
+  --animate-ring: ring 700ms ease-out 1;
+  --animate-flow: flow 1.2s linear infinite;
+
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+  }
+  @keyframes grow {
+    from {
+      transform: scaleY(0);
+    }
+  }
+  @keyframes grow-x {
+    from {
+      transform: scaleX(0);
+    }
+  }
+  @keyframes pop {
+    from {
+      opacity: 0;
+      transform: scale(0.4);
+    }
+  }
+  @keyframes ring {
+    20% {
+      transform: rotate(18deg);
+    }
+    40% {
+      transform: rotate(-14deg);
+    }
+    60% {
+      transform: rotate(9deg);
+    }
+    80% {
+      transform: rotate(-4deg);
+    }
+  }
+  @keyframes flow {
+    to {
+      stroke-dashoffset: -12;
+    }
+  }
+}
+
 html {
   scroll-behavior: smooth;
   scroll-padding-top: 12px;
@@ -65,6 +117,14 @@ body {
   color: var(--fg);
   font-family: var(--font-sans);
   -webkit-tap-highlight-color: transparent;
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }
 
 .tabular {

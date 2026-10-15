@@ -22,7 +22,7 @@ export default function WindDial({ windDir }: { windDir: number }) {
         );
       })}
       <g transform={`rotate(${windDir} ${C} ${C})`} stroke="var(--fg)" fill="var(--fg)">
-        <line x1={C} y1={C - 36} x2={C} y2={C - 8} strokeWidth={3} strokeLinecap="round" />
+        <line x1={C} y1={C - 40} x2={C} y2={C - 12} strokeWidth={3} strokeDasharray="6 6" className="animate-flow" />
         <polygon points={`${C},${C - 3} ${C - 6},${C - 14} ${C + 6},${C - 14}`} stroke="none" />
       </g>
       <circle cx={C} cy={C} r={2.5} fill="var(--bg)" stroke="var(--fg)" strokeWidth={1.5} />

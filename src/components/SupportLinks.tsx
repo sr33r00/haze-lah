@@ -1,8 +1,7 @@
 import { Bell, Coffee, MessageSquare } from "lucide-react";
-import { ALERTS_URL } from "@/lib/links";
+import { ALERTS_URL, BMC_URL } from "@/lib/links";
 
 const FEEDBACK_URL = "https://github.com/sr33r00/haze-lah/issues/new?template=feedback.yml";
-const BMC_URL = "https://buymeacoffee.com/hazelah";
 
 const pill = "inline-flex items-center gap-2 rounded-full border border-line bg-surface px-4 py-2 text-[14px] font-semibold text-fg";
 

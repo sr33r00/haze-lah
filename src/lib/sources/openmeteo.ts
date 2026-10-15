@@ -4,6 +4,7 @@ import { SG, getJson, haversineKm } from "../util";
 // Open-Meteo: ECMWF weather and Copernicus CAMS air-quality forecasts (CC BY 4.0).
 
 type AQ = { hourly: { time: string[]; pm2_5: (number | null)[] } };
+type GridWind = { hourly: { time: string[]; wind_speed_850hPa: (number | null)[]; wind_direction_850hPa: (number | null)[] } };
 type WX = {
   hourly: {
     time: string[];
@@ -92,21 +93,41 @@ export async function fetchSmokeGrid(): Promise<SmokeGrid> {
   for (let la = GRID.lat[0]; la <= GRID.lat[1]; la += GRID.step) lats.push(la);
   for (let lo = GRID.lon[0]; lo <= GRID.lon[1]; lo += GRID.step) lons.push(lo);
   const pts = lats.flatMap((la) => lons.map((lo) => [la, lo]));
-  const url =
-    "https://air-quality-api.open-meteo.com/v1/air-quality?" +
-    `latitude=${pts.map((p) => p[0]).join(",")}&longitude=${pts.map((p) => p[1]).join(",")}` +
-    "&hourly=pm2_5&domains=cams_global&timezone=GMT&forecast_days=4";
-  const j = await getJson<AQ[]>(url, { revalidate: 10800 });
+  const where = `latitude=${pts.map((p) => p[0]).join(",")}&longitude=${pts.map((p) => p[1]).join(",")}`;
+  // The air-quality API has no wind, so the same points are asked of the weather API (same level as the wind dial).
+  const [j, w] = await Promise.all([
+    getJson<AQ[]>(`https://air-quality-api.open-meteo.com/v1/air-quality?${where}&hourly=pm2_5&domains=cams_global&timezone=GMT&forecast_days=4`, {
+      revalidate: 10800,
+    }),
+    getJson<GridWind[]>(
+      `https://api.open-meteo.com/v1/forecast?${where}&hourly=wind_speed_850hPa,wind_direction_850hPa&wind_speed_unit=ms&timezone=GMT&forecast_days=4`,
+      { revalidate: 10800 },
+    ).catch(() => null), // smoke is still useful without wind
+  ]);
   const times0 = j[0].hourly.time;
   const now = Date.now() - 3600_000;
   const idx = times0
     .map((t, i) => ({ t: Date.parse(z(t)), i }))
     .filter(({ t }) => t >= now && new Date(t).getUTCHours() % 3 === 0)
     .slice(0, 25);
+  const wIdx = new Map(w?.[0].hourly.time.map((t, i) => [Date.parse(z(t)), i]));
+  // Wind comes "from" a direction; u and v point where it blows to.
+  const comp = (t: number, f: (s: number, rad: number) => number) =>
+    j.map((_, k) => {
+      const h = w?.[k]?.hourly;
+      const i = wIdx.get(t);
+      const s = h && i != null ? h.wind_speed_850hPa[i] : null;
+      const d = h && i != null ? h.wind_direction_850hPa[i] : null;
+      return s == null || d == null ? 0 : Math.round(f(s, (d * Math.PI) / 180) * 10) / 10;
+    });
   return {
     lats,
     lons,
     times: idx.map(({ t }) => new Date(t).toISOString()),
     values: idx.map(({ i }) => j.map((loc) => Math.round(loc.hourly.pm2_5[i] ?? 0))),
+    // No wind rather than zero wind, so a failed request never looks like calm air.
+    wind: w
+      ? { u: idx.map(({ t }) => comp(t, (s, r) => -s * Math.sin(r))), v: idx.map(({ t }) => comp(t, (s, r) => -s * Math.cos(r))) }
+      : null,
   };
 }

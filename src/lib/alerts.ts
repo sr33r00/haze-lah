@@ -1,7 +1,25 @@
-import { GROUP_LABEL, LEVEL_NAME, NEA_ADVICE, REGIONS, psiLevel, type Group, type Level, type Region } from "./bands";
+import { LEVEL_NAME, REGIONS, pm25Band, psiLevel, type Region } from "./bands";
+import { bestWindow, planHours } from "./plan";
+import { cap, fmtHour, trend3h } from "./format";
+import { islandSummary } from "./situation";
 import type { HazeData, NewsItem } from "./types";
+import { sgDate } from "./util";
 
-export type AlertState = { psiLevel: number | null; neaUrl: string | null };
+/** Persisted between runs. Fields added later are undefined in old files: record them without sending. */
+export type AlertState = {
+  psiLevel: number | null;
+  pm25Band?: number | null;
+  neaUrl: string | null;
+  briefDate?: string | null;
+  outlookDate?: string | null;
+};
+
+export const BRIEF_HOUR = 7;
+export const OUTLOOK_HOUR = 19;
+const MAX_LINES = 6;
+
+/** Hour of day (0-23) in Singapore. */
+export const sgHour = (now = new Date()) => (now.getUTCHours() + 8) % 24;
 
 /** Highest 24-hr PSI across regions, and where; null when no region has a reading. */
 export function islandMax(psi24: Record<Region, number>): { psi: number; region: Region } | null {
@@ -13,28 +31,101 @@ export function islandMax(psi24: Record<Region, number>): { psi: number; region:
 
 export const latestNea = (news: NewsItem[]) => news.find((n) => n.source === "NEA");
 
-const cap = (s: string) => s[0].toUpperCase() + s.slice(1);
+const firstSentence = (s: string) => s.split(/(?<=[.!?])\s/)[0].trim();
 
-/** Band-change message: headline, one NEA advice line per group, site link. */
-export function psiMessage(level: Level, psi: number, region: Region, site: string): string {
-  const groups = (Object.keys(NEA_ADVICE) as Group[]).map((g) => `${GROUP_LABEL[g]}: ${NEA_ADVICE[g][level]}`);
-  return [`24-hr PSI is now ${LEVEL_NAME[level]}: ${psi} (${cap(region)}).`, ...groups, site].join("\n");
+/** "6am-9am" as "6-9am" when both ends share am/pm. */
+function fmtWindow(start: string, end: string) {
+  const [a, b] = [fmtHour(start), fmtHour(end)];
+  return `${a.slice(-2) === b.slice(-2) ? a.slice(0, -2) : a}–${b}`;
 }
 
-export const neaMessage = (n: NewsItem) => `NEA: ${n.title}\n${n.summary}\n${n.url}`;
+/** Best 3-hour window for sensitive groups, optionally restricted to one SGT date. */
+export function bestWindowFor(data: HazeData, date?: string) {
+  const hours = planHours(data.forecast.hourly, "sensitive").filter((h) => !date || sgDate(0, new Date(h.time)) === date);
+  const w = bestWindow(hours, "sensitive");
+  return w && { ...w, text: fmtWindow(w.start, w.end) };
+}
 
-/** Messages to send and the next state. Null state means first run: record only. */
-export function plan(data: HazeData, prev: AlertState | null, site: string): { messages: string[]; next: AlertState } | null {
+/** Direction of the 3-hour change of an hourly series. */
+export function trendDir(series: { value: number }[] | undefined): "up" | "down" | "steady" | null {
+  const t = trend3h(series);
+  return !t ? null : t === "Steady" ? "steady" : t.startsWith("Up") ? "up" : "down";
+}
+
+const TREND_WORD = { up: "rising", down: "falling", steady: "steady" } as const;
+
+/** Highest 1-hr PM2.5 band index per hour across regions, oldest first. */
+function islandMaxSeries(history: HazeData["history"]) {
+  const peak = new Map<string, number>();
+  for (const r of REGIONS)
+    for (const p of history?.regions[r] ?? []) if (Number.isFinite(p.value)) peak.set(p.time, Math.max(peak.get(p.time) ?? -Infinity, p.value));
+  return [...peak].sort(([a], [b]) => Date.parse(a) - Date.parse(b)).map(([, v]) => v);
+}
+
+/** PM2.5 band index once the last two hourly island-max readings agree; otherwise the last known one. */
+export function confirmedPm25Band(history: HazeData["history"], known: number | null | undefined): number | null {
+  const s = islandMaxSeries(history);
+  if (!s.length) return known ?? null;
+  const [a, b] = [pm25Band(s.at(-2) ?? s[s.length - 1]).index, pm25Band(s.at(-1)!).index];
+  return a === b ? b : (known ?? b);
+}
+
+/** pm25 holds the band index it moved from. */
+export type Triggers = { psi: boolean; pm25: number | null; nea: NewsItem | null; brief: boolean; outlook: boolean };
+
+/** Messages to send: the triggers that fired and the next state. Null when NEA is unavailable (state kept). */
+export function detect(data: HazeData, prev: AlertState | null, now = new Date()): { fired: Triggers; next: AlertState } | null {
   const top = data.nea && islandMax(data.nea.psi24);
   if (!top) return null;
-  const { psi, region } = top;
-  const level = psiLevel(psi);
+  const today = sgDate(0, now);
+  const tomorrow = data.forecast.days.find((d) => d.date === sgDate(1, now));
+  const todayOutlook = data.forecast.days.find((d) => d.date === today);
+  const level = psiLevel(top.psi);
   const nea = latestNea(data.news);
-  const next: AlertState = { psiLevel: level, neaUrl: nea?.url ?? prev?.neaUrl ?? null };
-  const messages: string[] = [];
-  if (prev) {
-    if (prev.psiLevel != null && prev.psiLevel !== level) messages.push(psiMessage(level, psi, region, site));
-    if (nea && nea.url !== prev.neaUrl) messages.push(neaMessage(nea));
+  const band = confirmedPm25Band(data.history, prev?.pm25Band);
+  const hour = sgHour(now);
+  const briefDue = hour >= BRIEF_HOUR && prev?.briefDate !== today;
+  const outlookDue = hour >= OUTLOOK_HOUR && prev?.outlookDate !== today;
+  const next: AlertState = {
+    psiLevel: level,
+    pm25Band: band,
+    neaUrl: nea?.url ?? prev?.neaUrl ?? null,
+    briefDate: briefDue ? today : (prev?.briefDate ?? null),
+    outlookDate: outlookDue ? today : (prev?.outlookDate ?? null),
+  };
+  // A missing field means it is new: record it, send nothing for it.
+  const fired: Triggers = {
+    psi: prev?.psiLevel != null && prev.psiLevel !== level,
+    pm25: prev?.pm25Band != null && band != null && prev.pm25Band !== band ? prev.pm25Band : null,
+    nea: prev && nea && prev.neaUrl != null && nea.url !== prev.neaUrl ? nea : null,
+    brief: briefDue && prev?.briefDate !== undefined && (top.psi > 100 || (todayOutlook?.psiMax ?? 0) > 100),
+    outlook: outlookDue && prev?.outlookDate !== undefined && (tomorrow?.psiMax ?? 0) > 100,
+  };
+  return { fired, next };
+}
+
+/** Short caption (a few lines) for the triggers that fired. */
+export function caption(data: HazeData, fired: Triggers, site: string, now = new Date()): string {
+  const top = islandMax(data.nea!.psi24)!;
+  const level = psiLevel(top.psi);
+  const where = cap(top.region);
+  const summary = islandSummary(data);
+  const peak = summary?.peak;
+  const tomorrow = data.forecast.days.find((d) => d.date === sgDate(1, now));
+  const trend = peak && trendDir(data.history?.regions[peak.region]);
+  const win = bestWindowFor(data, fired.outlook && !fired.psi && fired.pm25 == null && !fired.brief ? sgDate(1, now) : undefined);
+
+  const lines: string[] = [];
+  if (fired.brief) lines.push(`Morning brief · ${new Intl.DateTimeFormat("en-SG", { timeZone: "Asia/Singapore", weekday: "long" }).format(now)}`);
+  if (fired.nea) lines.push(`NEA: ${fired.nea.title}`, firstSentence(fired.nea.summary));
+  if (fired.pm25 != null && peak) {
+    const b = pm25Band(peak.value);
+    lines.push(`PM2.5 ${b.index > fired.pm25! ? "rose to" : "eased to"} ${b.name} (band ${b.band}) · ${Math.round(peak.value)} ${cap(peak.region)}`);
   }
-  return { messages, next };
+  lines.push(`PSI ${fired.psi ? "now " : ""}${LEVEL_NAME[level]} · ${top.psi} ${where}`);
+  if (fired.pm25 == null && peak) lines.push(`PM2.5 now ${Math.round(peak.value)}${trend ? ` · ${TREND_WORD[trend]}` : ""}`);
+  if (fired.outlook && tomorrow) lines.push(`Tomorrow: PSI ~${tomorrow.psiMax}, ${LEVEL_NAME[psiLevel(tomorrow.psiMax)]}`);
+  else if (tomorrow && tomorrow.psiMax > 100) lines.push(`Tomorrow: PSI ~${tomorrow.psiMax}`);
+  if (win) lines.push(`Best time out: ${win.text}`);
+  return [...lines.slice(0, MAX_LINES - 1), site].join("\n");
 }

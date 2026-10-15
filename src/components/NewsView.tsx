@@ -18,11 +18,11 @@ const FILTERS: { label: string; sources: TimelineItem["source"][] | null }[] = [
   { label: "Live data", sources: ["NEA readings", "NASA FIRMS"] },
 ];
 
-function Item({ n }: { n: TimelineItem }) {
+function Item({ n, i }: { n: TimelineItem; i: number }) {
   const [open, setOpen] = useState(false);
   const long = n.summary.length > LONG;
   return (
-    <li className="flex gap-3 px-4 py-4">
+    <li className="flex animate-rise gap-3 px-4 py-4" style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}>
       <span className="tabular w-14 shrink-0 pt-0.5 text-[13px] text-muted">{n.hasHour ? fmtTime(n.time) : ""}</span>
       <div className="min-w-0 flex-1">
         <span className="rounded-full bg-line px-2 py-0.5 text-[12px] font-semibold">{n.source}</span>
@@ -87,7 +87,7 @@ export default function NewsView({ items, streak, psi }: { items: TimelineItem[]
         </div>
       )}
 
-      <div role="radiogroup" aria-label="Filter updates" className="flex gap-2 overflow-x-auto px-4 pt-4">
+      <div role="radiogroup" aria-label="Filter updates" className="no-scrollbar flex gap-2 overflow-x-auto px-4 pt-4">
         {FILTERS.map((f, i) => (
           <button
             key={f.label}
@@ -116,7 +116,7 @@ export default function NewsView({ items, streak, psi }: { items: TimelineItem[]
             </h2>
             <ul className="divide-y divide-line">
               {d.items.map((n, i) => (
-                <Item key={`${n.time}-${n.title}-${i}`} n={n} />
+                <Item key={`${n.time}-${n.title}-${i}`} n={n} i={i} />
               ))}
             </ul>
           </section>

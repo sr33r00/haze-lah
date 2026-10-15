@@ -31,8 +31,8 @@ export default function PlanDay({ hourly, group }: { hourly: ForecastPoint[]; gr
           <li key={h.time} className="min-w-0 flex-1 text-center">
             <div className="flex h-12 items-end">
               <div
-                className="w-full rounded-t-sm"
-                style={{ height: `${Math.max(12, (h.pm25 / top) * 100)}%`, background: TONE_COLOR[h.verdict.tone].bg }}
+                className="w-full origin-bottom animate-grow rounded-t-sm"
+                style={{ height: `${Math.max(12, (h.pm25 / top) * 100)}%`, background: TONE_COLOR[h.verdict.tone].bg, animationDelay: `${i * 20}ms` }}
                 title={`${fmtHour(h.time)}: PM2.5 ${Math.round(h.pm25)}`}
               />
             </div>
