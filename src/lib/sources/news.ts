@@ -49,11 +49,24 @@ export function summarise(text: string, max = 240): string {
 
 const tag = (xml: string, name: string) => xml.match(new RegExp(`<${name}[^>]*>([\\s\\S]*?)</${name}>`))?.[1] ?? "";
 
-/** "15 Oct 2026 06:19" to "2026-10-15"; the time of day has no am/pm, so it is dropped. */
-function neaDate(s: string): string | null {
-  const m = s.match(/(\d{1,2}) ([A-Za-z]{3}) (\d{4})/);
+/**
+ * "15 Oct 2026 06:19" to "2026-10-15", or an SGT ISO time when the text allows it.
+ * The pubDate clock has no am/pm, but NEA posts after the time it reports ("As at 6pm" goes out at 6:19pm).
+ * So the publish time is the earliest 12-hour reading at or after that reference; with no reference, or
+ * none that fits, only the date is kept rather than guessing.
+ */
+function neaDate(pub: string, text: string): string | null {
+  const m = pub.match(/(\d{1,2}) ([A-Za-z]{3}) (\d{4})/);
   const mi = m ? MONTHS.findIndex((x) => x.toLowerCase() === m[2].toLowerCase()) : -1;
-  return m && mi >= 0 ? `${m[3]}-${String(mi + 1).padStart(2, "0")}-${m[1].padStart(2, "0")}` : null;
+  if (!m || mi < 0) return null;
+  const date = `${m[3]}-${String(mi + 1).padStart(2, "0")}-${m[1].padStart(2, "0")}`;
+  const clock = pub.match(/\b(\d{1,2}):(\d{2})\b/);
+  const ref = text.match(/as (?:at|of) (\d{1,2})(?::(\d{2}))?\s*(am|pm)/i);
+  if (!clock || !ref) return date;
+  const refMin = ((+ref[1] % 12) + (ref[3].toLowerCase() === "pm" ? 12 : 0)) * 60 + +(ref[2] ?? 0);
+  const hh = +clock[1] % 12;
+  const hour = [hh, hh + 12].find((h) => h * 60 + +clock[2] >= refMin);
+  return hour == null ? date : `${date}T${String(hour).padStart(2, "0")}:${clock[2]}:00+08:00`;
 }
 
 export function parseNea(xml: string): NewsItem[] {
@@ -61,7 +74,7 @@ export function parseNea(xml: string): NewsItem[] {
   for (const [, item] of xml.matchAll(/<item>([\s\S]*?)<\/item>/g)) {
     const title = toText(tag(item, "title"));
     const text = toText(tag(item, "description"));
-    const date = neaDate(tag(item, "pubDate"));
+    const date = neaDate(tag(item, "pubDate"), `${title} ${text}`);
     if (!date || !HAZE.test(`${title} ${text}`)) continue;
     out.push({ source: "NEA", title, summary: summarise(text), date, url: safeUrl(toText(tag(item, "link"))) });
   }

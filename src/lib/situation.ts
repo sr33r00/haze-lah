@@ -76,7 +76,7 @@ export function buildTimeline(data: HazeData): TimelineItem[] {
     const hasHour = n.date.includes("T");
     return { ...n, time: hasHour ? Date.parse(n.date) : NOON_SGT(n.date), hasHour };
   });
-  return [...official, ...pm25Events(data.history), ...fireEvent(data.fires)].sort((a, b) => b.time - a.time).slice(0, 20);
+  return [...official, ...pm25Events(data.history), ...fireEvent(data.fires)].sort((a, b) => b.time - a.time).slice(0, 30);
 }
 
 /** Consecutive days up to today with a peak 24-hr PSI above 100 (NEA: Unhealthy starts at 101). */
@@ -88,3 +88,6 @@ export function unhealthyStreak(days: DayPsi[]): number {
   }
   return n;
 }
+
+/** Time of the newest timeline item that has already happened, or null. */
+export const newestTime = (data: HazeData): number | null => buildTimeline(data).find((i) => i.time <= Date.now())?.time ?? null;
