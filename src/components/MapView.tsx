@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import type { FireSummary, NeaNow, Station } from "@/lib/types";
+import type { FireSummary, NeaNow, Sensor, Station } from "@/lib/types";
 import { windVerdict } from "@/lib/context";
 import FireTrend from "./FireTrend";
 import Neighbours from "./Neighbours";
@@ -17,6 +17,7 @@ const SmokeMap = dynamic(() => import("./SmokeMap"), {
 export default function MapView(props: {
   fires: FireSummary;
   stations: Station[];
+  sensors: Sensor[];
   psi24: NeaNow["psi24"] | null;
   biasFactor: number | null;
   windDir: number | null;
@@ -26,7 +27,7 @@ export default function MapView(props: {
   return (
     <>
       <Section title="Next 72 hours" aside="PM2.5 forecast">
-        <SmokeMap fires={props.fires} stations={props.stations} psi24={props.psi24} biasFactor={props.biasFactor} />
+        <SmokeMap fires={props.fires} stations={props.stations} sensors={props.sensors} psi24={props.psi24} biasFactor={props.biasFactor} />
         <div className="mt-4 flex items-center gap-4 px-4">
           {windDir != null && <WindDial windDir={windDir} />}
           <div className="min-w-0 text-[15px]">

@@ -73,6 +73,13 @@ export function mockInputs(): Inputs {
       { id: "palembang", name: "Palembang", state: "South Sumatra", country: "ID", lat: -2.98, lon: 104.78, api: null, pm25: 240, time: null, distanceKm: 492 },
       { id: "pontianak", name: "Pontianak", state: "West Kalimantan", country: "ID", lat: -0.03, lon: 109.34, api: null, pm25: 60, time: null, distanceKm: 632 },
     ],
+    sensors: [
+      ["4 Haig Road", 1.3125, 103.8947, 142],
+      ["Sengkang West Way", 1.3920, 103.8800, 118],
+      ["Fernvale", 1.3910, 103.8770, 125],
+      ["Yio Chu Kang Beacon", 1.3820, 103.8450, 131],
+      ["Taman Jurong", 1.3400, 103.7230, 156],
+    ].map(([name, lat, lon, pm25]) => ({ name: String(name), lat: Number(lat), lon: Number(lon), pm25: Number(pm25), time: new Date(now).toISOString() })),
     fires: {
       available: true,
       days: 2,

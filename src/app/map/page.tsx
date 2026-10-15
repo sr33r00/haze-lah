@@ -14,6 +14,7 @@ export default async function MapPage() {
       <MapView
         fires={data.fires}
         stations={data.stations}
+        sensors={data.sensors}
         psi24={data.nea?.psi24 ?? null}
         biasFactor={data.forecast.biasFactor}
         windDir={wind?.windDir ?? null}

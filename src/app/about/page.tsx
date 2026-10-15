@@ -17,6 +17,7 @@ const SOURCES = [
   ["Meteorological Service Singapore", "24-hour weather forecast", "https://www.weather.gov.sg/weather-forecast-24hrs/"],
   ["Malaysia DOE APIMS", "Live Air Pollutant Index for Malaysian stations", "https://eqms.doe.gov.my/APIMS/main"],
   ["NASA FIRMS (VIIRS)", "Satellite-detected fires in Sumatra, Borneo and Malaysia", "https://firms.modaps.eosdis.nasa.gov"],
+  ["World Air Quality Index Project", "Community air sensors on the map (low-cost, converted to PM2.5)", "https://waqi.info/"],
   ["Copernicus CAMS via Open-Meteo", "5-day PM2.5 smoke model; Indonesian city estimates", "https://open-meteo.com/en/docs/air-quality-api"],
   ["ECMWF via Open-Meteo", "Wind at 850 hPa (about 1.5 km up) and rain forecast", "https://open-meteo.com"],
   ["ASEAN Specialised Meteorological Centre", "Regional haze outlook and hotspot maps (reference)", "https://asmc.asean.org"],
@@ -144,7 +145,7 @@ export default async function About() {
         </ul>
         <p className="mt-2 text-xs text-muted">
           Contains information from NEA made available under the Singapore Open Data Licence. Contains modified Copernicus Atmosphere
-          Monitoring Service information. Weather data by Open-Meteo.com (CC BY 4.0). Fire data from NASA FIRMS.
+          Monitoring Service information. Weather data by Open-Meteo.com (CC BY 4.0). Fire data from NASA FIRMS. Community sensor data from the World Air Quality Index Project.
         </p>
       </section>
 
