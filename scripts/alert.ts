@@ -3,9 +3,9 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { getHazeData } from "../src/lib/data";
 import { plan, type AlertState } from "../src/lib/alerts";
+import { SITE_URL } from "../src/lib/links";
 
 const STATE = process.env.ALERT_STATE || "data/alert-state.json";
-const SITE = process.env.SITE_URL || "https://hazelah.app";
 const { TELEGRAM_BOT_TOKEN: token, TELEGRAM_CHAT_ID: chat } = process.env;
 
 async function send(text: string) {
@@ -19,7 +19,7 @@ async function send(text: string) {
 
 async function main() {
   const prev: AlertState | null = existsSync(STATE) ? JSON.parse(readFileSync(STATE, "utf8")) : null;
-  const p = plan(await getHazeData(), prev, SITE);
+  const p = plan(await getHazeData(), prev, SITE_URL);
   if (!p) return console.log("alerts: NEA unavailable, state kept");
   if (token && chat) for (const m of p.messages) await send(m);
   else console.log("alerts: Telegram not configured");

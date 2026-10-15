@@ -1,9 +1,14 @@
+import { pageMeta } from "@/lib/seo";
 import AppShell from "@/components/AppShell";
 import ForecastView from "@/components/ForecastView";
 import { fetchAccuracy } from "@/lib/accuracy";
 import { getHazeData } from "@/lib/data";
 
-export const metadata = { title: "Haze forecast · Haze Lah" };
+export const metadata = pageMeta(
+  "Singapore haze forecast: next 48 hours and 5 days",
+  "Hour-by-hour PM2.5 for the next 48 hours and a 5-day PSI outlook for Singapore, calibrated against live NEA readings, with measured accuracy.",
+  "/forecast",
+);
 export const revalidate = 300;
 
 export default async function Forecast() {

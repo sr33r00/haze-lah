@@ -100,3 +100,16 @@ export function currentReading(data: Pick<HazeData, "history" | "nea">, region: 
   const level = latest ? pm25ToLevel(latest.value) : psi != null ? psiLevel(psi) : null;
   return { latest, psi, level };
 }
+
+/** Island-wide headline numbers from NEA: 24-hr PSI range, and the region with the highest 1-hr PM2.5. Null when NEA is unavailable. */
+export function islandSummary(data: Pick<HazeData, "history" | "nea">) {
+  const values = data.nea ? Object.values(data.nea.psi24).filter((v) => !isNaN(v)) : [];
+  if (!values.length) return null;
+  const psi = { min: Math.min(...values), max: Math.max(...values) };
+  let peak: { region: Region; value: number } | null = null;
+  for (const r of REGIONS) {
+    const v = data.history?.regions[r].at(-1)?.value;
+    if (v != null && !isNaN(v) && (!peak || v > peak.value)) peak = { region: r, value: v };
+  }
+  return { psi, level: psiLevel(psi.max), peak };
+}
