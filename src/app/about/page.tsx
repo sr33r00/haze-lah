@@ -1,11 +1,18 @@
 import Link from "next/link";
+import JsonLd from "@/components/JsonLd";
+import { FAQ } from "@/lib/faq";
+import { pageMeta } from "@/lib/seo";
 import { GROUP_LABEL, LEVEL_COLOR, LEVEL_NAME, NEA_ADVICE, type Group } from "@/lib/bands";
 import AccuracyTable from "@/components/AccuracyTable";
 import { fetchAccuracy } from "@/lib/accuracy";
 import { CIGARETTE_NOTES, CIGARETTE_SOURCES } from "@/lib/cigarettes";
 import { FORECAST_METHOD } from "@/lib/forecast";
 
-export const metadata = { title: "How it works · Haze Lah" };
+export const metadata = pageMeta(
+  "About Haze Lah: data sources, forecast method and FAQ",
+  "How Haze Lah works: NEA health advisory bands, the forecast method, measured accuracy, data sources and answers to common haze questions.",
+  "/about",
+);
 export const revalidate = 3600;
 
 const PSI_RANGES = ["0–50", "51–100", "101–200", "201–300", "Above 300"];
@@ -33,6 +40,25 @@ export default async function About() {
         ← Back
       </Link>
       <h1 className="text-2xl font-bold">How this works</h1>
+
+      <section className="space-y-2">
+        <h2 className="text-lg font-semibold">Questions</h2>
+        <div className="space-y-2">
+          {FAQ.map(({ q, a }) => (
+            <details key={q} className="rounded-2xl bg-surface p-3">
+              <summary className="cursor-pointer font-semibold">{q}</summary>
+              <p className="mt-2">{a}</p>
+            </details>
+          ))}
+        </div>
+        <JsonLd
+          data={{
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            mainEntity: FAQ.map(({ q, a }) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
+          }}
+        />
+      </section>
 
       <section className="space-y-2">
         <h2 className="text-lg font-semibold">The answer at the top</h2>
