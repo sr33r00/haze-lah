@@ -1,0 +1,155 @@
+{
+ "updated": "2026-10-15T11:05:43.921Z",
+ "forecasts": 1,
+ "from": "2026-10-15T19:00:00+08:00",
+ "to": "2026-10-15T19:00:00+08:00",
+ "leads": [
+  {
+   "lead": 6,
+   "ours": {
+    "n": 0,
+    "mae": null,
+    "rmse": null,
+    "bias": null
+   },
+   "cams": {
+    "n": 0,
+    "mae": null,
+    "rmse": null,
+    "bias": null
+   },
+   "persistence": {
+    "n": 0,
+    "mae": null,
+    "rmse": null,
+    "bias": null
+   },
+   "event": {
+    "n": 0,
+    "precision": null,
+    "recall": null,
+    "f1": null
+   }
+  },
+  {
+   "lead": 24,
+   "ours": {
+    "n": 0,
+    "mae": null,
+    "rmse": null,
+    "bias": null
+   },
+   "cams": {
+    "n": 0,
+    "mae": null,
+    "rmse": null,
+    "bias": null
+   },
+   "persistence": {
+    "n": 0,
+    "mae": null,
+    "rmse": null,
+    "bias": null
+   },
+   "event": {
+    "n": 0,
+    "precision": null,
+    "recall": null,
+    "f1": null
+   }
+  },
+  {
+   "lead": 48,
+   "ours": {
+    "n": 0,
+    "mae": null,
+    "rmse": null,
+    "bias": null
+   },
+   "cams": {
+    "n": 0,
+    "mae": null,
+    "rmse": null,
+    "bias": null
+   },
+   "persistence": {
+    "n": 0,
+    "mae": null,
+    "rmse": null,
+    "bias": null
+   },
+   "event": {
+    "n": 0,
+    "precision": null,
+    "recall": null,
+    "f1": null
+   }
+  },
+  {
+   "lead": 72,
+   "ours": {
+    "n": 0,
+    "mae": null,
+    "rmse": null,
+    "bias": null
+   },
+   "cams": {
+    "n": 0,
+    "mae": null,
+    "rmse": null,
+    "bias": null
+   },
+   "persistence": {
+    "n": 0,
+    "mae": null,
+    "rmse": null,
+    "bias": null
+   },
+   "event": {
+    "n": 0,
+    "precision": null,
+    "recall": null,
+    "f1": null
+   }
+  },
+  {
+   "lead": 96,
+   "ours": {
+    "n": 0,
+    "mae": null,
+    "rmse": null,
+    "bias": null
+   },
+   "cams": {
+    "n": 0,
+    "mae": null,
+    "rmse": null,
+    "bias": null
+   },
+   "persistence": {
+    "n": 0,
+    "mae": null,
+    "rmse": null,
+    "bias": null
+   },
+   "event": {
+    "n": 0,
+    "precision": null,
+    "recall": null,
+    "f1": null
+   }
+  }
+ ],
+ "hazyDays": {
+  "days": 0,
+  "hazy": 0,
+  "ours": {
+   "hits": 0,
+   "clearRight": 0
+  },
+  "persistence": {
+   "hits": 0,
+   "clearRight": 0
+  }
+ }
+}
