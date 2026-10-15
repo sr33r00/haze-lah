@@ -6,7 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { CircleMarker, ImageOverlay, MapContainer, TileLayer, Tooltip } from "react-leaflet";
 import { LEVEL_COLOR, REGIONS, REGION_POINT, pm25Color, psiLevel, stationLevel } from "@/lib/bands";
 import { fmtDay, fmtHour } from "@/lib/format";
-import type { HazeData, SmokeGrid } from "@/lib/types";
+import type { FireSummary, NeaNow, SmokeGrid, Station } from "@/lib/types";
 import { sgDate } from "@/lib/util";
 
 function frameLabel(t: string) {
@@ -16,12 +16,13 @@ function frameLabel(t: string) {
 }
 
 /** Regional smoke forecast (CAMS, calibrated to NEA) with fires, stations and a time slider. */
-export default function SmokeMap({ data }: { data: HazeData }) {
+export default function SmokeMap(props: { fires: FireSummary; stations: Station[]; psi24: NeaNow["psi24"] | null; biasFactor: number | null }) {
+  const { fires, stations, psi24 } = props;
   const [grid, setGrid] = useState<SmokeGrid | null>(null);
   const [failed, setFailed] = useState(false);
   const [frame, setFrame] = useState(0);
   const [playing, setPlaying] = useState(false);
-  const scale = data.forecast.biasFactor ?? 1;
+  const scale = props.biasFactor ?? 1;
 
   useEffect(() => {
     fetch("/api/smoke")
@@ -59,11 +60,11 @@ export default function SmokeMap({ data }: { data: HazeData }) {
           />
           {image && <ImageOverlay url={image.url} bounds={image.bounds} opacity={0.75} />}
           {frame === 0 &&
-            data.fires.points.map((f, i) => (
+            fires.points.map((f, i) => (
               <CircleMarker key={i} center={[f.lat, f.lon]} radius={2.5} pathOptions={{ color: "#c2410c", weight: 0, fillOpacity: 0.85 }} />
             ))}
           {frame === 0 &&
-            data.stations.map((s) => {
+            stations.map((s) => {
               const lv = stationLevel(s);
               return (
                 <CircleMarker
@@ -79,9 +80,9 @@ export default function SmokeMap({ data }: { data: HazeData }) {
               );
             })}
           {frame === 0 &&
-            data.nea &&
+            psi24 &&
             REGIONS.map((r) => {
-              const p = data.nea!.psi24[r];
+              const p = psi24![r];
               return (
                 <CircleMarker
                   key={r}
