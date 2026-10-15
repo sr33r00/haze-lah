@@ -8,13 +8,18 @@ The site is independent and is not an official NEA service. For official advisor
 
 - **A plain answer for you.** "Go ahead", "Short outings only", "Stay indoors", based on NEA's health advisory for healthy adults, for children, the elderly and pregnant women, and for people with heart or lung conditions.
 - **Live readings** of 1-hour PM2.5 and 24-hour PSI for all five regions, with "use my location".
-- **What to do:** practical steps for the current level, such as closing windows, when an N95 mask helps and when to see a doctor.
+- **What to do:** practical steps for the current level, such as closing windows, choosing a purifier, when an N95 mask helps, school measures and when to see a doctor.
+- **Cigarette comparison:** today's air expressed as cigarettes, using Berkeley Earth's 22 µg/m³ per cigarette.
+- **Plan your day:** the next 24 hours by advice level and the cleanest 3-hour window.
 - **Next 48 hours:** measured PM2.5, the forecast with its likely range, and the uncorrected model for comparison.
 - **Next 5 days:** morning, afternoon and evening outlook, the likely peak, the chance PM2.5 rises above 55 µg/m³, and the expected 24-hour PSI.
 - **Smoke map:** the regional smoke forecast for the next 72 hours with fires and monitoring stations.
-- **What is driving it:** fires upwind, wind direction, rain, the smoke trend and Johor stations.
+- **Last 7 days:** each day's peak 24-hour PSI, compared with NEA records since 2014.
+- **Wind and fires:** a wind dial showing whether air comes from the fire areas, and daily hotspot counts.
+- **News:** NEA haze updates, the official weather outlook and changes in the live readings, with times.
 - **What is in the air:** every pollutant behind the PSI for your region.
 - **Neighbours:** live Malaysian stations and modelled conditions in upwind Indonesian cities.
+- **Alerts:** an optional Telegram channel posts when the 24-hour PSI band changes or NEA issues a haze update.
 - **Measured accuracy:** every forecast is saved when it is made and scored against what NEA later measured.
 
 ## Data sources
@@ -69,6 +74,9 @@ All variables are optional. Copy `.env.example` to `.env.local` to set them.
 | `FIRMS_MAP_KEY` | Free [NASA FIRMS key](https://firms.modaps.eosdis.nasa.gov/api/map_key/) for fire counts and the fire map |
 | `DATA_GOV_SG_API_KEY` | data.gov.sg key for higher rate limits |
 | `HAZE_MOCK` | `1` renders synthetic demo data |
+| `NEXT_PUBLIC_ALERTS_URL` | Telegram channel link (`https://t.me/...`) for the "Get alerts" button |
+| `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` | Bot and channel used by `scripts/alert.ts` |
+| `SITE_URL` | Site link in alert messages |
 
 ## Project structure
 
@@ -79,7 +87,7 @@ src/lib/bands.ts      NEA bands, PSI sub-index and health advisory
 src/lib/advice.ts     practical steps by level and group
 src/lib/accuracy.ts   forecast verification
 src/components/       page sections
-scripts/              archive and scoring jobs
+scripts/              archive, scoring and alert jobs
 ```
 
 ## Contributing
