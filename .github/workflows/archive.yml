@@ -4,6 +4,11 @@ on:
   schedule:
     - cron: "7 * * * *" # hourly, after NEA publishes the hour's reading
   workflow_dispatch:
+    inputs:
+      test_alert:
+        description: Only send a test message to the Telegram channel
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -24,13 +29,16 @@ jobs:
           cache: npm
       - run: npm ci --ignore-scripts
       - run: npx tsx scripts/archive.ts
+        if: ${{ !inputs.test_alert }}
         env:
           FIRMS_MAP_KEY: ${{ secrets.FIRMS_MAP_KEY }}
           DATA_GOV_SG_API_KEY: ${{ secrets.DATA_GOV_SG_API_KEY }}
       - run: npx tsx scripts/score.ts
+        if: ${{ !inputs.test_alert }}
       - run: npx tsx scripts/alert.ts
-        continue-on-error: true
+        continue-on-error: ${{ !inputs.test_alert }}
         env:
+          ALERT_TEST: ${{ inputs.test_alert && '1' || '' }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           FIRMS_MAP_KEY: ${{ secrets.FIRMS_MAP_KEY }}
