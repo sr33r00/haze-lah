@@ -1,36 +1,31 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Haze SG
 
-## Getting Started
+A mobile-first Singapore haze tracker: live levels, a 5-day forecast and a plain answer to "is it safe to go out?", based on NEA's official health advisory.
 
-First, run the development server:
+## Data
+
+| Source | Used for |
+|---|---|
+| NEA via data.gov.sg | Live 1-hr PM2.5 and 24-hr PSI, 5 regions |
+| Malaysia DOE APIMS | Live API for Johor, Melaka and other nearby stations |
+| NASA FIRMS (VIIRS) | Fire hotspots in Sumatra and Borneo (needs `FIRMS_MAP_KEY`) |
+| Copernicus CAMS via Open-Meteo | PM2.5 forecast; model estimates for upwind Indonesian cities |
+| ECMWF via Open-Meteo | Wind at 850 hPa and rain |
+
+## Forecast
+
+CAMS PM2.5 is calibrated against NEA's last 48 h of readings (median log-ratio bias correction, current error decaying over about 12 h, uncertainty band from recent residuals). The daily PSI outlook applies NEA's PM2.5 sub-index breakpoints to a rolling 24-h mean. See `src/lib/forecast.ts`.
+
+## Develop
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+HAZE_MOCK=1 npm run dev   # demo data, no network needed
+npm run dev               # live data
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+`GET /api/haze` returns everything as JSON.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Deploy
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Import the repo at vercel.com/new, add `FIRMS_MAP_KEY` as an environment variable, and deploy. Pages revalidate every 5 minutes.
