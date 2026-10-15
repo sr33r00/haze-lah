@@ -3,7 +3,8 @@
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { pm25ToLevel, psiLevel } from "@/lib/bands";
-import { ago, fmtTime } from "@/lib/format";
+import { ago, fmtTime, trend3h } from "@/lib/format";
+import { mapContext } from "@/lib/context";
 import type { LeadScore } from "@/lib/accuracy";
 import type { HazeData } from "@/lib/types";
 import { tips } from "@/lib/advice";
@@ -11,10 +12,10 @@ import AirDetail from "./AirDetail";
 import Advice from "./Advice";
 import BottomNav from "./BottomNav";
 import Chart from "./Chart";
-import Drivers from "./Drivers";
 import Hero from "./Hero";
 import Neighbours from "./Neighbours";
 import Outlook from "./Outlook";
+import PlanDay from "./PlanDay";
 import RegionChips from "./RegionChips";
 import ShareButton from "./ShareButton";
 import { Section, cap } from "./ui";
@@ -52,6 +53,7 @@ export default function Dashboard({ data, skill24 }: { data: HazeData; skill24: 
           readingTime={latest?.time ?? null}
           pm25={latest?.value ?? null}
           psi={psi}
+          trend={trend3h(data.history?.regions[region])}
           level={level}
           group={group}
           onGroup={setGroup}
@@ -63,6 +65,10 @@ export default function Dashboard({ data, skill24 }: { data: HazeData; skill24: 
             <Advice items={tips(level, group)} />
           </Section>
         )}
+
+        <Section id="plan" title="Plan your day">
+          <PlanDay hourly={data.forecast.hourly} group={group} />
+        </Section>
 
         <Section id="forecast" title="Next 48 hours" aside="PM2.5 µg/m³, island-wide">
           {data.history ? (
@@ -86,10 +92,7 @@ export default function Dashboard({ data, skill24 }: { data: HazeData; skill24: 
 
         <Section id="map" title="Smoke map" aside="Next 72 hours">
           <SmokeMap data={data} />
-        </Section>
-
-        <Section id="why" title="What is driving it">
-          <Drivers data={data} />
+          {mapContext(data) && <p className="mt-3 px-4 text-[15px]">{mapContext(data)}</p>}
         </Section>
 
         {data.nea && (

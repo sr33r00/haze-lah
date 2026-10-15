@@ -1,12 +1,12 @@
 import type { NextConfig } from "next";
 
-// Everything is served from this origin except OpenStreetMap/CARTO map tiles.
+// Everything is served from this origin except OpenStreetMap map tiles.
 const csp = [
   "default-src 'self'",
   // Next.js inline bootstrap scripts; the page renders no user input. Dev mode also needs eval.
   `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : ""}`,
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob: https://*.basemaps.cartocdn.com",
+  "img-src 'self' data: blob: https://tile.openstreetmap.org",
   "font-src 'self'",
   "connect-src 'self'",
   "object-src 'none'",

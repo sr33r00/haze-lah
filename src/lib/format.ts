@@ -27,13 +27,10 @@ export function ago(t: string) {
   return `${h} h ago`;
 }
 
-const COMPASS = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
-export const compass = (deg: number) => COMPASS[Math.round(((deg % 360) / 45)) % 8];
-
-/** Where wind blowing *from* `deg` comes from, seen from Singapore. */
-export function windOrigin(deg: number): { place: string; smoky: "sumatra" | "borneo" | null } {
-  if (deg >= 190 && deg <= 300) return { place: "Sumatra", smoky: "sumatra" };
-  if (deg > 160 && deg < 190) return { place: "Riau Islands and Sumatra", smoky: "sumatra" };
-  if (deg >= 90 && deg <= 160) return { place: "Borneo and the South China Sea", smoky: "borneo" };
-  return { place: "the north (Malaysia and the sea)", smoky: null };
+/** Change over the last 3 hours of an hourly series, as a short phrase. */
+export function trend3h(series: { value: number }[] | undefined): string | null {
+  if (!series || series.length < 4) return null;
+  const d = Math.round(series[series.length - 1].value - series[series.length - 4].value);
+  if (Math.abs(d) < 5) return "Steady";
+  return `${d > 0 ? "Up" : "Down"} ${Math.abs(d)} in 3 h`;
 }

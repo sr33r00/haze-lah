@@ -76,6 +76,17 @@ body {
   font-family: var(--font-sans);
 }
 
+/* Muted basemap so the smoke shading stands out. */
+.leaflet-tile-pane {
+  filter: grayscale(1) contrast(0.9) brightness(1.05);
+}
+
+@media (prefers-color-scheme: dark) {
+  .leaflet-tile-pane {
+    filter: grayscale(1) invert(1) hue-rotate(180deg) contrast(0.85) brightness(0.9);
+  }
+}
+
 input[type="range"].slider {
   accent-color: var(--fg);
 }
