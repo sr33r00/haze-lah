@@ -4,7 +4,8 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { pm25ToLevel, psiLevel } from "@/lib/bands";
 import { ago, fmtTime, trend3h } from "@/lib/format";
-import { mapContext } from "@/lib/context";
+import { mapContext, windVerdict } from "@/lib/context";
+import { buildTimeline, unhealthyStreak } from "@/lib/situation";
 import type { LeadScore } from "@/lib/accuracy";
 import type { HazeData } from "@/lib/types";
 import { tips } from "@/lib/advice";
@@ -13,13 +14,17 @@ import Advice from "./Advice";
 import BottomNav from "./BottomNav";
 import Chart from "./Chart";
 import Hero from "./Hero";
+import FireTrend from "./FireTrend";
 import Neighbours from "./Neighbours";
+import NewsTimeline from "./NewsTimeline";
 import Outlook from "./Outlook";
 import PlanDay from "./PlanDay";
+import PsiWeek from "./PsiWeek";
 import RegionChips from "./RegionChips";
 import ShareButton from "./ShareButton";
 import { Section, cap } from "./ui";
 import { usePrefs } from "./usePrefs";
+import WindDial from "./WindDial";
 
 const SmokeMap = dynamic(() => import("./SmokeMap"), {
   ssr: false,
@@ -34,6 +39,9 @@ export default function Dashboard({ data, skill24 }: { data: HazeData; skill24: 
   const psi = rawPsi != null && !isNaN(rawPsi) ? rawPsi : null;
   // NEA: 1-hr PM2.5 guides immediate activities; fall back to 24-hr PSI.
   const level = latest ? pm25ToLevel(latest.value) : psi != null ? psiLevel(psi) : null;
+
+  const wind = data.weather[0] && !isNaN(data.weather[0].windDir) ? data.weather[0] : null;
+  const context = mapContext(data);
 
   return (
     <div className="pb-24">
@@ -70,6 +78,10 @@ export default function Dashboard({ data, skill24 }: { data: HazeData; skill24: 
           <PlanDay hourly={data.forecast.hourly} group={group} />
         </Section>
 
+        <Section id="news" title="Latest">
+          <NewsTimeline items={buildTimeline(data)} streak={unhealthyStreak(data.psiDaily)} />
+        </Section>
+
         <Section id="forecast" title="Next 48 hours" aside="PM2.5 µg/m³, island-wide">
           {data.history ? (
             <Chart observed={data.history.island} forecast={data.forecast.hourly.slice(0, 48)} />
@@ -90,9 +102,20 @@ export default function Dashboard({ data, skill24 }: { data: HazeData; skill24: 
           <Outlook days={data.forecast.days} group={group} />
         </Section>
 
+        <Section title="Last 7 days" aside="Peak 24-hr PSI">
+          <PsiWeek days={data.psiDaily} />
+        </Section>
+
         <Section id="map" title="Smoke map" aside="Next 72 hours">
           <SmokeMap data={data} />
-          {mapContext(data) && <p className="mt-3 px-4 text-[15px]">{mapContext(data)}</p>}
+          <div className="mt-4 flex items-center gap-4 px-4">
+            {wind && <WindDial windDir={wind.windDir} />}
+            <div className="min-w-0 text-[15px]">
+              {wind && <p className="font-bold">{windVerdict(wind.windDir)}</p>}
+              {context && <p className="mt-1 text-muted">{context}</p>}
+            </div>
+          </div>
+          {data.fires.available && <FireTrend daily={data.fires.daily} />}
         </Section>
 
         {data.nea && (
@@ -108,7 +131,7 @@ export default function Dashboard({ data, skill24 }: { data: HazeData; skill24: 
         <footer className="mt-12 space-y-3 px-6 text-center text-[13px] leading-relaxed text-muted">
           <p suppressHydrationWarning>
             Readings from NEA via data.gov.sg and Malaysia&apos;s Department of Environment. Fires from NASA FIRMS. Forecast from Copernicus CAMS and
-            ECMWF via Open-Meteo. Page updated {ago(data.generatedAt)}.
+            ECMWF via Open-Meteo. News from NEA and the Meteorological Service Singapore. Page updated {ago(data.generatedAt)}.
           </p>
           <p>
             An independent tool, not an official NEA service. For official advisories visit{" "}

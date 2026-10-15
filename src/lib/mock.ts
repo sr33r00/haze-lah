@@ -1,8 +1,8 @@
 // Synthetic data for local development and screenshots (HAZE_MOCK=1). Not real readings.
 import { REGIONS, type Region } from "./bands";
 import type { Inputs } from "./data";
-import type { HourPoint, SmokeGrid, Station, WeatherHour } from "./types";
-import { hourKey } from "./util";
+import type { DayPsi, HourPoint, NewsItem, SmokeGrid, Station, WeatherHour } from "./types";
+import { hourKey, sgDate } from "./util";
 
 export function mockInputs(): Inputs {
   const now = Date.parse(hourKey(new Date()));
@@ -79,6 +79,11 @@ export function mockInputs(): Inputs {
       sumatra: 1243,
       borneo: 318,
       peninsula: 12,
+      daily: [820, 1010, 1190, 1065, 1243].map((sumatra, i) => ({
+        date: new Date(now - (4 - i) * 86400_000).toISOString().slice(0, 10),
+        sumatra,
+        borneo: [190, 230, 215, 290, 318][i],
+      })),
       points: Array.from({ length: 300 }, (_, i) => {
         const sum = i < 230;
         return {
@@ -91,8 +96,44 @@ export function mockInputs(): Inputs {
       }),
     },
     weather,
+    news: mockNews(),
+    psiDaily: [112, 124, 98, 135, 150, 168, 190].map((max, i): DayPsi => ({ date: sgDate(i - 6), max, region: i % 2 ? "west" : "central" })),
     errors: [],
   };
+}
+
+const haze = (d: number, text: string): NewsItem => {
+  const date = sgDate(-d);
+  const long = new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Singapore", day: "numeric", month: "long", year: "numeric" }).format(new Date(`${date}T12:00:00+08:00`));
+  return {
+    source: "NEA",
+    title: `Haze Situation Update (${long})`,
+    summary: text,
+    date,
+    url: `https://www.nea.gov.sg/media/news/advisories/index/haze-situation-update-${long.toLowerCase().replace(/ /g, "-")}`,
+  };
+};
+
+function mockNews(): NewsItem[] {
+  return [
+    haze(0, "The 24-hr PSI forecast for tomorrow is Unhealthy to Low Very Unhealthy. Please check the latest 1-hr PM2.5 concentration readings and personal guide when deciding on carrying out activities in the next few hours."),
+    haze(1, "Dry conditions were observed over Singapore today. As at 4pm, the 1-hr PM2.5 concentration readings were 139 – 251 µg/m3, and the 24-hr PSI was 118 – 168, in the Unhealthy range."),
+    haze(3, "Showers fell over parts of Singapore today. As at 7pm, the 1-hr PM2.5 concentration readings were 93 – 135 µg/m3, and the 24-hr PSI was 118 – 155, in the Unhealthy range."),
+    {
+      source: "NEA",
+      title: "Singapore Ready To Step Up Haze Response",
+      summary: "Over the past week, the haze situation has deteriorated due to an increase in hotspots in southern and central Sumatra, and unfavourable wind conditions.",
+      date: sgDate(-5),
+      url: "https://www.nea.gov.sg/media/news/news/index/singapore-ready-to-step-up-haze-response",
+    },
+    {
+      source: "MSS",
+      title: "Weather outlook",
+      summary: "Cloudy. For tomorrow, thundery showers mainly over northern, western and central Singapore in the afternoon.",
+      date: new Date().toISOString(),
+      url: "https://www.weather.gov.sg/weather-forecast-24hrs/",
+    },
+  ];
 }
 
 /** Synthetic regional smoke: plumes over Sumatra and Borneo drifting north-east. */
