@@ -127,6 +127,14 @@ export default async function About() {
         </p>
       </section>
 
+      <section>
+        <h2 className="mb-2 text-lg font-semibold">Privacy</h2>
+        <p>
+          No accounts and no cookies. Anonymous page-view counts are collected with Vercel Web Analytics. Your region and group
+          choices stay on your device.
+        </p>
+      </section>
+
       <section className="rounded-2xl border border-line bg-surface p-3">
         This is an independent tool, not an official government service. If you feel unwell, seek medical attention. Official advisories:{" "}
         <a className="underline" href="https://www.haze.gov.sg">
