@@ -26,7 +26,7 @@ export type Level = 0 | 1 | 2 | 3 | 4; // good, moderate, unhealthy, very unheal
 export const LEVEL_NAME = ["Good", "Moderate", "Unhealthy", "Very unhealthy", "Hazardous"] as const;
 
 // Colours follow NEA's PSI legend (green, blue, yellow, orange, red).
-export const LEVEL_COLOR = ["#16a34a", "#2563eb", "#eab308", "#ea580c", "#dc2626"] as const;
+export const LEVEL_COLOR = ["#3f9a6b", "#3c7db0", "#d9a118", "#d2662a", "#9e2b35"] as const;
 
 /** Readable text colours for each level (theme-aware CSS variables). */
 export const LEVEL_TEXT = ["var(--lv0)", "var(--lv1)", "var(--lv2)", "var(--lv3)", "var(--lv4)"] as const;
@@ -47,6 +47,11 @@ export const PM25_BANDS = [
   { max: 250, name: "High", band: "III" },
   { max: Infinity, name: "Very high", band: "IV" },
 ] as const;
+
+/** Colour for a 1-hr PM2.5 value: Normal is green, then the colours of the PSI rows it corresponds to. */
+export function pm25Color(pm: number) {
+  return [LEVEL_COLOR[0], LEVEL_COLOR[2], LEVEL_COLOR[3], LEVEL_COLOR[4]][pm25Band(pm).index];
+}
 
 export function pm25Band(pm: number) {
   const i = PM25_BANDS.findIndex((b) => pm <= b.max);
@@ -123,22 +128,17 @@ export const NEA_ADVICE: Record<Group, string[]> = {
 export type Verdict = {
   tone: "go" | "easy" | "limit" | "stay";
   headline: string;
-  emoji: string;
+  detail: string;
 };
 
 /** Plain-language verdict for a group at a level, derived from the NEA advice row. */
 export function verdict(level: Level, group: Group): Verdict {
   const advice = NEA_ADVICE[group][level];
-  if (advice === "Normal activities") return { tone: "go", headline: "Yes, go out", emoji: "✅" };
-  if (advice.startsWith("Reduce")) return { tone: "easy", headline: "Yes, but take it easy", emoji: "🚶" };
-  if (advice.includes("exertion")) return { tone: "limit", headline: "Short trips only, no exercise", emoji: "⚠️" };
-  if (advice.startsWith("Minimise")) return { tone: "limit", headline: "Stay in if you can", emoji: "🏠" };
-  return { tone: "stay", headline: "Stay indoors", emoji: "🛑" };
+  if (advice === "Normal activities") return { tone: "go", headline: "Go ahead.", detail: "The air is fine for normal activities." };
+  if (advice.startsWith("Reduce")) return { tone: "easy", headline: "Go out, take it easy.", detail: "Cut back on long or hard exercise outdoors." };
+  if (advice.startsWith("Minimise prolonged"))
+    return { tone: "limit", headline: "Short outings only.", detail: "Keep long or hard exercise outdoors to a minimum." };
+  if (advice.startsWith("Avoid prolonged")) return { tone: "limit", headline: "Short outings only.", detail: "No long or hard exercise outdoors." };
+  if (advice.startsWith("Minimise")) return { tone: "limit", headline: "Stay in if you can.", detail: "Keep time outdoors to a minimum." };
+  return { tone: "stay", headline: "Stay indoors.", detail: "Avoid going outside." };
 }
-
-export const TONE_COLOR: Record<Verdict["tone"], string> = {
-  go: "#16a34a",
-  easy: "#b45309",
-  limit: "#ea580c",
-  stay: "#dc2626",
-};

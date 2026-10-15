@@ -1,4 +1,4 @@
-import type { HourPoint, Station, WeatherHour } from "../types";
+import type { HourPoint, SmokeGrid, Station, WeatherHour } from "../types";
 import { SG, getJson, haversineKm } from "../util";
 
 // Open-Meteo: ECMWF weather and Copernicus CAMS air-quality forecasts (CC BY 4.0).
@@ -81,4 +81,32 @@ export async function fetchUpwindModel(): Promise<Station[]> {
       distanceKm: Math.round(haversineKm(SG.lat, SG.lon, c.lat, c.lon)),
     };
   });
+}
+
+const GRID = { lat: [-6, 7], lon: [95, 120], step: 1 };
+
+/** Regional CAMS PM2.5 forecast on a 1° grid, sampled every 3 h for the next 72 h. */
+export async function fetchSmokeGrid(): Promise<SmokeGrid> {
+  const lats: number[] = [];
+  const lons: number[] = [];
+  for (let la = GRID.lat[0]; la <= GRID.lat[1]; la += GRID.step) lats.push(la);
+  for (let lo = GRID.lon[0]; lo <= GRID.lon[1]; lo += GRID.step) lons.push(lo);
+  const pts = lats.flatMap((la) => lons.map((lo) => [la, lo]));
+  const url =
+    "https://air-quality-api.open-meteo.com/v1/air-quality?" +
+    `latitude=${pts.map((p) => p[0]).join(",")}&longitude=${pts.map((p) => p[1]).join(",")}` +
+    "&hourly=pm2_5&domains=cams_global&timezone=GMT&forecast_days=4";
+  const j = await getJson<AQ[]>(url, { revalidate: 10800 });
+  const times0 = j[0].hourly.time;
+  const now = Date.now() - 3600_000;
+  const idx = times0
+    .map((t, i) => ({ t: Date.parse(z(t)), i }))
+    .filter(({ t }) => t >= now && new Date(t).getUTCHours() % 3 === 0)
+    .slice(0, 25);
+  return {
+    lats,
+    lons,
+    times: idx.map(({ t }) => new Date(t).toISOString()),
+    values: idx.map(({ i }) => j.map((loc) => Math.round(loc.hourly.pm2_5[i] ?? 0))),
+  };
 }

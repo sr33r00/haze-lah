@@ -4,7 +4,7 @@ const f = (x: number | null) => (x == null ? "–" : `±${x}`);
 
 export default function AccuracyTable({ a }: { a: Accuracy }) {
   return (
-    <div className="overflow-x-auto rounded-2xl bg-card">
+    <div className="overflow-x-auto rounded-2xl bg-surface">
       <table className="w-full text-left text-xs">
         <thead>
           <tr className="border-b border-line">

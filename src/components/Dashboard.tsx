@@ -1,31 +1,26 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useMemo } from "react";
 import { pm25ToLevel, psiLevel } from "@/lib/bands";
 import { ago, fmtTime } from "@/lib/format";
 import type { LeadScore } from "@/lib/accuracy";
-import type { ForecastPoint, HazeData } from "@/lib/types";
+import type { HazeData } from "@/lib/types";
+import AirDetail from "./AirDetail";
+import BottomNav from "./BottomNav";
 import Chart from "./Chart";
+import Drivers from "./Drivers";
+import Hero from "./Hero";
 import Neighbours from "./Neighbours";
-import NowStats from "./NowStats";
 import Outlook from "./Outlook";
-import RegionPicker from "./RegionPicker";
-import Regions from "./Regions";
-import { Card } from "./ui";
+import RegionChips from "./RegionChips";
+import { Section, cap } from "./ui";
 import { usePrefs } from "./usePrefs";
-import Verdict from "./Verdict";
-import Why from "./Why";
 
-const sgHour = (t: string) => (new Date(t).getUTCHours() + 8) % 24;
-
-/** Daytime hour with the cleanest forecast air in the next 12 h, if it is meaningfully cleaner. */
-function cleanestHour(hourly: ForecastPoint[]): ForecastPoint | null {
-  const day = hourly.slice(0, 12).filter((p) => sgHour(p.time) >= 6 && sgHour(p.time) <= 22);
-  if (day.length < 3) return null;
-  const min = day.reduce((a, b) => (b.pm25 < a.pm25 ? b : a));
-  return Math.max(...day.map((p) => p.pm25)) - min.pm25 >= 15 ? min : null;
-}
+const SmokeMap = dynamic(() => import("./SmokeMap"), {
+  ssr: false,
+  loading: () => <div className="h-[420px] animate-pulse bg-line" />,
+});
 
 export default function Dashboard({ data, skill24 }: { data: HazeData; skill24: LeadScore | null }) {
   const { region, setRegion, group, setGroup, locating, locate } = usePrefs();
@@ -35,64 +30,87 @@ export default function Dashboard({ data, skill24 }: { data: HazeData; skill24: 
   const psi = rawPsi != null && !isNaN(rawPsi) ? rawPsi : null;
   // NEA: 1-hr PM2.5 guides immediate activities; fall back to 24-hr PSI.
   const level = latest ? pm25ToLevel(latest.value) : psi != null ? psiLevel(psi) : null;
-  const best = useMemo(() => cleanestHour(data.forecast.hourly), [data.forecast.hourly]);
 
   return (
-    <main className="mx-auto max-w-lg px-4 pb-16 pt-4">
-      {data.mock && <div className="mb-3 rounded-xl bg-amber-100 px-3 py-2 text-sm text-amber-900">Demo data, not real readings.</div>}
+    <div className="pb-24">
+      <main className="mx-auto max-w-lg">
+        <header className="flex items-center justify-between px-4 pb-3 pt-4">
+          <span className="text-[19px] font-extrabold tracking-tight">Haze SG</span>
+          <span className="text-[13px] text-muted">{latest ? `NEA reading at ${fmtTime(latest.time)}` : "Waiting for NEA"}</span>
+        </header>
+        {data.mock && <p className="mx-4 mb-3 rounded-xl bg-[var(--lv2)]/15 px-3 py-2 text-[13px]">Demo data. These are not real readings.</p>}
 
-      <header className="mb-3 flex items-center justify-between">
-        <h1 className="text-lg font-bold tracking-tight">
-          Haze<span className="text-muted">SG</span>
-        </h1>
-        <span className="text-xs text-muted">{latest ? `NEA reading ${fmtTime(latest.time)}` : "Updating"}</span>
-      </header>
+        <RegionChips history={data.history} region={region} onPick={setRegion} onLocate={locate} locating={locating} />
+        <Hero
+          region={region}
+          readingTime={latest?.time ?? null}
+          pm25={latest?.value ?? null}
+          psi={psi}
+          level={level}
+          group={group}
+          onGroup={setGroup}
+          next={data.forecast.hourly.slice(0, 6)}
+        />
 
-      <RegionPicker region={region} onPick={setRegion} onLocate={locate} locating={locating} />
-      <Verdict level={level} group={group} onGroup={setGroup} best={best} />
-      <NowStats pm25={latest?.value ?? null} psi={psi} />
+        <Section id="forecast" title="Next 48 hours" aside="PM2.5 µg/m³, island-wide">
+          {data.history ? (
+            <Chart observed={data.history.island} forecast={data.forecast.hourly.slice(0, 48)} />
+          ) : (
+            <p className="px-4 text-[15px] text-muted">NEA readings are unavailable right now.</p>
+          )}
+          {skill24 && (
+            <p className="mt-2 px-4 text-[13px] text-muted">
+              Track record: 24 hours ahead, off by {skill24.ours.mae} µg/m³ on average, against {skill24.persistence.mae} for assuming no change.{" "}
+              <Link href="/about#accuracy" className="font-semibold text-accent underline">
+                See accuracy
+              </Link>
+            </p>
+          )}
+        </Section>
 
-      <Card title="Next 48 hours" aside={<span className="text-xs text-muted">PM2.5 µg/m³, island-wide</span>}>
-        {data.history ? (
-          <Chart observed={data.history.island} forecast={data.forecast.hourly.slice(0, 48)} />
-        ) : (
-          <p className="text-sm text-muted">Readings unavailable right now.</p>
+        <Section title="Next 5 days">
+          <Outlook days={data.forecast.days} group={group} />
+        </Section>
+
+        <Section id="map" title="Smoke map" aside="Next 72 hours">
+          <SmokeMap data={data} />
+        </Section>
+
+        <Section id="why" title="What is driving it">
+          <Drivers data={data} />
+        </Section>
+
+        {data.nea && (
+          <Section title={`What is in the air, ${cap(region)}`}>
+            <AirDetail nea={data.nea} region={region} />
+          </Section>
         )}
-        {skill24 && (
-          <p className="mt-2 text-xs text-muted">
-            Track record: 24 h ahead, off by {skill24.ours.mae} µg/m³ on average (assuming &ldquo;same as now&rdquo;: {skill24.persistence.mae}).{" "}
-            <Link href="/about#accuracy" className="text-sky-600">
-              Details
+
+        <Section title="Neighbours">
+          <Neighbours stations={data.stations} />
+        </Section>
+
+        <footer className="mt-12 space-y-3 px-6 text-center text-[13px] leading-relaxed text-muted">
+          <p suppressHydrationWarning>
+            Readings from NEA via data.gov.sg and Malaysia&apos;s Department of Environment. Fires from NASA FIRMS. Forecast from Copernicus CAMS and
+            ECMWF via Open-Meteo. Page updated {ago(data.generatedAt)}.
+          </p>
+          <p>
+            An independent tool, not an official NEA service. For official advisories visit{" "}
+            <a className="font-semibold text-accent underline" href="https://www.haze.gov.sg" target="_blank" rel="noreferrer">
+              haze.gov.sg
+            </a>
+            .
+          </p>
+          <p>
+            <Link className="font-semibold text-accent underline" href="/about">
+              How the forecast works
             </Link>
           </p>
-        )}
-      </Card>
-
-      <Outlook days={data.forecast.days} group={group} />
-      <Regions data={data} region={region} onPick={setRegion} />
-      <Why data={data} />
-      <Neighbours data={data} />
-
-      <footer className="mt-6 space-y-2 text-center text-xs text-muted">
-        <p suppressHydrationWarning>
-          Data: NEA (data.gov.sg), Malaysia DOE APIMS, NASA FIRMS, Copernicus CAMS and ECMWF via Open-Meteo. Updated {ago(data.generatedAt)}.
-        </p>
-        <p>
-          Not an official service. For official advisories see{" "}
-          <a className="underline" href="https://www.haze.gov.sg" target="_blank" rel="noreferrer">
-            haze.gov.sg
-          </a>
-          .
-        </p>
-        <p>
-          <Link className="font-medium text-sky-600" href="/about">
-            How this works, sources and forecast method
-          </Link>
-        </p>
-        {data.errors.length > 0 && (
-          <p className="text-amber-600">Some sources are unavailable: {data.errors.map((e) => e.split(":")[0]).join(", ")}.</p>
-        )}
-      </footer>
-    </main>
+          {data.errors.length > 0 && <p style={{ color: "var(--lv3)" }}>Not loading right now: {data.errors.map((e) => e.split(":")[0]).join(", ")}.</p>}
+        </footer>
+      </main>
+      <BottomNav />
+    </div>
   );
 }

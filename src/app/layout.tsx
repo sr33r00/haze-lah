@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import "@fontsource-variable/atkinson-hyperlegible-next";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -15,8 +16,8 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f5f6f8" },
-    { media: "(prefers-color-scheme: dark)", color: "#0b0f14" },
+    { media: "(prefers-color-scheme: light)", color: "#e9eef1" },
+    { media: "(prefers-color-scheme: dark)", color: "#0d161d" },
   ],
 };
 

@@ -7,6 +7,9 @@ export type NeaNow = {
   psi24: RegionValues;
   pm25_24h: RegionValues;
   pm10_24h: RegionValues;
+  /** PSI sub-indices per pollutant (the PSI is the highest of these). */
+  sub: { pm25: RegionValues; pm10: RegionValues; o3: RegionValues; so2: RegionValues; co: RegionValues };
+  no2_1h_max: RegionValues; // µg/m³, no PSI sub-index
 };
 
 export type HourPoint = { time: string; value: number };
@@ -55,14 +58,22 @@ export type ForecastPoint = {
   low: number;
   high: number;
   raw: number; // CAMS model value
+  pHigh: number; // probability 1-hr PM2.5 exceeds 55 µg/m³ (NEA Band I)
 };
 
 export type DayOutlook = {
-  date: string; // YYYY-MM-DD
+  date: string; // YYYY-MM-DD, SGT
   psiMax: number; // expected peak 24-hr PSI
   pm25Max: number; // expected peak 1-hr PM2.5
+  low: number; // likely range of that peak
+  high: number;
+  pHigh: number; // chance 1-hr PM2.5 goes above 55 at some point that day
+  parts: (number | null)[]; // mean 1-hr PM2.5: morning 6-12, afternoon 12-18, evening 18-24
   rainProb: number | null;
 };
+
+/** CAMS PM2.5 on a 1° grid over the region, every 3 hours. */
+export type SmokeGrid = { lats: number[]; lons: number[]; times: string[]; values: number[][] /* [time][lat*lons+lon] */ };
 
 export type HazeData = {
   generatedAt: string;
