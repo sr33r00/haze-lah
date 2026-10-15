@@ -24,7 +24,7 @@ export default async function About() {
   const groups = Object.keys(GROUP_LABEL) as Group[];
   return (
     <main className="mx-auto max-w-lg space-y-5 px-4 pb-16 pt-4 text-sm leading-relaxed">
-      <Link href="/" className="text-sky-600">
+      <Link href="/" className="text-accent">
         ← Back
       </Link>
       <h1 className="text-2xl font-bold">How this works</h1>
@@ -41,7 +41,7 @@ export default async function About() {
 
       <section>
         <h2 className="mb-2 text-lg font-semibold">NEA health advisory (24-hr PSI)</h2>
-        <div className="overflow-x-auto rounded-2xl bg-card">
+        <div className="overflow-x-auto rounded-2xl bg-surface">
           <table className="w-full text-left text-xs">
             <thead>
               <tr className="border-b border-line">
@@ -111,8 +111,8 @@ export default async function About() {
         <h2 className="mb-2 text-lg font-semibold">Data sources</h2>
         <ul className="space-y-2">
           {SOURCES.map(([name, what, url]) => (
-            <li key={name} className="rounded-2xl bg-card p-3">
-              <a href={url} target="_blank" rel="noreferrer" className="font-semibold text-sky-600">
+            <li key={name} className="rounded-2xl bg-surface p-3">
+              <a href={url} target="_blank" rel="noreferrer" className="font-semibold text-accent">
                 {name}
               </a>
               <div className="text-muted">{what}</div>
@@ -125,7 +125,7 @@ export default async function About() {
         </p>
       </section>
 
-      <section className="rounded-2xl bg-amber-50 p-3 text-amber-900">
+      <section className="rounded-2xl border border-line bg-surface p-3">
         This is an independent tool, not an official government service. If you feel unwell, seek medical attention. Official advisories:{" "}
         <a className="underline" href="https://www.haze.gov.sg">
           haze.gov.sg

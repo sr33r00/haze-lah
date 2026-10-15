@@ -1,7 +1,7 @@
 // Synthetic data for local development and screenshots (HAZE_MOCK=1). Not real readings.
 import { REGIONS, type Region } from "./bands";
 import type { Inputs } from "./data";
-import type { HourPoint, Station, WeatherHour } from "./types";
+import type { HourPoint, SmokeGrid, Station, WeatherHour } from "./types";
 import { hourKey } from "./util";
 
 export function mockInputs(): Inputs {
@@ -51,6 +51,14 @@ export function mockInputs(): Inputs {
       psi24: { north: 126, south: 159, east: 173, west: 197, central: 183 },
       pm25_24h: { north: 80, south: 111, east: 124, west: 148, central: 134 },
       pm10_24h: { north: 99, south: 144, east: 171, west: 168, central: 165 },
+      sub: {
+        pm25: { north: 126, south: 159, east: 173, west: 197, central: 183 },
+        pm10: { north: 75, south: 97, east: 111, west: 110, central: 108 },
+        o3: { north: 57, south: 25, east: 31, west: 22, central: 36 },
+        so2: { north: 4, south: 2, east: 2, west: 2, central: 4 },
+        co: { north: 24, south: 29, east: 22, west: 26, central: 24 },
+      },
+      no2_1h_max: { north: 14, south: 44, east: 33, west: 60, central: 27 },
     },
     history: { regions, island },
     stations: [
@@ -85,4 +93,23 @@ export function mockInputs(): Inputs {
     weather,
     errors: [],
   };
+}
+
+/** Synthetic regional smoke: plumes over Sumatra and Borneo drifting north-east. */
+export function mockGrid(): SmokeGrid {
+  const lats = Array.from({ length: 14 }, (_, i) => -6 + i);
+  const lons = Array.from({ length: 26 }, (_, i) => 95 + i);
+  const t0 = Date.parse(hourKey(new Date()));
+  const times = Array.from({ length: 25 }, (_, k) => new Date(t0 + k * 3 * 3600_000).toISOString());
+  const values = times.map((_, k) =>
+    lats.flatMap((la) =>
+      lons.map((lo) => {
+        const drift = k * 0.08;
+        const sum = 160 * Math.exp(-(((la + 1.5 - drift) / 2.2) ** 2 + ((lo - 103 - drift) / 2.4) ** 2));
+        const bor = 90 * Math.exp(-(((la + 1.5) / 2) ** 2 + ((lo - 112.5) / 2.5) ** 2));
+        return Math.round((sum + bor) * (k > 12 ? 0.7 : 1) + 8);
+      }),
+    ),
+  );
+  return { lats, lons, times, values };
 }

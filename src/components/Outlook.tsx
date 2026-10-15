@@ -1,29 +1,55 @@
-import { GROUP_LABEL, LEVEL_COLOR, LEVEL_NAME, psiLevel, verdict, type Group } from "@/lib/bands";
+import { CloudRain } from "lucide-react";
+import { LEVEL_NAME, LEVEL_TEXT, pm25Color, psiLevel, verdict, type Group } from "@/lib/bands";
 import { fmtDay } from "@/lib/format";
 import type { DayOutlook } from "@/lib/types";
-import { Card } from "./ui";
 
+const PARTS = ["Morning", "Afternoon", "Evening"];
+
+/** One row per day: morning/afternoon/evening strip, peak range, chance of high PM2.5, expected PSI. */
 export default function Outlook({ days, group }: { days: DayOutlook[]; group: Group }) {
-  if (!days.length) return null;
+  if (!days.length) return <p className="px-4 text-[15px] text-muted">The forecast is not available right now.</p>;
   return (
-    <Card title="5-day outlook">
-      <div className="grid grid-cols-5 gap-2 text-center">
+    <div className="px-4">
+      <ul className="divide-y divide-line rounded-3xl bg-surface px-4">
         {days.map((d, i) => {
           const lv = psiLevel(d.psiMax);
           return (
-            <div key={d.date} className="flex flex-col items-center gap-1">
-              <span className="text-xs font-medium text-muted">{fmtDay(d.date, i)}</span>
-              <span className="grid h-11 w-11 place-items-center rounded-full text-lg" style={{ background: LEVEL_COLOR[lv] }}>
-                <span aria-hidden>{verdict(lv, group).emoji}</span>
-              </span>
-              <span className="tabular text-sm font-bold">{d.psiMax}</span>
-              <span className="text-[10px] leading-tight text-muted">{LEVEL_NAME[lv]}</span>
-              {d.rainProb != null && d.rainProb >= 40 && <span className="text-[10px] text-sky-500">🌧 {d.rainProb}%</span>}
-            </div>
+            <li key={d.date} className="grid grid-cols-[3.6rem_1fr_auto] items-center gap-x-3 py-3.5">
+              <div className="text-[15px] font-bold">{fmtDay(d.date, i)}</div>
+              <div>
+                <div className="flex gap-1" aria-label={PARTS.map((p, k) => `${p} ${d.parts[k] ?? "no data"}`).join(", ")}>
+                  {d.parts.map((p, k) => (
+                    <span
+                      key={k}
+                      className="h-2.5 flex-1 rounded-full"
+                      style={{ background: p != null ? pm25Color(p) : "var(--line)" }}
+                    />
+                  ))}
+                </div>
+                <div className="mt-1.5 text-[13px] text-muted">
+                  Peak <span className="tabular font-semibold text-fg">{d.low === d.high ? d.high : `${d.low}–${d.high}`}</span> µg/m³
+                  {d.rainProb != null && d.rainProb >= 40 && (
+                    <span className="ml-2 inline-flex items-center gap-1">
+                      <CloudRain size={13} aria-hidden />
+                      {d.rainProb}%
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="tabular text-[17px] font-bold" style={{ color: LEVEL_TEXT[lv] }}>
+                  PSI {d.psiMax}
+                </div>
+                <div className="text-[12px] text-muted">{verdict(lv, group).headline.replace(".", "")}</div>
+              </div>
+              <div className="col-span-3 mt-1 text-[12px] text-muted">
+                {Math.round(d.pHigh * 100)}% chance PM2.5 goes above 55, {LEVEL_NAME[lv].toLowerCase()} by 24-hour PSI
+              </div>
+            </li>
           );
         })}
-      </div>
-      <p className="mt-3 text-xs text-muted">Peak 24-hr PSI expected each day. Icons show advice for: {GROUP_LABEL[group].toLowerCase()}.</p>
-    </Card>
+      </ul>
+      <p className="mt-2 px-1 text-[12px] text-muted">Strips show morning, afternoon and evening. Peak is the likely range of the day&apos;s highest hour.</p>
+    </div>
   );
 }

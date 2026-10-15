@@ -28,6 +28,14 @@ export async function fetchNeaNow(): Promise<NeaNow> {
     psi24: regionValues(item.readings.psi_twenty_four_hourly),
     pm25_24h: regionValues(item.readings.pm25_twenty_four_hourly),
     pm10_24h: regionValues(item.readings.pm10_twenty_four_hourly),
+    sub: {
+      pm25: regionValues(item.readings.pm25_sub_index),
+      pm10: regionValues(item.readings.pm10_sub_index),
+      o3: regionValues(item.readings.o3_sub_index),
+      so2: regionValues(item.readings.so2_sub_index),
+      co: regionValues(item.readings.co_sub_index),
+    },
+    no2_1h_max: regionValues(item.readings.no2_one_hour_max),
   };
 }
 
