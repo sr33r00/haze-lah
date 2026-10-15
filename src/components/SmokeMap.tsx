@@ -8,6 +8,8 @@ import { LEVEL_COLOR, REGIONS, REGION_POINT, pm25Color, psiLevel, stationLevel }
 import { fmtDay, fmtHour } from "@/lib/format";
 import type { FireSummary, NeaNow, Sensor, SmokeGrid, Station } from "@/lib/types";
 import { sgDate } from "@/lib/util";
+import InfoNote from "./InfoNote";
+import WindLayer from "./WindLayer";
 
 function frameLabel(t: string) {
   const day = sgDate(0, new Date(t));
@@ -59,6 +61,7 @@ export default function SmokeMap(props: { fires: FireSummary; stations: Station[
             maxZoom={19}
           />
           {image && <ImageOverlay url={image.url} bounds={image.bounds} opacity={0.75} />}
+          {grid?.wind && <WindLayer grid={grid as Parameters<typeof WindLayer>[0]["grid"]} frame={frame} />}
           {frame === 0 &&
             fires.points.map((f, i) => (
               <CircleMarker key={i} center={[f.lat, f.lon]} radius={2.5} pathOptions={{ color: "#c2410c", weight: 0, fillOpacity: 0.85 }} />
@@ -173,20 +176,38 @@ export default function SmokeMap(props: { fires: FireSummary; stations: Station[
               Community sensors
             </span>
           )}
+          {grid?.wind && (
+            <span className="flex items-center gap-1.5">
+              <svg width="16" height="8" viewBox="0 0 16 8" aria-hidden>
+                <line x1="0" y1="4" x2="16" y2="4" stroke="currentColor" strokeWidth="1.5" strokeDasharray="4 2" className="animate-flow" />
+              </svg>
+              Wind
+            </span>
+          )}
         </div>
-        <p className="mt-2 text-[12px] leading-snug text-muted">
-          Shading is the Copernicus PM2.5 forecast, scaled by how far it has been off from NEA&apos;s readings recently. Fires and stations show
-          at the current time.
-        </p>
-        {sensors.length > 0 && (
-          <p className="mt-1 text-[12px] leading-snug text-muted">
-            Community sensors are low-cost and can read high in humid air; NEA&apos;s readings are the official measure. Data:{" "}
-            <a href="https://openaq.org" target="_blank" rel="noreferrer" className="underline">
-              OpenAQ
-            </a>{" "}
-            and AirGradient.
-          </p>
-        )}
+        <div className="mt-2">
+          <InfoNote
+            lead={
+              sensors.length > 0 && (
+                <span>
+                  Data:{" "}
+                  <a href="https://openaq.org" target="_blank" rel="noreferrer" className="underline">
+                    OpenAQ
+                  </a>{" "}
+                  and AirGradient
+                </span>
+              )
+            }
+          >
+            <p>
+              Shading is the Copernicus PM2.5 forecast, scaled by how far it has been off from NEA&apos;s readings recently. Lines show the wind
+              at about 1.5 km up. Fires and stations show at the current time.
+            </p>
+            {sensors.length > 0 && (
+              <p>Community sensors are low-cost and can read high in humid air; NEA&apos;s readings are the official measure.</p>
+            )}
+          </InfoNote>
+        </div>
       </div>
     </div>
   );

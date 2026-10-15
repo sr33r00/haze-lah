@@ -5,6 +5,7 @@ import { GROUP_LABEL, LEVEL_COLOR, LEVEL_NAME, NEA_ADVICE, TONE_COLOR, pm25Band,
 import { fmtHour } from "@/lib/format";
 import type { ForecastPoint } from "@/lib/types";
 import { cap } from "./ui";
+import { useCountUp } from "./useCountUp";
 
 const GROUPS: Group[] = ["healthy", "sensitive", "chronic"];
 const GROUP_SHORT: Record<Group, string> = { healthy: "Healthy adult", sensitive: "Child, elderly, pregnant", chronic: "Heart or lung condition" };
@@ -29,6 +30,8 @@ export default function Hero(props: {
   const { pm25, psi, level, group } = props;
   const [open, setOpen] = useState<keyof typeof EXPLAIN | null>(null);
   const v = level != null ? verdict(level, group) : null;
+  const pm = useCountUp(pm25 != null ? Math.round(pm25) : null);
+  const psiShown = useCountUp(psi);
   // Solid verdict colour with a subtle same-hue shade; neutral when there is no reading.
   const tone = v ? TONE_COLOR[v.tone] : null;
   const ink = tone ? tone.fg : "var(--fg)";
@@ -48,8 +51,10 @@ export default function Hero(props: {
         {cap(props.region)}
         {props.readingTime ? `, ${fmtHour(props.readingTime)}` : ""}. Should I go out?
       </p>
-      <h1 className="mt-1 text-[40px] font-extrabold leading-[1.02] tracking-[-0.02em]">{v ? v.headline : "No reading yet."}</h1>
-      <p className="mt-2 max-w-[34ch] text-[17px] leading-snug">{v ? v.detail : "NEA data is temporarily unavailable."}</p>
+      <div key={`${props.region}-${group}-${v?.headline}`} className="animate-rise">
+        <h1 className="mt-1 text-[40px] font-extrabold leading-[1.02] tracking-[-0.02em]">{v ? v.headline : "No reading yet."}</h1>
+        <p className="mt-2 max-w-[34ch] text-[17px] leading-snug">{v ? v.detail : "NEA data is temporarily unavailable."}</p>
+      </div>
 
       <div role="radiogroup" aria-label="Advice for" className="mt-5 grid grid-cols-3 gap-1 rounded-2xl p-1" style={{ background: `color-mix(in srgb, ${ink} 14%, transparent)` }}>
         {GROUPS.map((g) => (
@@ -80,7 +85,10 @@ export default function Hero(props: {
               <Info size={14} aria-hidden />
             </button>
           </dt>
-          <dd className="tabular text-[52px] font-light leading-none tracking-tight">{pm25 != null ? Math.round(pm25) : "–"}</dd>
+          <dd className="tabular text-[52px] font-light leading-none tracking-tight">
+            <span aria-hidden>{pm25 != null ? pm : "–"}</span>
+            {pm25 != null && <span className="sr-only">{Math.round(pm25)}</span>}
+          </dd>
           <dd className="mt-1 flex items-center gap-1.5 text-[15px] font-semibold">
             {pm25 != null && <Dot color={pm25Color(pm25)} />}
             {pm25 != null ? `${pm25Band(pm25).name}, band ${pm25Band(pm25).band}` : ""}
@@ -102,7 +110,10 @@ export default function Hero(props: {
               <Info size={14} aria-hidden />
             </button>
           </dt>
-          <dd className="tabular text-[52px] font-light leading-none tracking-tight">{psi ?? "–"}</dd>
+          <dd className="tabular text-[52px] font-light leading-none tracking-tight">
+            <span aria-hidden>{psi != null ? psiShown : "–"}</span>
+            {psi != null && <span className="sr-only">{psi}</span>}
+          </dd>
           <dd className="mt-1 flex items-center gap-1.5 text-[15px] font-semibold">
             {psi != null && <Dot color={LEVEL_COLOR[psiLevel(psi)]} />}
             {psi != null ? LEVEL_NAME[psiLevel(psi)] : ""}
@@ -122,9 +133,12 @@ export default function Hero(props: {
             Next {props.next.length} hours, island-wide forecast
           </p>
           <ol className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${props.next.length}, minmax(0, 1fr))` }}>
-            {props.next.map((p) => (
+            {props.next.map((p, i) => (
               <li key={p.time} className="text-center">
-                <div className="h-2 rounded-full" style={{ background: pm25Color(p.pm25), boxShadow: `0 0 0 1.5px ${soft}` }} />
+                <div
+                  className="h-2 origin-bottom animate-grow rounded-full"
+                  style={{ background: pm25Color(p.pm25), boxShadow: `0 0 0 1.5px ${soft}`, animationDelay: `${i * 60}ms` }}
+                />
                 <div className="tabular mt-1 text-[15px] font-bold">{p.pm25}</div>
                 <div className="text-[11px]" style={{ color: soft }}>
                   {fmtHour(p.time)}

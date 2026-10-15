@@ -12,7 +12,7 @@ export default function RegionChips(props: {
   locating: boolean;
 }) {
   return (
-    <nav className="flex gap-1.5 px-4" aria-label="Choose your part of Singapore">
+    <nav className="mt-3 flex gap-1.5 px-4" aria-label="Choose your part of Singapore">
       <button
         onClick={props.onLocate}
         aria-label="Use my location"
@@ -28,15 +28,15 @@ export default function RegionChips(props: {
             key={r}
             onClick={() => props.onPick(r)}
             aria-pressed={on}
-            className={`min-w-0 flex-1 rounded-2xl px-1 pb-1.5 pt-1 text-center transition-colors ${
-              on ? "bg-fg text-bg" : "border border-line bg-surface"
+            className={`min-w-0 flex-1 rounded-2xl border bg-surface px-0.5 pb-2 pt-1.5 text-center transition-colors ${
+              on ? "border-fg ring-1 ring-inset ring-fg" : "border-line"
             }`}
           >
-            <span className="block text-[12px] leading-tight opacity-80">{cap(r)}</span>
+            <span className="block text-[12px] leading-tight text-muted">{cap(r)}</span>
             <span className="tabular block text-[15px] font-bold leading-tight">{v != null ? Math.round(v) : "–"}</span>
             <span
               aria-hidden
-              className="mx-auto mt-0.5 block h-1 w-6 rounded-full"
+              className="mx-auto mt-1 block h-1 w-6 rounded-full"
               style={{ background: v != null ? pm25Color(v) : "transparent" }}
             />
           </button>

@@ -15,7 +15,7 @@ export default function AirDetail({ nea, region }: { nea: NeaNow; region: Region
   return (
     <div className="mx-4 rounded-3xl bg-surface p-4">
       <ul className="space-y-3">
-        {POLLUTANTS.map((p) => {
+        {POLLUTANTS.map((p, i) => {
           const v = nea.sub[p.key][region];
           const ok = !isNaN(v);
           return (
@@ -26,7 +26,10 @@ export default function AirDetail({ nea, region }: { nea: NeaNow; region: Region
               </div>
               <div className="mt-1 h-2 rounded-full bg-line">
                 {ok && (
-                  <div className="h-2 rounded-full" style={{ width: `${Math.min(100, (v / max) * 100)}%`, background: LEVEL_COLOR[psiLevel(v)] }} />
+                  <div
+                    className="h-2 origin-left animate-grow-x rounded-full"
+                    style={{ width: `${Math.min(100, (v / max) * 100)}%`, background: LEVEL_COLOR[psiLevel(v)], animationDelay: `${i * 80}ms` }}
+                  />
                 )}
               </div>
               <div className="mt-0.5 text-[12px] text-muted">{p.note}</div>

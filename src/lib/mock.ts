@@ -159,5 +159,7 @@ export function mockGrid(): SmokeGrid {
       }),
     ),
   );
-  return { lats, lons, times, values };
+  // A steady south-westerly (towards the north-east) with a gentle swirl, in m/s.
+  const wind = (f: (la: number, lo: number) => number) => times.map(() => lats.flatMap((la) => lons.map((lo) => Math.round(f(la, lo) * 10) / 10)));
+  return { lats, lons, times, values, wind: { u: wind((la) => 4 + 2 * Math.sin(la / 3)), v: wind((la, lo) => 3 + 2 * Math.cos(lo / 4)) } };
 }

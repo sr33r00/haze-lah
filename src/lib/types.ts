@@ -87,8 +87,17 @@ export type DayOutlook = {
   rainProb: number | null;
 };
 
-/** CAMS PM2.5 on a 1° grid over the region, every 3 hours. */
-export type SmokeGrid = { lats: number[]; lons: number[]; times: string[]; values: number[][] /* [time][lat*lons+lon] */ };
+/**
+ * CAMS PM2.5 on a 1° grid over the region, every 3 hours, with the 850 hPa wind on the same grid.
+ * Index is [time][lat*lons+lon]; wind is in m/s, u towards the east and v towards the north.
+ */
+export type SmokeGrid = {
+  lats: number[];
+  lons: number[];
+  times: string[];
+  values: number[][];
+  wind: { u: number[][]; v: number[][] } | null; // null when the wind request failed
+};
 
 export type HazeData = {
   generatedAt: string;

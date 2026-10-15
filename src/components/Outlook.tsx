@@ -2,6 +2,7 @@ import { CloudRain } from "lucide-react";
 import { LEVEL_NAME, LEVEL_TEXT, pm25Color, psiLevel, verdict, type Group } from "@/lib/bands";
 import { fmtDay } from "@/lib/format";
 import type { DayOutlook } from "@/lib/types";
+import InfoNote from "./InfoNote";
 
 const PARTS = ["Morning", "Afternoon", "Evening"];
 
@@ -49,7 +50,11 @@ export default function Outlook({ days, group }: { days: DayOutlook[]; group: Gr
           );
         })}
       </ul>
-      <p className="mt-2 px-1 text-[12px] text-muted">Strips show morning, afternoon and evening. Peak is the likely range of the day&apos;s highest hour.</p>
+      <div className="mt-2 px-1">
+        <InfoNote>
+          <p>Strips show morning, afternoon and evening. Peak is the likely range of the day&apos;s highest hour.</p>
+        </InfoNote>
+      </div>
     </div>
   );
 }

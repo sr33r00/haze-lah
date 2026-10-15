@@ -18,7 +18,7 @@ export default function CigaretteCard({ region, pm25, today }: { region: string;
         <span className="tabular text-5xl font-bold leading-none">{n}</span>
         <div className={`flex flex-wrap items-center gap-0.5 ${n < 1 ? "opacity-40" : ""}`} aria-hidden>
           {Array.from({ length: icons }, (_, i) => (
-            <Cigarette key={i} size={20} />
+            <Cigarette key={i} size={20} className="animate-pop" style={{ animationDelay: `${i * 60}ms` }} />
           ))}
           {extra > 0 && <span className="ml-1 text-[13px] font-semibold">+{extra}</span>}
         </div>

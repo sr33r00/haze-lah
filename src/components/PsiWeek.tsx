@@ -10,11 +10,14 @@ export default function PsiWeek({ days }: { days: DayPsi[] }) {
   const summary = days.map((d) => `${d.date === sgDate(0) ? "Today" : fmtDay(d.date, 2)} ${d.max} ${LEVEL_NAME[psiLevel(d.max)]}`).join(", ");
   return (
     <ol aria-label={`Peak 24-hour PSI, last 7 days. ${summary}`} className="flex gap-2 px-4">
-      {days.map((d) => (
+      {days.map((d, i) => (
         <li key={d.date} className="min-w-0 flex-1 text-center">
           <div className="tabular text-[13px] font-bold">{d.max}</div>
           <div className="flex h-24 items-end">
-            <div className="w-full rounded-t-md" style={{ height: `${(d.max / top) * 100}%`, background: LEVEL_COLOR[psiLevel(d.max)] }} />
+            <div
+              className="w-full origin-bottom animate-grow rounded-t-md"
+              style={{ height: `${(d.max / top) * 100}%`, background: LEVEL_COLOR[psiLevel(d.max)], animationDelay: `${i * 60}ms` }}
+            />
           </div>
           <div aria-hidden className="mt-1 text-[12px] text-muted">
             {d.date === sgDate(0) ? "Today" : fmtDay(d.date, 2)}
