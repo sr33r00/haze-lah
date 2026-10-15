@@ -1,3 +1,5 @@
+import { Info } from "lucide-react";
+import { useState } from "react";
 import { GROUP_LABEL, LEVEL_COLOR, LEVEL_NAME, NEA_ADVICE, TONE_COLOR, pm25Band, pm25Color, psiLevel, verdict, type Group, type Level } from "@/lib/bands";
 import { fmtHour } from "@/lib/format";
 import type { ForecastPoint } from "@/lib/types";
@@ -5,6 +7,12 @@ import { cap } from "./ui";
 
 const GROUPS: Group[] = ["healthy", "sensitive", "chronic"];
 const GROUP_SHORT: Record<Group, string> = { healthy: "Healthy adult", sensitive: "Child, elderly, pregnant", chronic: "Heart or lung condition" };
+
+// Wording follows the NEA haze advisory: 1-hr PM2.5 for the next few hours, 24-hr PSI for planning the day.
+const EXPLAIN = {
+  pm25: "The last hour's fine smoke particles. NEA advises using it to decide what to do in the next few hours.",
+  psi: "Singapore's official index over the past day. Use it to plan the day; above 100 is unhealthy.",
+} as const;
 
 export default function Hero(props: {
   region: string;
@@ -18,6 +26,7 @@ export default function Hero(props: {
   next: ForecastPoint[];
 }) {
   const { pm25, psi, level, group } = props;
+  const [open, setOpen] = useState<keyof typeof EXPLAIN | null>(null);
   const v = level != null ? verdict(level, group) : null;
   // Solid verdict colour with a subtle same-hue shade; neutral when there is no reading.
   const tone = v ? TONE_COLOR[v.tone] : null;
@@ -55,8 +64,17 @@ export default function Hero(props: {
 
       <dl className="mt-6 grid grid-cols-2 gap-4">
         <div>
-          <dt className="text-[13px]" style={{ color: soft }}>
-            PM2.5 now, 1-hour
+          <dt>
+            <button
+              onClick={() => setOpen(open === "pm25" ? null : "pm25")}
+              aria-expanded={open === "pm25"}
+              aria-controls="explain"
+              className="flex items-center gap-1 text-left text-[13px]"
+              style={{ color: soft }}
+            >
+              PM2.5 now, 1-hour
+              <Info size={14} aria-hidden />
+            </button>
           </dt>
           <dd className="tabular text-[52px] font-light leading-none tracking-tight">{pm25 != null ? Math.round(pm25) : "–"}</dd>
           <dd className="mt-1 flex items-center gap-1.5 text-[15px] font-semibold">
@@ -68,8 +86,17 @@ export default function Hero(props: {
           </dd>
         </div>
         <div>
-          <dt className="text-[13px]" style={{ color: soft }}>
-            PSI, 24-hour
+          <dt>
+            <button
+              onClick={() => setOpen(open === "psi" ? null : "psi")}
+              aria-expanded={open === "psi"}
+              aria-controls="explain"
+              className="flex items-center gap-1 text-left text-[13px]"
+              style={{ color: soft }}
+            >
+              PSI, 24-hour
+              <Info size={14} aria-hidden />
+            </button>
           </dt>
           <dd className="tabular text-[52px] font-light leading-none tracking-tight">{psi ?? "–"}</dd>
           <dd className="mt-1 flex items-center gap-1.5 text-[15px] font-semibold">
@@ -81,6 +108,9 @@ export default function Hero(props: {
           </dd>
         </div>
       </dl>
+      <p id="explain" hidden={!open} className="mt-3 text-[13px] leading-snug" style={{ color: soft }}>
+        {open && EXPLAIN[open]}
+      </p>
 
       {props.next.length > 0 && (
         <div className="mt-6">

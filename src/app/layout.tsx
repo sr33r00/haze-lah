@@ -22,9 +22,15 @@ export const viewport: Viewport = {
   ],
 };
 
+// Applies a saved light/dark choice before first paint; static string, no user input.
+const THEME_SCRIPT = `try{var t=localStorage.getItem("theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}`;
+
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+      </head>
       <body className="antialiased">
         {children}
         {/* Cookieless page-view counts; served from this origin under /_vercel/insights. */}

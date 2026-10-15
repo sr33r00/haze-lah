@@ -14,8 +14,23 @@
   --lv4: #9e2b35;
 }
 
+/* Dark values appear twice: CSS cannot share a selector list across a media query. */
+:root[data-theme="dark"] {
+  --bg: #0d161d;
+  --surface: #15212a;
+  --fg: #e6edf1;
+  --muted: #8a9ba7;
+  --line: #22313c;
+  --accent: #6fb3dc;
+  --lv0: #6cc596;
+  --lv1: #7fb5e0;
+  --lv2: #e8bd45;
+  --lv3: #f08c55;
+  --lv4: #f07a84;
+}
+
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --bg: #0d161d;
     --surface: #15212a;
     --fg: #e6edf1;
@@ -81,8 +96,12 @@ body {
   filter: grayscale(1) contrast(0.9) brightness(1.05);
 }
 
+:root[data-theme="dark"] .leaflet-tile-pane {
+  filter: grayscale(1) invert(1) hue-rotate(180deg) contrast(0.85) brightness(0.9);
+}
+
 @media (prefers-color-scheme: dark) {
-  .leaflet-tile-pane {
+  :root:not([data-theme="light"]) .leaflet-tile-pane {
     filter: grayscale(1) invert(1) hue-rotate(180deg) contrast(0.85) brightness(0.9);
   }
 }

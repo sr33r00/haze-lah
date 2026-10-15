@@ -24,6 +24,10 @@ export default function Footer({ errors }: { errors: string[] }) {
         <Link className="font-semibold text-accent underline" href="/about">
           How the forecast works
         </Link>
+        {" · "}
+        <Link className="font-semibold text-accent underline" href="/glance">
+          Big screen view
+        </Link>
       </p>
       {errors.length > 0 && <p style={{ color: "var(--lv3)" }}>Not loading right now: {errors.join(", ")}.</p>}
     </footer>
