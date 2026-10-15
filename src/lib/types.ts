@@ -32,7 +32,7 @@ export type Station = {
   distanceKm: number;
 };
 
-/** Low-cost community air sensor (WAQI); pm25 is derived from its AQI. */
+/** Low-cost community air sensor (OpenAQ); pm25 in µg/m³. */
 export type Sensor = { name: string; lat: number; lon: number; pm25: number; time: string };
 
 export type Fire = { lat: number; lon: number; frp: number; time: string; confidence: string };

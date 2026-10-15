@@ -5,7 +5,7 @@ import { fetchFires } from "./sources/firms";
 import { fetchNews } from "./sources/news";
 import { fetchNeaNow, fetchNeaPm25History, fetchPsiDaily } from "./sources/nea";
 import { fetchCamsSingapore, fetchUpwindModel, fetchWeather } from "./sources/openmeteo";
-import { fetchCommunitySensors } from "./sources/waqi";
+import { fetchCommunitySensors } from "./sources/openaq";
 import type { DayPsi, FireSummary, HazeData, HourPoint, NeaNow, NewsItem, NeaPm25History, Sensor, Station, WeatherHour } from "./types";
 
 /** Raw inputs from every source; any of them may be missing. */

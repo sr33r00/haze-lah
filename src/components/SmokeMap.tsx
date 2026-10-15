@@ -181,10 +181,10 @@ export default function SmokeMap(props: { fires: FireSummary; stations: Station[
         {sensors.length > 0 && (
           <p className="mt-1 text-[12px] leading-snug text-muted">
             Community sensors are low-cost and can read high in humid air; NEA&apos;s readings are the official measure. Data:{" "}
-            <a href="https://waqi.info/" target="_blank" rel="noreferrer" className="underline">
-              World Air Quality Index Project
-            </a>
-            .
+            <a href="https://openaq.org" target="_blank" rel="noreferrer" className="underline">
+              OpenAQ
+            </a>{" "}
+            and AirGradient.
           </p>
         )}
       </div>

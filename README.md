@@ -72,7 +72,7 @@ All variables are optional. Copy `.env.example` to `.env.local` to set them.
 | Variable | Purpose |
 |---|---|
 | `FIRMS_MAP_KEY` | Free [NASA FIRMS key](https://firms.modaps.eosdis.nasa.gov/api/map_key/) for fire counts and the fire map |
-| `WAQI_TOKEN` | Free [WAQI token](https://aqicn.org/data-platform/token) for community air sensors on the map |
+| `OPENAQ_API_KEY` | Free [OpenAQ key](https://explore.openaq.org/register) for community air sensors on the map |
 | `DATA_GOV_SG_API_KEY` | data.gov.sg key for higher rate limits |
 | `HAZE_MOCK` | `1` renders synthetic demo data |
 | `NEXT_PUBLIC_ALERTS_URL` | Telegram channel link (`https://t.me/...`) for the "Get alerts" button |
