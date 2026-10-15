@@ -1,10 +1,10 @@
 // Synthetic data for local development and screenshots (HAZE_MOCK=1). Not real readings.
 import { REGIONS, type Region } from "./bands";
-import { FORECAST_METHOD, buildForecast, dailyOutlook } from "./forecast";
-import type { HazeData, HourPoint, Station, WeatherHour } from "./types";
+import type { Inputs } from "./data";
+import type { HourPoint, Station, WeatherHour } from "./types";
 import { hourKey } from "./util";
 
-export function mockData(): HazeData {
+export function mockInputs(): Inputs {
   const now = Date.parse(hourKey(new Date()));
   const H = 3600_000;
   const shape = (t: number) => {
@@ -41,13 +41,11 @@ export function mockData(): HazeData {
       rain: h > 60 ? 2 : 0,
     });
   }
-  const fc = buildForecast(island, cams)!;
   const st = (id: string, name: string, state: string, lat: number, lon: number, api: number, pm25: number, d: number): Station => ({
     id, name, state, country: "MY", lat, lon, api, pm25, time: new Date(now).toISOString(), distanceKm: d,
   });
   return {
-    generatedAt: new Date().toISOString(),
-    mock: true,
+    cams,
     nea: {
       time: new Date(now).toISOString(),
       psi24: { north: 126, south: 159, east: 173, west: 197, central: 183 },
@@ -85,13 +83,6 @@ export function mockData(): HazeData {
       }),
     },
     weather,
-    forecast: {
-      available: true,
-      method: FORECAST_METHOD,
-      biasFactor: Math.round(fc.bias * 100) / 100,
-      hourly: fc.points,
-      days: dailyOutlook(island, fc.points, weather),
-    },
     errors: [],
   };
 }
