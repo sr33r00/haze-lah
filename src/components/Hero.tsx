@@ -1,6 +1,5 @@
-import { GROUP_LABEL, LEVEL_COLOR, LEVEL_NAME, NEA_ADVICE, pm25Band, pm25Color, psiLevel, verdict, type Group, type Level } from "@/lib/bands";
+import { GROUP_LABEL, LEVEL_COLOR, LEVEL_NAME, NEA_ADVICE, TONE_COLOR, pm25Band, pm25Color, psiLevel, verdict, type Group, type Level } from "@/lib/bands";
 import { fmtHour } from "@/lib/format";
-import { skyColors } from "@/lib/sky";
 import type { ForecastPoint } from "@/lib/types";
 import { cap } from "./ui";
 
@@ -12,6 +11,7 @@ export default function Hero(props: {
   readingTime: string | null;
   pm25: number | null;
   psi: number | null;
+  trend: string | null;
   level: Level | null;
   group: Group;
   onGroup: (g: Group) => void;
@@ -19,15 +19,17 @@ export default function Hero(props: {
 }) {
   const { pm25, psi, level, group } = props;
   const v = level != null ? verdict(level, group) : null;
-  const sky = skyColors(pm25 ?? 20);
-  const ink = sky.dark ? "#fbf8f2" : "#13232e";
-  const soft = sky.dark ? "rgba(251,248,242,.78)" : "rgba(19,35,46,.72)";
+  // Solid verdict colour with a subtle same-hue shade; neutral when there is no reading.
+  const tone = v ? TONE_COLOR[v.tone] : null;
+  const ink = tone ? tone.fg : "var(--fg)";
+  const soft = `color-mix(in srgb, ${ink} 80%, transparent)`;
+  const bg = tone ? `linear-gradient(180deg, ${tone.bg}, color-mix(in srgb, ${tone.bg} 88%, black))` : "var(--surface)";
 
   return (
     <section
       id="now"
       className="relative mt-3 overflow-hidden rounded-b-[32px] px-5 pb-6 pt-5"
-      style={{ background: `linear-gradient(180deg, ${sky.top}, ${sky.bottom})`, color: ink }}
+      style={{ background: bg, color: ink }}
     >
       <p className="text-[15px]" style={{ color: soft }}>
         {cap(props.region)}
@@ -36,7 +38,7 @@ export default function Hero(props: {
       <h1 className="mt-1 text-[40px] font-extrabold leading-[1.02] tracking-[-0.02em]">{v ? v.headline : "No reading yet."}</h1>
       <p className="mt-2 max-w-[34ch] text-[17px] leading-snug">{v ? v.detail : "NEA data is temporarily unavailable."}</p>
 
-      <div role="radiogroup" aria-label="Advice for" className="mt-5 grid grid-cols-3 gap-1 rounded-2xl p-1" style={{ background: sky.dark ? "rgba(0,0,0,.22)" : "rgba(255,255,255,.45)" }}>
+      <div role="radiogroup" aria-label="Advice for" className="mt-5 grid grid-cols-3 gap-1 rounded-2xl p-1" style={{ background: `color-mix(in srgb, ${ink} 14%, transparent)` }}>
         {GROUPS.map((g) => (
           <button
             key={g}
@@ -44,7 +46,7 @@ export default function Hero(props: {
             aria-checked={g === group}
             onClick={() => props.onGroup(g)}
             className="rounded-xl px-1 py-2 text-[13px] font-semibold leading-tight transition-colors"
-            style={g === group ? { background: ink, color: sky.dark ? "#2a2018" : "#f7f9fa" } : { color: soft }}
+            style={g === group ? { background: ink, color: tone ? tone.bg : "var(--surface)" } : { color: soft }}
           >
             {GROUP_SHORT[g]}
           </button>
@@ -62,7 +64,7 @@ export default function Hero(props: {
             {pm25 != null ? `${pm25Band(pm25).name}, band ${pm25Band(pm25).band}` : ""}
           </dd>
           <dd className="text-[12px]" style={{ color: soft }}>
-            µg/m³, for right now
+            µg/m³{props.trend ? `, ${props.trend.toLowerCase()}` : ""}
           </dd>
         </div>
         <div>
@@ -88,7 +90,7 @@ export default function Hero(props: {
           <ol className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${props.next.length}, minmax(0, 1fr))` }}>
             {props.next.map((p) => (
               <li key={p.time} className="text-center">
-                <div className="h-1.5 rounded-full" style={{ background: pm25Color(p.pm25) }} />
+                <div className="h-2 rounded-full" style={{ background: pm25Color(p.pm25), boxShadow: `0 0 0 1.5px ${soft}` }} />
                 <div className="tabular mt-1 text-[15px] font-bold">{p.pm25}</div>
                 <div className="text-[11px]" style={{ color: soft }}>
                   {fmtHour(p.time)}

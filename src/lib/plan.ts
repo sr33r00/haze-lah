@@ -1,0 +1,27 @@
+import { pm25ToLevel, verdict, type Group, type Verdict } from "./bands";
+import type { ForecastPoint } from "./types";
+
+export type PlanHour = { time: string; pm25: number; verdict: Verdict };
+export type Window = { start: string; end: string; startIndex: number; meanPm25: number; verdict: Verdict };
+
+const LEN = 3;
+const sgHour = (t: string) => (new Date(t).getUTCHours() + 8) % 24;
+
+/** The next 24 forecast hours with a verdict for the group. */
+export const planHours = (hourly: ForecastPoint[], group: Group): PlanHour[] =>
+  hourly.slice(0, 24).map((p) => ({ time: p.time, pm25: p.pm25, verdict: verdict(pm25ToLevel(p.pm25), group) }));
+
+/** Best 3-hour window starting 6am to 7pm Singapore time, by lowest mean PM2.5. */
+export function bestWindow(hours: PlanHour[], group: Group): Window | null {
+  let best: Window | null = null;
+  for (let i = 0; i + LEN <= hours.length; i++) {
+    const h = sgHour(hours[i].time);
+    if (h < 6 || h > 19) continue;
+    const mean = hours.slice(i, i + LEN).reduce((a, p) => a + p.pm25, 0) / LEN;
+    if (!best || mean < best.meanPm25) {
+      const end = new Date(Date.parse(hours[i].time) + LEN * 3600_000).toISOString();
+      best = { start: hours[i].time, end, startIndex: i, meanPm25: mean, verdict: verdict(pm25ToLevel(mean), group) };
+    }
+  }
+  return best;
+}

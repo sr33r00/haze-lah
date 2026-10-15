@@ -139,6 +139,14 @@ export function verdict(level: Level, group: Group): Verdict {
   if (advice.startsWith("Minimise prolonged"))
     return { tone: "limit", headline: "Short outings only.", detail: "Keep long or hard exercise outdoors to a minimum." };
   if (advice.startsWith("Avoid prolonged")) return { tone: "limit", headline: "Short outings only.", detail: "No long or hard exercise outdoors." };
-  if (advice.startsWith("Minimise")) return { tone: "limit", headline: "Stay in if you can.", detail: "Keep time outdoors to a minimum." };
+  if (advice.startsWith("Minimise")) return { tone: "stay", headline: "Stay in if you can.", detail: "Keep time outdoors to a minimum." };
   return { tone: "stay", headline: "Stay indoors.", detail: "Avoid going outside." };
 }
+
+/** Hero and plan colours per verdict tone; text colours pass WCAG AA on their background. */
+export const TONE_COLOR: Record<Verdict["tone"], { bg: string; fg: string }> = {
+  go: { bg: "#2e7d55", fg: "#ffffff" },
+  easy: { bg: "#e0a91b", fg: "#1d1a10" },
+  limit: { bg: "#b84f17", fg: "#ffffff" },
+  stay: { bg: "#c62828", fg: "#ffffff" },
+};

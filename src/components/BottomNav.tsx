@@ -1,10 +1,10 @@
-import { CalendarDays, CircleGauge, Map, Wind } from "lucide-react";
+import { CalendarDays, CircleGauge, Clock, Map } from "lucide-react";
 
 const ITEMS = [
   { href: "#now", label: "Now", icon: CircleGauge },
+  { href: "#plan", label: "Plan", icon: Clock },
   { href: "#forecast", label: "Forecast", icon: CalendarDays },
   { href: "#map", label: "Map", icon: Map },
-  { href: "#why", label: "Why", icon: Wind },
 ];
 
 /** Thumb-reach section navigation for phones. */
