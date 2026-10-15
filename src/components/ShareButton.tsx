@@ -1,6 +1,6 @@
 "use client";
 
-import { Share2 } from "lucide-react";
+import { Check, Share2 } from "lucide-react";
 import { useState } from "react";
 
 export default function ShareButton() {
@@ -17,9 +17,8 @@ export default function ShareButton() {
     } catch {}
   };
   return (
-    <button onClick={share} className="flex items-center gap-1.5 rounded-full border border-line bg-surface px-3 py-1.5 text-[13px] font-semibold">
-      <Share2 size={15} aria-hidden />
-      {copied ? "Link copied" : "Share"}
+    <button onClick={share} aria-label="Share" title={copied ? "Link copied" : "Share"} className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-line bg-surface">
+      {copied ? <Check size={18} aria-hidden /> : <Share2 size={18} aria-hidden />}
     </button>
   );
 }

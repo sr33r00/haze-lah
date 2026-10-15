@@ -1,9 +1,9 @@
 export { cap } from "@/lib/format";
 
 /** A page section: plain heading on the page background, no card chrome. */
-export function Section(props: { title: string; aside?: React.ReactNode; children: React.ReactNode; className?: string }) {
+export function Section(props: { title: string; aside?: React.ReactNode; children: React.ReactNode; className?: string; id?: string }) {
   return (
-    <section className={`mt-10 ${props.className ?? ""}`}>
+    <section id={props.id} className={`mt-10 scroll-mt-20 ${props.className ?? ""}`}>
       <div className="mb-3 flex items-baseline justify-between gap-3 px-4">
         <h2 className="text-[22px] font-bold tracking-tight">{props.title}</h2>
         {props.aside && <div className="text-[13px] text-muted">{props.aside}</div>}

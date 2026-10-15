@@ -1,7 +1,9 @@
 "use client";
 
+import { Bell } from "lucide-react";
 import { useState } from "react";
 import { LEVEL_NAME, LEVEL_TEXT, psiLevel } from "@/lib/bands";
+import { ALERTS_URL } from "@/lib/links";
 import { fmtTime, fmtWhen } from "@/lib/format";
 import type { TimelineItem } from "@/lib/situation";
 import { sgDate } from "@/lib/util";
@@ -72,6 +74,19 @@ export default function NewsView({ items, streak, psi }: { items: TimelineItem[]
         </div>
       )}
 
+      {ALERTS_URL && (
+        <div className="mx-4 mt-4 flex items-center gap-3 rounded-3xl bg-surface p-4">
+          <Bell size={20} className="shrink-0 text-accent" aria-hidden />
+          <p className="min-w-0 flex-1 text-[14px] leading-snug">
+            <b>Get alerts on Telegram</b>
+            <span className="text-muted"> — a message when the PSI band changes or NEA posts an update.</span>
+          </p>
+          <a href={ALERTS_URL} target="_blank" rel="noreferrer" className="shrink-0 rounded-full bg-accent px-4 py-2 text-[14px] font-semibold text-bg">
+            Join
+          </a>
+        </div>
+      )}
+
       <div role="radiogroup" aria-label="Filter updates" className="flex gap-2 overflow-x-auto px-4 pt-4">
         {FILTERS.map((f, i) => (
           <button
@@ -96,7 +111,7 @@ export default function NewsView({ items, streak, psi }: { items: TimelineItem[]
       ) : (
         days.map((d) => (
           <section key={d.key} className="mt-2">
-            <h2 suppressHydrationWarning className="sticky top-0 z-10 bg-bg px-4 py-2 text-[14px] font-bold text-muted">
+            <h2 suppressHydrationWarning className="sticky top-[calc(3.5rem+env(safe-area-inset-top))] z-10 bg-bg px-4 py-2 text-[14px] font-bold text-muted">
               {d.label}
             </h2>
             <ul className="divide-y divide-line">
