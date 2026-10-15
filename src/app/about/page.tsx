@@ -2,6 +2,7 @@ import Link from "next/link";
 import { GROUP_LABEL, LEVEL_COLOR, LEVEL_NAME, NEA_ADVICE, type Group } from "@/lib/bands";
 import AccuracyTable from "@/components/AccuracyTable";
 import { fetchAccuracy } from "@/lib/accuracy";
+import { CIGARETTE_NOTES, CIGARETTE_SOURCES } from "@/lib/cigarettes";
 import { FORECAST_METHOD } from "@/lib/forecast";
 
 export const metadata = { title: "How it works · Haze Lah" };
@@ -87,6 +88,25 @@ export default async function About() {
           The 24-hr PSI outlook is computed from the forecast PM2.5 using NEA&apos;s published PM2.5 sub-index breakpoints (a rolling
           24-hour mean). During haze, PM2.5 almost always sets the PSI. Forecasts are estimates and can be wrong, especially when wind
           shifts suddenly or fires flare up.
+        </p>
+      </section>
+
+      <section className="space-y-2">
+        <h2 className="text-lg font-semibold">Cigarette comparison</h2>
+        {CIGARETTE_NOTES.map((t) => (
+          <p key={t}>{t}</p>
+        ))}
+        <p className="text-xs text-muted">
+          Sources:{" "}
+          {CIGARETTE_SOURCES.map(([name, url], i) => (
+            <span key={url}>
+              {i > 0 && "; "}
+              <a href={url} target="_blank" rel="noreferrer" className="text-accent underline">
+                {name}
+              </a>
+            </span>
+          ))}
+          .
         </p>
       </section>
 
