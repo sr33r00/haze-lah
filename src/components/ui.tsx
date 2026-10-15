@@ -1,4 +1,4 @@
-export const cap = (s: string) => s[0].toUpperCase() + s.slice(1);
+export { cap } from "@/lib/format";
 
 /** A page section: plain heading on the page background, no card chrome. */
 export function Section(props: { id?: string; title: string; aside?: React.ReactNode; children: React.ReactNode; className?: string }) {

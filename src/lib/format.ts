@@ -1,3 +1,5 @@
+import { sgDate } from "./util";
+
 const TZ = "Asia/Singapore";
 
 export const fmtHour = (t: string | number) =>
@@ -33,4 +35,18 @@ export function trend3h(series: { value: number }[] | undefined): string | null 
   const d = Math.round(series[series.length - 1].value - series[series.length - 4].value);
   if (Math.abs(d) < 5) return "Steady";
   return `${d > 0 ? "Up" : "Down"} ${Math.abs(d)} in 3 h`;
+}
+
+export const cap = (s: string) => s[0].toUpperCase() + s.slice(1);
+
+/** "Today", "Yesterday" or "Mon 12 Oct", with the hour when known. */
+export function fmtWhen(t: number, withHour: boolean) {
+  const day = sgDate(0, new Date(t));
+  const label =
+    day === sgDate(0)
+      ? "Today"
+      : day === sgDate(-1)
+        ? "Yesterday"
+        : new Intl.DateTimeFormat("en-SG", { timeZone: TZ, weekday: "short", day: "numeric", month: "short" }).format(new Date(t)).replace(",", "");
+  return withHour ? `${label} ${fmtHour(t)}` : label;
 }

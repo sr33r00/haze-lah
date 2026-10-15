@@ -22,7 +22,9 @@ export function hourKey(t: string | number | Date) {
   return d.toISOString();
 }
 
-export async function getJson<T>(url: string, init: RequestInit & { revalidate?: number } = {}): Promise<T> {
+type FetchInit = RequestInit & { revalidate?: number };
+
+async function getRes(url: string, init: FetchInit): Promise<Response> {
   const { revalidate = 300, ...rest } = init;
   const get = () =>
     fetch(url, {
@@ -38,8 +40,12 @@ export async function getJson<T>(url: string, init: RequestInit & { revalidate?:
     res = await get();
   }
   if (!res.ok) throw new Error(`${new URL(url).host} ${res.status}`);
-  return res.json() as Promise<T>;
+  return res;
 }
+
+export const getJson = async <T>(url: string, init: FetchInit = {}): Promise<T> => (await getRes(url, init)).json() as Promise<T>;
+
+export const getText = async (url: string, init: FetchInit = {}): Promise<string> => (await getRes(url, init)).text();
 
 export const num = (v: unknown): number | null => {
   const n = typeof v === "string" ? parseFloat(v) : typeof v === "number" ? v : NaN;

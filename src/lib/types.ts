@@ -41,8 +41,20 @@ export type FireSummary = {
   sumatra: number;
   borneo: number;
   peninsula: number;
-  points: Fire[]; // capped for the map
+  points: Fire[]; // last `days` days only, capped for the map
+  daily: { date: string; sumatra: number; borneo: number }[]; // UTC acq_date, oldest first; the last day is partial
 };
+
+export type NewsItem = {
+  source: "NEA" | "MSS";
+  title: string;
+  summary: string;
+  date: string; // YYYY-MM-DD or ISO
+  url: string;
+};
+
+/** Highest 24-hr PSI of one SGT day, and where. */
+export type DayPsi = { date: string; max: number; region: Region };
 
 export type WeatherHour = {
   time: string;
@@ -82,6 +94,8 @@ export type HazeData = {
   history: NeaPm25History | null;
   stations: Station[];
   fires: FireSummary;
+  news: NewsItem[];
+  psiDaily: DayPsi[];
   weather: WeatherHour[];
   forecast: {
     available: boolean;

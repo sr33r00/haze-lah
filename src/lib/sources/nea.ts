@@ -1,5 +1,5 @@
 import { REGIONS, type Region } from "../bands";
-import type { HourPoint, NeaNow, NeaPm25History, RegionValues } from "../types";
+import type { DayPsi, HourPoint, NeaNow, NeaPm25History, RegionValues } from "../types";
 import { getJson, num, sgDate } from "../util";
 
 // NEA data via data.gov.sg (Singapore Open Data Licence).
@@ -67,4 +67,29 @@ export async function fetchNeaPm25History(): Promise<NeaPm25History> {
   }
   if (!island.length) throw new Error("NEA PM2.5: no readings");
   return { regions, island };
+}
+
+/**
+ * Highest 24-hr PSI of each of the last `days` SGT days. Fetched one at a time: data.gov.sg allows
+ * 6 anonymous calls per 10 s. Past days never change, so they are cached for a day.
+ */
+export async function fetchPsiDaily(days = 7): Promise<DayPsi[]> {
+  const out: DayPsi[] = [];
+  for (let k = 1 - days; k <= 0; k++) {
+    const date = sgDate(k);
+    try {
+      const j = await getJson<Resp>(`${BASE}/psi?date=${date}`, { headers: headers(), revalidate: k < 0 ? 86400 : 300 });
+      let best: DayPsi | null = null;
+      for (const it of j.data.items)
+        for (const r of REGIONS) {
+          const v = num(it.readings.psi_twenty_four_hourly?.[r]);
+          if (v != null && (!best || v > best.max)) best = { date, max: v, region: r };
+        }
+      if (best) out.push(best);
+    } catch (e) {
+      console.error(`[haze] PSI ${date}:`, e);
+    }
+  }
+  if (!out.length) throw new Error("NEA PSI history: no days");
+  return out;
 }

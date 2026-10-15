@@ -2,9 +2,10 @@ import { FORECAST_METHOD, buildForecast, dailyOutlook } from "./forecast";
 import { mockInputs } from "./mock";
 import { fetchApims } from "./sources/apims";
 import { fetchFires } from "./sources/firms";
-import { fetchNeaNow, fetchNeaPm25History } from "./sources/nea";
+import { fetchNews } from "./sources/news";
+import { fetchNeaNow, fetchNeaPm25History, fetchPsiDaily } from "./sources/nea";
 import { fetchCamsSingapore, fetchUpwindModel, fetchWeather } from "./sources/openmeteo";
-import type { FireSummary, HazeData, HourPoint, NeaNow, NeaPm25History, Station, WeatherHour } from "./types";
+import type { DayPsi, FireSummary, HazeData, HourPoint, NeaNow, NewsItem, NeaPm25History, Station, WeatherHour } from "./types";
 
 /** Raw inputs from every source; any of them may be missing. */
 export type Inputs = {
@@ -14,10 +15,12 @@ export type Inputs = {
   weather: WeatherHour[];
   stations: Station[];
   fires: FireSummary;
+  news: NewsItem[];
+  psiDaily: DayPsi[];
   errors: string[];
 };
 
-const NO_FIRES: FireSummary = { available: false, days: 2, sumatra: 0, borneo: 0, peninsula: 0, points: [] };
+const NO_FIRES: FireSummary = { available: false, days: 2, sumatra: 0, borneo: 0, peninsula: 0, points: [], daily: [] };
 
 function settled<T>(r: PromiseSettledResult<T>, label: string, errors: string[]): T | null {
   if (r.status === "fulfilled") return r.value;
@@ -29,7 +32,7 @@ function settled<T>(r: PromiseSettledResult<T>, label: string, errors: string[])
 
 async function fetchInputs(): Promise<Inputs> {
   const errors: string[] = [];
-  const [now, hist, apims, upwind, fires, cams, weather] = await Promise.allSettled([
+  const [now, hist, apims, upwind, fires, cams, weather, news, psiDaily] = await Promise.allSettled([
     fetchNeaNow(),
     fetchNeaPm25History(),
     fetchApims(),
@@ -37,6 +40,8 @@ async function fetchInputs(): Promise<Inputs> {
     fetchFires(),
     fetchCamsSingapore(),
     fetchWeather(),
+    fetchNews(),
+    fetchPsiDaily(),
   ]);
   return {
     nea: settled(now, "NEA PSI", errors),
@@ -45,6 +50,8 @@ async function fetchInputs(): Promise<Inputs> {
     weather: settled(weather, "Weather", errors) ?? [],
     stations: [...(settled(apims, "Malaysia APIMS", errors) ?? []), ...(settled(upwind, "Upwind model", errors) ?? [])],
     fires: settled(fires, "NASA FIRMS", errors) ?? NO_FIRES,
+    news: settled(news, "News", errors) ?? [],
+    psiDaily: settled(psiDaily, "NEA PSI history", errors) ?? [],
     errors,
   };
 }

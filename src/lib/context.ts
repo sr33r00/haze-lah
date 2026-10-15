@@ -15,3 +15,27 @@ export function mapContext({ weather, fires }: HazeData): string | null {
   }
   return parts.length ? parts.join(". ") + "." : null;
 }
+
+/**
+ * Wind directions (degrees, "from") that bring smoke from each fire area to Singapore. NEA's Haze
+ * Situation Updates attribute southwesterly winds to Sumatra smoke and southeasterly winds to
+ * Kalimantan (Borneo) smoke.
+ */
+export const SMOKE_SECTORS = { sumatra: [190, 300], borneo: [90, 160] } as const;
+
+export type SmokeSource = keyof typeof SMOKE_SECTORS;
+
+/** Colours that tell the two fire areas apart in the dial and the daily chart. */
+export const SOURCE_COLOR: Record<SmokeSource, string> = { sumatra: "#c2410c", borneo: "#2563eb" };
+
+export function windSource(deg: number): SmokeSource | null {
+  const d = ((deg % 360) + 360) % 360;
+  return (Object.keys(SMOKE_SECTORS) as SmokeSource[]).find((k) => d >= SMOKE_SECTORS[k][0] && d <= SMOKE_SECTORS[k][1]) ?? null;
+}
+
+const VERDICT = { sumatra: "Blowing from Sumatra's fires", borneo: "Blowing from Borneo's fires" };
+
+export const windVerdict = (deg: number) => {
+  const s = windSource(deg);
+  return s ? VERDICT[s] : "Not from the main fire areas";
+};
