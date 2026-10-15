@@ -112,7 +112,11 @@ export default function Dashboard({ data, skill24 }: { data: HazeData; skill24: 
             <a className="font-semibold text-accent underline" href="https://www.haze.gov.sg" target="_blank" rel="noreferrer">
               haze.gov.sg
             </a>
-            .
+            , and NEA&apos;s daily{" "}
+            <a className="font-semibold text-accent underline" href="https://www.nea.gov.sg/media/news/advisories" target="_blank" rel="noreferrer">
+              haze updates
+            </a>{" "}
+            for the official 24-hour PSI outlook.
           </p>
           <p>
             <Link className="font-semibold text-accent underline" href="/about">
