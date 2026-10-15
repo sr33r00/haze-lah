@@ -24,12 +24,19 @@ export function hourKey(t: string | number | Date) {
 
 export async function getJson<T>(url: string, init: RequestInit & { revalidate?: number } = {}): Promise<T> {
   const { revalidate = 300, ...rest } = init;
-  const res = await fetch(url, {
-    ...rest,
-    headers: { "User-Agent": "haze-sg (open-source haze tracker)", ...(rest.headers || {}) },
-    next: { revalidate },
-    signal: AbortSignal.timeout(15_000),
-  });
+  const get = () =>
+    fetch(url, {
+      ...rest,
+      headers: { "User-Agent": "haze-sg (open-source haze tracker)", ...(rest.headers || {}) },
+      next: { revalidate },
+      signal: AbortSignal.timeout(15_000),
+    });
+  let res = await get();
+  // data.gov.sg allows 6 anonymous calls per 10 s; wait out the window once.
+  if (res.status === 429) {
+    await new Promise((r) => setTimeout(r, 10_000));
+    res = await get();
+  }
   if (!res.ok) throw new Error(`${new URL(url).host} ${res.status}`);
   return res.json() as Promise<T>;
 }

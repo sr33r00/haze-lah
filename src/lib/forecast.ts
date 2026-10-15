@@ -3,7 +3,7 @@ import type { DayOutlook, ForecastPoint, HourPoint, WeatherHour } from "./types"
 import { hourKey, median, sgDate } from "./util";
 
 export const FORECAST_METHOD =
-  "Copernicus CAMS PM2.5 forecast, calibrated against NEA's live readings from the past 48 hours: a multiplicative bias correction, plus the current error fading out over about 12 hours. The shaded band is the typical recent error, widening with lead time.";
+  "Copernicus CAMS global PM2.5 forecast (0.4° grid, about 45 km, 3-hourly, interpolated to hourly), calibrated against NEA's live readings from the past 48 hours: a multiplicative bias correction, plus the current error fading out over about 12 hours. The shaded band is the typical recent error, widening with lead time.";
 
 /**
  * Statistical post-processing of the CAMS model forecast (model output statistics).
