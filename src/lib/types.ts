@@ -32,6 +32,9 @@ export type Station = {
   distanceKm: number;
 };
 
+/** Low-cost community air sensor (WAQI); pm25 is derived from its AQI. */
+export type Sensor = { name: string; lat: number; lon: number; pm25: number; time: string };
+
 export type Fire = { lat: number; lon: number; frp: number; time: string; confidence: string };
 
 export type FireSummary = {
@@ -93,6 +96,7 @@ export type HazeData = {
   nea: NeaNow | null;
   history: NeaPm25History | null;
   stations: Station[];
+  sensors: Sensor[];
   fires: FireSummary;
   news: NewsItem[];
   psiDaily: DayPsi[];

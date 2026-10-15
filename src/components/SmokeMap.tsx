@@ -6,7 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { CircleMarker, ImageOverlay, MapContainer, TileLayer, Tooltip } from "react-leaflet";
 import { LEVEL_COLOR, REGIONS, REGION_POINT, pm25Color, psiLevel, stationLevel } from "@/lib/bands";
 import { fmtDay, fmtHour } from "@/lib/format";
-import type { FireSummary, NeaNow, SmokeGrid, Station } from "@/lib/types";
+import type { FireSummary, NeaNow, Sensor, SmokeGrid, Station } from "@/lib/types";
 import { sgDate } from "@/lib/util";
 
 function frameLabel(t: string) {
@@ -16,8 +16,8 @@ function frameLabel(t: string) {
 }
 
 /** Regional smoke forecast (CAMS, calibrated to NEA) with fires, stations and a time slider. */
-export default function SmokeMap(props: { fires: FireSummary; stations: Station[]; psi24: NeaNow["psi24"] | null; biasFactor: number | null }) {
-  const { fires, stations, psi24 } = props;
+export default function SmokeMap(props: { fires: FireSummary; stations: Station[]; sensors: Sensor[]; psi24: NeaNow["psi24"] | null; biasFactor: number | null }) {
+  const { fires, stations, sensors, psi24 } = props;
   const [grid, setGrid] = useState<SmokeGrid | null>(null);
   const [failed, setFailed] = useState(false);
   const [frame, setFrame] = useState(0);
@@ -79,6 +79,19 @@ export default function SmokeMap(props: { fires: FireSummary; stations: Station[
                 </CircleMarker>
               );
             })}
+          {frame === 0 &&
+            sensors.map((s, i) => (
+              <CircleMarker
+                key={i}
+                center={[s.lat, s.lon]}
+                radius={4}
+                pathOptions={{ color: pm25Color(s.pm25), weight: 2, fillColor: "#fff", fillOpacity: 0.9 }}
+              >
+                <Tooltip>
+                  {s.name}: PM2.5 about {s.pm25} µg/m³ (community sensor)
+                </Tooltip>
+              </CircleMarker>
+            ))}
           {frame === 0 &&
             psi24 &&
             REGIONS.map((r) => {
@@ -154,11 +167,26 @@ export default function SmokeMap(props: { fires: FireSummary; stations: Station[
             <span className="h-2.5 w-2.5 rounded-full border-2 border-white bg-[var(--muted)]" />
             Stations
           </span>
+          {sensors.length > 0 && (
+            <span className="flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full border-2 border-[var(--muted)] bg-white" />
+              Community sensors
+            </span>
+          )}
         </div>
         <p className="mt-2 text-[12px] leading-snug text-muted">
           Shading is the Copernicus PM2.5 forecast, scaled by how far it has been off from NEA&apos;s readings recently. Fires and stations show
           at the current time.
         </p>
+        {sensors.length > 0 && (
+          <p className="mt-1 text-[12px] leading-snug text-muted">
+            Community sensors are low-cost and can read high in humid air; NEA&apos;s readings are the official measure. Data:{" "}
+            <a href="https://waqi.info/" target="_blank" rel="noreferrer" className="underline">
+              World Air Quality Index Project
+            </a>
+            .
+          </p>
+        )}
       </div>
     </div>
   );
