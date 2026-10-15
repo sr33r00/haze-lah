@@ -111,7 +111,7 @@ export function scoreHazyDays(records: ArchiveRecord[], observed: Map<number, nu
 }
 
 const ACCURACY_URL =
-  process.env.ACCURACY_URL || "https://raw.githubusercontent.com/sr33r00/haze-sg/main/data/accuracy.json";
+  process.env.ACCURACY_URL || "https://raw.githubusercontent.com/sr33r00/haze-lah/main/data/accuracy.json";
 
 /** Published scores, or null until the archive has enough matched forecasts. */
 export async function fetchAccuracy(minN = 20): Promise<Accuracy | null> {
