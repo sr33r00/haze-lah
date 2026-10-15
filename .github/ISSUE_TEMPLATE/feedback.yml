@@ -1,0 +1,27 @@
+name: Feedback
+description: Report wrong data, a bug, or suggest an idea for Haze Lah
+title: "[Feedback] "
+body:
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What kind of feedback?
+      options:
+        - Something looks wrong (data or advice)
+        - Bug or display problem
+        - Idea or request
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: Details
+      description: What did you see, and what did you expect? Screenshots help.
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: Device and browser (optional)
+      placeholder: e.g. iPhone 15, Safari
