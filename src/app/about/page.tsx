@@ -4,7 +4,7 @@ import AccuracyTable from "@/components/AccuracyTable";
 import { fetchAccuracy } from "@/lib/accuracy";
 import { FORECAST_METHOD } from "@/lib/forecast";
 
-export const metadata = { title: "How it works · Haze SG" };
+export const metadata = { title: "How it works · Haze Lah" };
 export const revalidate = 3600;
 
 const PSI_RANGES = ["0–50", "51–100", "101–200", "201–300", "Above 300"];

@@ -27,7 +27,7 @@ export async function getJson<T>(url: string, init: RequestInit & { revalidate?:
   const get = () =>
     fetch(url, {
       ...rest,
-      headers: { "User-Agent": "haze-sg (open-source haze tracker)", ...(rest.headers || {}) },
+      headers: { "User-Agent": "haze-lah (open-source haze tracker)", ...(rest.headers || {}) },
       next: { revalidate },
       signal: AbortSignal.timeout(15_000),
     });

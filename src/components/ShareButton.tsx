@@ -8,7 +8,7 @@ export default function ShareButton() {
   const share = async () => {
     const url = location.href;
     try {
-      if (navigator.share) await navigator.share({ title: "Haze SG", url });
+      if (navigator.share) await navigator.share({ title: "Haze Lah", url });
       else {
         await navigator.clipboard.writeText(url);
         setCopied(true);

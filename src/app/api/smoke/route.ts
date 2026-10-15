@@ -9,6 +9,7 @@ export async function GET() {
     const grid = process.env.HAZE_MOCK === "1" ? mockGrid() : await fetchSmokeGrid();
     return Response.json(grid, { headers: { "Cache-Control": "s-maxage=10800, stale-while-revalidate=3600" } });
   } catch (e) {
-    return Response.json({ error: e instanceof Error ? e.message : "unavailable" }, { status: 502 });
+    console.error("[haze] smoke grid:", e);
+    return Response.json({ error: "Smoke forecast unavailable" }, { status: 502 });
   }
 }

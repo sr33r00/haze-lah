@@ -17,12 +17,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
+      - run: npm ci --ignore-scripts
       - run: npx tsx scripts/archive.ts
         env:
           FIRMS_MAP_KEY: ${{ secrets.FIRMS_MAP_KEY }}
@@ -30,7 +30,7 @@ jobs:
       - run: npx tsx scripts/score.ts
       - name: Commit
         run: |
-          git config user.name "haze-sg-bot"
+          git config user.name "haze-lah-bot"
           git config user.email "actions@users.noreply.github.com"
           git add data
           git diff --cached --quiet || git commit -m "data: archive forecast $(date -u +%FT%H:00Z)"
