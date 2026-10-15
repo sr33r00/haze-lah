@@ -6,6 +6,15 @@ export type Region = "north" | "south" | "east" | "west" | "central";
 
 export const REGIONS: Region[] = ["north", "south", "east", "west", "central"];
 
+/** Label points NEA publishes for each region. */
+export const REGION_POINT: Record<Region, [number, number]> = {
+  north: [1.418, 103.82],
+  south: [1.296, 103.82],
+  east: [1.352, 103.94],
+  west: [1.352, 103.7],
+  central: [1.357, 103.82],
+};
+
 export const GROUP_LABEL: Record<Group, string> = {
   healthy: "Healthy adult",
   sensitive: "Child, elderly or pregnant",
@@ -77,6 +86,13 @@ export function pm25ToPsi(c: number): number {
     if (c <= c1) return Math.floor(p0 + ((c - c0) / (c1 - c0)) * (p1 - p0));
   }
   return 500;
+}
+
+/** Level for a neighbouring station: its API if measured, else modelled PM2.5. */
+export function stationLevel(s: { api: number | null; pm25: number | null }): Level | null {
+  if (s.api != null) return psiLevel(s.api);
+  if (s.pm25 != null) return pm25ToLevel(s.pm25);
+  return null;
 }
 
 /** NEA advisory text by 24-hr PSI level and group. Levels 0 and 1 share "normal activities". */

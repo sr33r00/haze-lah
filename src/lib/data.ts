@@ -1,11 +1,23 @@
-import { REGIONS } from "./bands";
 import { FORECAST_METHOD, buildForecast, dailyOutlook } from "./forecast";
-import { mockData } from "./mock";
+import { mockInputs } from "./mock";
 import { fetchApims } from "./sources/apims";
 import { fetchFires } from "./sources/firms";
 import { fetchNeaNow, fetchNeaPm25History } from "./sources/nea";
 import { fetchCamsSingapore, fetchUpwindModel, fetchWeather } from "./sources/openmeteo";
-import type { FireSummary, HazeData } from "./types";
+import type { FireSummary, HazeData, HourPoint, NeaNow, NeaPm25History, Station, WeatherHour } from "./types";
+
+/** Raw inputs from every source; any of them may be missing. */
+export type Inputs = {
+  nea: NeaNow | null;
+  history: NeaPm25History | null;
+  cams: HourPoint[];
+  weather: WeatherHour[];
+  stations: Station[];
+  fires: FireSummary;
+  errors: string[];
+};
+
+const NO_FIRES: FireSummary = { available: false, days: 2, sumatra: 0, borneo: 0, peninsula: 0, points: [] };
 
 function settled<T>(r: PromiseSettledResult<T>, label: string, errors: string[]): T | null {
   if (r.status === "fulfilled") return r.value;
@@ -13,8 +25,7 @@ function settled<T>(r: PromiseSettledResult<T>, label: string, errors: string[])
   return null;
 }
 
-export async function getHazeData(): Promise<HazeData> {
-  if (process.env.HAZE_MOCK === "1") return mockData();
+async function fetchInputs(): Promise<Inputs> {
   const errors: string[] = [];
   const [now, hist, apims, upwind, fires, cams, weather] = await Promise.allSettled([
     fetchNeaNow(),
@@ -25,40 +36,32 @@ export async function getHazeData(): Promise<HazeData> {
     fetchCamsSingapore(),
     fetchWeather(),
   ]);
-  const nea = settled(now, "NEA PSI", errors);
-  const history = settled(hist, "NEA PM2.5", errors);
-  const camsPts = settled(cams, "CAMS forecast", errors) ?? [];
-  const wx = settled(weather, "Weather", errors) ?? [];
-  const fireSummary: FireSummary = settled(fires, "NASA FIRMS", errors) ?? {
-    available: false,
-    reason: "unavailable",
-    days: 2,
-    sumatra: 0,
-    borneo: 0,
-    peninsula: 0,
-    points: [],
-  };
-
-  const fc = history ? buildForecast(history.island, camsPts) : null;
-  if (!fc && history) errors.push("Forecast: not enough overlap between NEA and CAMS");
-
   return {
-    generatedAt: new Date().toISOString(),
-    mock: false,
-    nea,
-    history,
+    nea: settled(now, "NEA PSI", errors),
+    history: settled(hist, "NEA PM2.5", errors),
+    cams: settled(cams, "CAMS forecast", errors) ?? [],
+    weather: settled(weather, "Weather", errors) ?? [],
     stations: [...(settled(apims, "Malaysia APIMS", errors) ?? []), ...(settled(upwind, "Upwind model", errors) ?? [])],
-    fires: fireSummary,
-    weather: wx,
+    fires: settled(fires, "NASA FIRMS", errors) ?? NO_FIRES,
+    errors,
+  };
+}
+
+export async function getHazeData(): Promise<HazeData> {
+  const mock = process.env.HAZE_MOCK === "1";
+  const { cams, ...inp } = mock ? mockInputs() : await fetchInputs();
+  const fc = inp.history ? buildForecast(inp.history.island, cams) : null;
+  if (!fc && inp.history) inp.errors.push("Forecast: not enough overlap between NEA and CAMS");
+  return {
+    ...inp,
+    generatedAt: new Date().toISOString(),
+    mock,
     forecast: {
       available: !!fc,
       method: FORECAST_METHOD,
       biasFactor: fc ? Math.round(fc.bias * 100) / 100 : null,
       hourly: fc?.points ?? [],
-      days: fc && history ? dailyOutlook(history.island, fc.points, wx) : [],
+      days: fc && inp.history ? dailyOutlook(inp.history.island, fc.points, inp.weather) : [],
     },
-    errors,
   };
 }
-
-export { REGIONS };

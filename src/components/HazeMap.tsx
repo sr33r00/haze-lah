@@ -2,16 +2,8 @@
 
 import "leaflet/dist/leaflet.css";
 import { CircleMarker, MapContainer, TileLayer, Tooltip } from "react-leaflet";
-import { LEVEL_COLOR, psiLevel, pm25ToLevel } from "@/lib/bands";
+import { LEVEL_COLOR, REGIONS, REGION_POINT, psiLevel, stationLevel } from "@/lib/bands";
 import type { HazeData } from "@/lib/types";
-
-const SG_POINTS: Record<string, [number, number]> = {
-  north: [1.418, 103.82],
-  south: [1.296, 103.82],
-  east: [1.352, 103.94],
-  west: [1.352, 103.7],
-  central: [1.357, 103.82],
-};
 
 export default function HazeMap({ data }: { data: HazeData }) {
   return (
@@ -30,7 +22,7 @@ export default function HazeMap({ data }: { data: HazeData }) {
           />
         ))}
         {data.stations.map((s) => {
-          const lv = s.api != null ? psiLevel(s.api) : s.pm25 != null ? pm25ToLevel(s.pm25) : null;
+          const lv = stationLevel(s);
           return (
             <CircleMarker
               key={s.id}
@@ -45,8 +37,9 @@ export default function HazeMap({ data }: { data: HazeData }) {
           );
         })}
         {data.nea &&
-          Object.entries(SG_POINTS).map(([r, c]) => {
-            const p = data.nea!.psi24[r as keyof typeof data.nea.psi24];
+          REGIONS.map((r) => {
+            const p = data.nea!.psi24[r];
+            const c = REGION_POINT[r];
             return (
               <CircleMarker
                 key={r}
