@@ -29,3 +29,7 @@ npm run dev               # live data
 ## Deploy
 
 Import the repo at vercel.com/new, add `FIRMS_MAP_KEY` as an environment variable, and deploy. Pages revalidate every 5 minutes.
+
+## Forecast verification
+
+`.github/workflows/archive.yml` runs hourly: `scripts/archive.ts` saves the forecast as issued to `data/archive/YYYY-MM.jsonl`, and `scripts/score.ts` writes `data/accuracy.json` (MAE, RMSE and bias at 6/24/48/72/96 h for this site, raw CAMS and persistence, plus precision/recall for PM2.5 > 55 µg/m³). The site reads that file from GitHub, and `vercel.json` skips redeploys for data-only commits. The archive is also the training set for a future learned correction (e.g. XGBoost) once it covers enough haze episodes.

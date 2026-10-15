@@ -19,7 +19,7 @@ const z = (t: string) => (t.endsWith("Z") ? t : `${t}Z`);
 
 export async function fetchCamsSingapore(): Promise<HourPoint[]> {
   const j = await getJson<AQ>(
-    `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${SG.lat}&longitude=${SG.lon}&hourly=pm2_5&timezone=GMT&past_days=2&forecast_days=5`,
+    `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${SG.lat}&longitude=${SG.lon}&hourly=pm2_5&domains=cams_global&timezone=GMT&past_days=2&forecast_days=5`,
     { revalidate: 1800 },
   );
   return j.hourly.time
@@ -56,7 +56,7 @@ export async function fetchUpwindModel(): Promise<Station[]> {
   const lats = UPWIND.map((c) => c.lat).join(",");
   const lons = UPWIND.map((c) => c.lon).join(",");
   const j = await getJson<AQ[] | AQ>(
-    `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lats}&longitude=${lons}&hourly=pm2_5&timezone=GMT&past_days=0&forecast_days=1`,
+    `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lats}&longitude=${lons}&hourly=pm2_5&domains=cams_global&timezone=GMT&past_days=0&forecast_days=1`,
     { revalidate: 1800 },
   );
   const arr = Array.isArray(j) ? j : [j];
