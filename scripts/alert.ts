@@ -1,7 +1,7 @@
 // Sends haze alerts to a Telegram channel: a card image plus a short caption.
-// Run every 10 minutes by .github/workflows/alerts.yml. State lives in data/alert-state.json.
+// Run every 10 minutes by .github/workflows/alerts.yml; posts at least once per new NEA hourly reading. State lives in data/alert-state.json.
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { caption, detect, type AlertState, type Triggers } from "../src/lib/alerts";
+import { caption, detect, quietHours, type AlertState, type Triggers } from "../src/lib/alerts";
 import { SITE_URL } from "../src/lib/links";
 import type { HazeData } from "../src/lib/types";
 
@@ -18,13 +18,14 @@ async function tg(method: string, body: object) {
   if (!res.ok) throw new Error(`Telegram ${method} ${res.status}: ${(await res.text()).replaceAll(token!, "***")}`);
 }
 
-/** The card as a photo; if Telegram cannot fetch it, the caption alone. */
+/** The card as a photo; if Telegram cannot fetch it, the caption alone. Silent at night. */
 async function send(text: string) {
+  const disable_notification = quietHours();
   try {
-    await tg("sendPhoto", { photo: `${SITE_URL}/alert-card?t=${Date.now()}`, caption: text });
+    await tg("sendPhoto", { photo: `${SITE_URL}/alert-card?t=${Date.now()}`, caption: text, disable_notification });
   } catch (e) {
     console.warn("alerts: sendPhoto failed, sending text:", (e as Error).message);
-    await tg("sendMessage", { text, disable_web_page_preview: true });
+    await tg("sendMessage", { text, disable_web_page_preview: true, disable_notification });
   }
 }
 
@@ -37,7 +38,7 @@ async function load(): Promise<HazeData> {
 /** ALERT_TEST=1: post the full format once to prove the bot and channel work; state is left alone. */
 async function test(data: HazeData) {
   if (!token || !chat) throw new Error("Telegram not configured: add the TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID secrets");
-  const all: Triggers = { psi: true, pm25: null, nea: null, news: null, brief: false, outlook: false };
+  const all: Triggers = { psi: true, pm25: null, nea: null, news: null, brief: false, outlook: false, hourly: false };
   if (!data.nea) return send(`Test: Haze Lah alerts are connected.\n${SITE_URL}`);
   await send(`Test: alerts are connected\n${caption(data, all, SITE_URL)}`);
   console.log("alerts: test alert sent");
@@ -50,7 +51,7 @@ async function main() {
   const d = detect(data, prev);
   if (!d) return console.log("alerts: NEA unavailable, state kept");
   const { fired } = d;
-  const any = fired.psi || fired.pm25 != null || fired.nea || fired.news || fired.brief || fired.outlook;
+  const any = fired.psi || fired.pm25 != null || fired.nea || fired.news || fired.brief || fired.outlook || fired.hourly;
   if (any) {
     const text = caption(data, fired, SITE_URL);
     if (token && chat) await send(text);

@@ -13,10 +13,13 @@ export type AlertState = {
   newsUrls?: string[]; // CNA/ST stories already seen, newest first
   briefDate?: string | null;
   outlookDate?: string | null;
+  hourTime?: string | null; // NEA reading time of the last hourly update
 };
 
 export const BRIEF_HOUR = 7;
 export const OUTLOOK_HOUR = 19;
+/** Posts from 11pm to 7am go out without a notification sound. */
+export const quietHours = (now = new Date()) => sgHour(now) >= 23 || sgHour(now) < 7;
 const MAX_LINES = 6;
 
 /** Hour of day (0-23) in Singapore. */
@@ -69,7 +72,7 @@ export function confirmedPm25Band(history: HazeData["history"], known: number | 
 }
 
 /** pm25 holds the band index it moved from. */
-export type Triggers = { psi: boolean; pm25: number | null; nea: NewsItem | null; news: NewsItem | null; brief: boolean; outlook: boolean };
+export type Triggers = { psi: boolean; pm25: number | null; nea: NewsItem | null; news: NewsItem | null; brief: boolean; outlook: boolean; hourly: boolean };
 
 /** Messages to send: the triggers that fired and the next state. Null when NEA is unavailable (state kept). */
 export function detect(data: HazeData, prev: AlertState | null, now = new Date()): { fired: Triggers; next: AlertState } | null {
@@ -93,6 +96,7 @@ export function detect(data: HazeData, prev: AlertState | null, now = new Date()
     newsUrls: [...new Set([...outlets.map((n) => n.url), ...(prev?.newsUrls ?? [])])].slice(0, NEWS_SEEN),
     briefDate: briefDue ? today : (prev?.briefDate ?? null),
     outlookDate: outlookDue ? today : (prev?.outlookDate ?? null),
+    hourTime: data.nea!.time,
   };
   // A missing field means it is new: record it, send nothing for it.
   const fired: Triggers = {
@@ -102,6 +106,8 @@ export function detect(data: HazeData, prev: AlertState | null, now = new Date()
     news: unseen[0] ?? null,
     brief: briefDue && prev?.briefDate !== undefined && (top.psi > 100 || (todayOutlook?.psiMax ?? 0) > 100),
     outlook: outlookDue && prev?.outlookDate !== undefined && (tomorrow?.psiMax ?? 0) > 100,
+    // One update per new NEA hourly reading.
+    hourly: prev != null && data.nea!.time !== prev.hourTime,
   };
   return { fired, next };
 }
@@ -119,6 +125,8 @@ export function caption(data: HazeData, fired: Triggers, site: string, now = new
 
   const lines: string[] = [];
   if (fired.brief) lines.push(`Morning brief · ${new Intl.DateTimeFormat("en-SG", { timeZone: "Asia/Singapore", weekday: "long" }).format(now)}`);
+  const only = fired.hourly && !fired.psi && fired.pm25 == null && !fired.nea && !fired.news && !fired.brief && !fired.outlook;
+  if (only) lines.push(`Hourly update · ${fmtHour(data.nea!.time)}`);
   if (fired.nea) lines.push(`NEA: ${fired.nea.title}`, firstSentence(fired.nea.summary));
   if (fired.news) lines.push(`${OUTLET_NAME[fired.news.source as "CNA" | "ST"]}: ${fired.news.title}`, fired.news.url);
   if (fired.pm25 != null && peak) {
@@ -129,6 +137,6 @@ export function caption(data: HazeData, fired: Triggers, site: string, now = new
   if (fired.pm25 == null && peak) lines.push(`PM2.5 now ${Math.round(peak.value)}${trend ? ` · ${TREND_WORD[trend]}` : ""}`);
   if (fired.outlook && tomorrow) lines.push(`Tomorrow: PSI ~${tomorrow.psiMax}, ${LEVEL_NAME[psiLevel(tomorrow.psiMax)]}`);
   else if (tomorrow && tomorrow.psiMax > 100) lines.push(`Tomorrow: PSI ~${tomorrow.psiMax}`);
-  if (win) lines.push(`Best time out: ${win.text}`);
+  if (win) lines.push(`Best time out: ${win.text}${sgDate(0, new Date(win.start)) === sgDate(0, now) ? "" : " tomorrow"}`);
   return [...lines.slice(0, MAX_LINES - 1), site].join("\n");
 }
