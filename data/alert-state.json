@@ -3,6 +3,9 @@
   "pm25Band": 2,
   "neaUrl": "https://www.nea.gov.sg/media/news/advisories/index/haze-situation-update-15-october-2026",
   "newsUrls": [
+    "https://www.channelnewsasia.com/singapore/activesg-outdoor-facilities-closed-haze-6465086",
+    "https://www.channelnewsasia.com/living/singapore-haze-tracker-ntu-student-6464691",
+    "https://www.channelnewsasia.com/singapore/haze-el-nino-first-resources-indonesia-6464761",
     "https://www.straitstimes.com/singapore/environment/spore-is-experiencing-its-12th-consecutive-day-of-unhealthy-air-the-longest-since-2015-haze-crisis",
     "https://www.channelnewsasia.com/singapore/haze-oct-16-psi-pm-25-6459416",
     "https://www.straitstimes.com/singapore/haze-in-spore-air-quality-worsens-overnight-as-psi-hits-very-unhealthy-range-in-central-region",
@@ -11,12 +14,12 @@
     "https://www.channelnewsasia.com/singapore/n95-masks-distribution-vending-machines-community-clubs-haze-6462106",
     "https://www.straitstimes.com/singapore/lines-form-for-n95-masks-as-haze-situation-persists-but-haze-centres-see-few-people",
     "https://www.straitstimes.com/singapore/why-would-i-want-to-harm-myself-some-delivery-riders-look-to-cut-hours-as-haze-worsens",
+    "https://www.straitstimes.com/singapore/activesg-closes-outdoor-facilities-in-central-southern-and-western-singapore-as-haze-worsens",
     "https://www.channelnewsasia.com/singapore/n95-mask-collection-community-centre-vending-machines-6461351",
     "https://www.channelnewsasia.com/entertainment/bigbang-singapore-concert-haze-advisory-6461461",
-    "https://www.straitstimes.com/singapore/activesg-closes-outdoor-facilities-in-central-southern-and-western-singapore-as-haze-worsens",
     "https://www.channelnewsasia.com/singapore/haze-pm25-elevated-psi-very-unhealthy-6460876"
   ],
   "briefDate": "2026-10-16",
-  "outlookDate": null,
-  "hourTime": "2026-10-16T12:00:00+08:00"
+  "outlookDate": "2026-10-16",
+  "hourTime": "2026-10-16T14:00:00+08:00"
 }
