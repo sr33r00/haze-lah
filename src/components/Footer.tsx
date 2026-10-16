@@ -7,7 +7,7 @@ export default function Footer({ errors }: { errors: string[] }) {
       <SupportLinks />
       <p>
         Readings from NEA via data.gov.sg and Malaysia&apos;s Department of Environment. Fires from NASA FIRMS. Forecast from Copernicus CAMS and ECMWF via
-        Open-Meteo. News from NEA and the Meteorological Service Singapore.
+        Open-Meteo. News from NEA, the Meteorological Service Singapore, CNA and The Straits Times.
       </p>
       <p>
         An independent tool, not an official NEA service. For official advisories visit{" "}
@@ -29,6 +29,7 @@ export default function Footer({ errors }: { errors: string[] }) {
           Big screen view
         </Link>
       </p>
+      <p>Created by sr33</p>
       {errors.length > 0 && <p style={{ color: "var(--lv3)" }}>Not loading right now: {errors.join(", ")}.</p>}
     </footer>
   );
