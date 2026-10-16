@@ -1,7 +1,7 @@
-import { LEVEL_NAME, REGIONS, pm25Band, psiLevel, type Region } from "./bands";
+import { LEVEL_NAME, REGIONS, pm25Band, psiLevel } from "./bands";
 import { bestWindow, planHours } from "./plan";
 import { cap, fmtHour, trend3h } from "./format";
-import { islandSummary } from "./situation";
+import { islandMax, islandSummary } from "./situation";
 import type { HazeData, NewsItem } from "./types";
 import { sgDate } from "./util";
 
@@ -21,14 +21,6 @@ const MAX_LINES = 6;
 
 /** Hour of day (0-23) in Singapore. */
 export const sgHour = (now = new Date()) => (now.getUTCHours() + 8) % 24;
-
-/** Highest 24-hr PSI across regions, and where; null when no region has a reading. */
-export function islandMax(psi24: Record<Region, number>): { psi: number; region: Region } | null {
-  const valid = REGIONS.filter((r) => Number.isFinite(psi24[r]));
-  if (!valid.length) return null;
-  const region = valid.reduce((a, b) => (psi24[b] > psi24[a] ? b : a));
-  return { psi: psi24[region], region };
-}
 
 export const latestNea = (news: NewsItem[]) => news.find((n) => n.source === "NEA");
 
