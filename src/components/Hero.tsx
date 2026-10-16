@@ -128,21 +128,18 @@ export default function Hero(props: {
       </p>
 
       {props.next.length > 0 && (
-        <div className="mt-6">
-          <p className="mb-2 text-[13px]" style={{ color: soft }}>
-            Next {props.next.length} hours, island-wide forecast
-          </p>
+        // A neutral panel, so the PM2.5 band colours stay visible on every verdict colour.
+        <div className="mt-6 rounded-2xl bg-surface p-3 text-fg">
+          <p className="mb-2 text-[13px] text-muted">Next {props.next.length} hours, island-wide forecast</p>
           <ol className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${props.next.length}, minmax(0, 1fr))` }}>
             {props.next.map((p, i) => (
               <li key={p.time} className="text-center">
                 <div
-                  className="h-2 origin-bottom animate-grow rounded-full"
-                  style={{ background: pm25Color(p.pm25), boxShadow: `0 0 0 1.5px ${soft}`, animationDelay: `${i * 60}ms` }}
+                  className="h-2.5 origin-bottom animate-grow rounded-full"
+                  style={{ background: pm25Color(p.pm25), animationDelay: `${i * 60}ms` }}
                 />
                 <div className="tabular mt-1 text-[15px] font-bold">{p.pm25}</div>
-                <div className="text-[11px]" style={{ color: soft }}>
-                  {fmtHour(p.time)}
-                </div>
+                <div className="text-[11px] text-muted">{fmtHour(p.time)}</div>
               </li>
             ))}
           </ol>
@@ -159,5 +156,6 @@ export default function Hero(props: {
 }
 
 function Dot({ color }: { color: string }) {
-  return <span aria-hidden className="inline-block h-2.5 w-2.5 rounded-full ring-2 ring-white/60" style={{ background: color }} />;
+  // White gap and a ring in the text colour, so the level colour shows on every verdict background.
+  return <span aria-hidden className="inline-block h-3 w-3 rounded-full" style={{ background: color, boxShadow: "0 0 0 2px #fff, 0 0 0 3.5px currentColor" }} />;
 }

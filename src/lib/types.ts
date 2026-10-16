@@ -49,7 +49,7 @@ export type FireSummary = {
 };
 
 export type NewsItem = {
-  source: "NEA" | "MSS";
+  source: "NEA" | "MSS" | "CNA" | "ST";
   title: string;
   summary: string;
   date: string; // YYYY-MM-DD or ISO

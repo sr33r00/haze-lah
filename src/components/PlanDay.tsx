@@ -5,7 +5,7 @@ import type { ForecastPoint } from "@/lib/types";
 import { sgDate } from "@/lib/util";
 
 const LEGEND = ["go", "easy", "limit", "stay"] as const;
-const LEGEND_NAME = { go: "Go ahead", easy: "Take it easy", limit: "Short outings", stay: "Stay indoors" };
+const LEGEND_NAME = { go: "Go ahead", easy: "Cut back", limit: "Keep short", stay: "Stay indoors" };
 
 /** Next 24 hours as a coloured strip, with the best 3-hour window outlined. */
 export default function PlanDay({ hourly, group }: { hourly: ForecastPoint[]; group: Group }) {

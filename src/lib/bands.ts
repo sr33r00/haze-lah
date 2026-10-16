@@ -131,14 +131,18 @@ export type Verdict = {
   detail: string;
 };
 
-/** Plain-language verdict for a group at a level, derived from the NEA advice row. */
+/**
+ * Plain-language verdict for a group at a level, derived from the NEA advice row. Short trips such as
+ * commuting are fine under every row below Hazardous; what changes is how long and how hard to be outdoors.
+ */
 export function verdict(level: Level, group: Group): Verdict {
   const advice = NEA_ADVICE[group][level];
   if (advice === "Normal activities") return { tone: "go", headline: "Go ahead.", detail: "The air is fine for normal activities." };
-  if (advice.startsWith("Reduce")) return { tone: "easy", headline: "Go out, take it easy.", detail: "Cut back on long or hard exercise outdoors." };
+  if (advice.startsWith("Reduce"))
+    return { tone: "easy", headline: "Cut back outdoors.", detail: "Short trips are fine. Skip long runs and hard exercise outside." };
   if (advice.startsWith("Minimise prolonged"))
-    return { tone: "limit", headline: "Short outings only.", detail: "Keep long or hard exercise outdoors to a minimum." };
-  if (advice.startsWith("Avoid prolonged")) return { tone: "limit", headline: "Short outings only.", detail: "No long or hard exercise outdoors." };
+    return { tone: "limit", headline: "Keep outings short.", detail: "Keep long or hard exercise outdoors to a minimum." };
+  if (advice.startsWith("Avoid prolonged")) return { tone: "limit", headline: "Keep outings short.", detail: "No long or hard exercise outdoors." };
   if (advice.startsWith("Minimise")) return { tone: "stay", headline: "Stay in if you can.", detail: "Keep time outdoors to a minimum." };
   return { tone: "stay", headline: "Stay indoors.", detail: "Avoid going outside." };
 }
@@ -146,7 +150,7 @@ export function verdict(level: Level, group: Group): Verdict {
 /** Hero and plan colours per verdict tone; text colours pass WCAG AA on their background. */
 export const TONE_COLOR: Record<Verdict["tone"], { bg: string; fg: string }> = {
   go: { bg: "#2e7d55", fg: "#ffffff" },
-  easy: { bg: "#e0a91b", fg: "#1d1a10" },
-  limit: { bg: "#b84f17", fg: "#ffffff" },
-  stay: { bg: "#c62828", fg: "#ffffff" },
+  easy: { bg: "#eba21c", fg: "#1d1a10" },
+  limit: { bg: "#c24e17", fg: "#ffffff" },
+  stay: { bg: "#a91d1d", fg: "#ffffff" },
 };

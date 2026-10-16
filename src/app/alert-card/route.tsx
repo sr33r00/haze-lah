@@ -194,17 +194,11 @@ export async function GET() {
         }}
       >
         <div style={{ ...box, width: 546, justifyContent: "space-between" }}>
-          <div style={{ display: "flex", flexDirection: "column" }}>
-            <div>PM2.5 now</div>
-            <div
-              style={{
-                fontSize: 80,
-                fontWeight: 800,
-                lineHeight: 1,
-                color: s.peak ? pm25Color(s.peak.value) : INK,
-              }}
-            >
-              {s.peak ? `${Math.round(s.peak.value)}` : "-"}
+          <div style={row}>
+            {s.peak && <div style={{ width: 16, height: 110, borderRadius: 8, marginRight: 24, background: pm25Color(s.peak.value) }} />}
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              <div>PM2.5 now</div>
+              <div style={{ fontSize: 80, fontWeight: 800, lineHeight: 1 }}>{s.peak ? `${Math.round(s.peak.value)}` : "-"}</div>
             </div>
           </div>
           {trend && <Arrow deg={trend === "up" ? 0 : trend === "down" ? 180 : 90} size={84} />}
@@ -290,10 +284,14 @@ export async function GET() {
             <div>Best time out</div>
             <div
               style={{
-                fontSize: 56,
+                fontSize: 52,
                 fontWeight: 800,
                 lineHeight: 1,
-                color: TONE_COLOR[win.verdict.tone].bg,
+                marginTop: 8,
+                padding: "6px 16px",
+                borderRadius: 14,
+                background: TONE_COLOR[win.verdict.tone].bg,
+                color: TONE_COLOR[win.verdict.tone].fg,
               }}
             >
               {win.text}

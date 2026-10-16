@@ -63,10 +63,11 @@ export default async function About() {
       <section className="space-y-2">
         <h2 className="text-lg font-semibold">The answer at the top</h2>
         <p>
-          &ldquo;Should I go out now?&rdquo; uses NEA&apos;s latest <b>1-hour PM2.5</b> reading for your region, which NEA recommends for
-          deciding on immediate activities. Each PM2.5 band is matched to the NEA advisory row it corresponds to (Normal → Moderate,
-          Elevated → Unhealthy, High → Very unhealthy, Very high → Hazardous). The 5-day outlook uses the expected <b>24-hour PSI</b>,
-          which NEA recommends for planning ahead.
+          &ldquo;Should I go out?&rdquo; looks at two NEA readings for your region: the latest <b>1-hour PM2.5</b>, which NEA
+          recommends for deciding on immediate activities, and the <b>24-hour PSI</b>, which it recommends for planning the day. Each
+          PM2.5 band is matched to the advisory row it corresponds to (Normal → Moderate, Elevated → Unhealthy, High → Very unhealthy,
+          Very high → Hazardous), and the advice follows whichever of the two is worse, so a brief dip in PM2.5 is not shown as all
+          clear while the day&apos;s PSI is still high. The 5-day outlook uses the expected 24-hour PSI.
         </p>
       </section>
 

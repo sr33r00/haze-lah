@@ -92,12 +92,17 @@ export function unhealthyStreak(days: DayPsi[]): number {
 /** Time of the newest timeline item that has already happened, or null. */
 export const newestTime = (data: HazeData): number | null => buildTimeline(data).find((i) => i.time <= Date.now())?.time ?? null;
 
-/** Latest 1-hr PM2.5 reading, 24-hr PSI and advisory level for a region. NEA: 1-hr PM2.5 guides immediate activities; fall back to 24-hr PSI. */
+/**
+ * Latest 1-hr PM2.5 reading, 24-hr PSI and advisory level for a region. NEA uses 1-hr PM2.5 for immediate
+ * activities and 24-hr PSI for the day; the advice follows whichever is worse, so a short dip in PM2.5
+ * never reads as all clear while the day's PSI is still unhealthy.
+ */
 export function currentReading(data: Pick<HazeData, "history" | "nea">, region: Region): { latest: HourPoint | null; psi: number | null; level: Level | null } {
   const latest = data.history?.regions[region].at(-1) ?? null;
   const rawPsi = data.nea?.psi24[region];
   const psi = rawPsi != null && !isNaN(rawPsi) ? rawPsi : null;
-  const level = latest ? pm25ToLevel(latest.value) : psi != null ? psiLevel(psi) : null;
+  const levels = [latest && pm25ToLevel(latest.value), psi != null && psiLevel(psi)].filter((l): l is Level => typeof l === "number");
+  const level = levels.length ? (Math.max(...levels) as Level) : null;
   return { latest, psi, level };
 }
 
