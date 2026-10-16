@@ -4,7 +4,7 @@ import { CIGARETTE_NOTES, PM25_PER_CIGARETTE } from "./cigarettes";
 export const FAQ: { q: string; a: string }[] = [
   {
     q: "Is it safe to go out in the haze today?",
-    a: "It depends on the current NEA reading and on who you are. The home page answers this for your region and group, using NEA's latest 1-hour PM2.5. Healthy adults can go about normal activities when the 24-hour PSI is 100 or below, and are advised to reduce prolonged or strenuous outdoor exertion from 101.",
+    a: "It depends on the current NEA reading and on who you are. The home page answers this for your region and group, using whichever is worse of NEA's latest 1-hour PM2.5 and 24-hour PSI. Healthy adults can go about normal activities when the 24-hour PSI is 100 or below, and are advised to reduce prolonged or strenuous outdoor exertion from 101.",
   },
   {
     q: "What is the difference between PSI and PM2.5?",

@@ -37,7 +37,7 @@ async function load(): Promise<HazeData> {
 /** ALERT_TEST=1: post the full format once to prove the bot and channel work; state is left alone. */
 async function test(data: HazeData) {
   if (!token || !chat) throw new Error("Telegram not configured: add the TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID secrets");
-  const all: Triggers = { psi: true, pm25: null, nea: null, brief: false, outlook: false };
+  const all: Triggers = { psi: true, pm25: null, nea: null, news: null, brief: false, outlook: false };
   if (!data.nea) return send(`Test: Haze Lah alerts are connected.\n${SITE_URL}`);
   await send(`Test: alerts are connected\n${caption(data, all, SITE_URL)}`);
   console.log("alerts: test alert sent");
@@ -50,7 +50,7 @@ async function main() {
   const d = detect(data, prev);
   if (!d) return console.log("alerts: NEA unavailable, state kept");
   const { fired } = d;
-  const any = fired.psi || fired.pm25 != null || fired.nea || fired.brief || fired.outlook;
+  const any = fired.psi || fired.pm25 != null || fired.nea || fired.news || fired.brief || fired.outlook;
   if (any) {
     const text = caption(data, fired, SITE_URL);
     if (token && chat) await send(text);

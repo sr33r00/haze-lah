@@ -14,8 +14,9 @@ const LONG = 140; // about three lines on a phone
 const FILTERS: { label: string; sources: TimelineItem["source"][] | null }[] = [
   { label: "All", sources: null },
   { label: "NEA", sources: ["NEA"] },
+  { label: "News", sources: ["CNA", "ST"] },
   { label: "Weather", sources: ["MSS"] },
-  { label: "Live data", sources: ["NEA readings", "NASA FIRMS"] },
+  { label: "Live", sources: ["NEA readings", "NASA FIRMS"] },
 ];
 
 function Item({ n, i }: { n: TimelineItem; i: number }) {
@@ -87,14 +88,14 @@ export default function NewsView({ items, streak, psi }: { items: TimelineItem[]
         </div>
       )}
 
-      <div role="radiogroup" aria-label="Filter updates" className="no-scrollbar flex gap-2 overflow-x-auto px-4 pt-4">
+      <div role="radiogroup" aria-label="Filter updates" className="flex gap-1.5 px-4 pt-4">
         {FILTERS.map((f, i) => (
           <button
             key={f.label}
             role="radio"
             aria-checked={i === filter}
             onClick={() => setFilter(i)}
-            className={`min-h-[44px] shrink-0 rounded-full px-4 text-[14px] font-semibold ${i === filter ? "bg-fg text-bg" : "border border-line bg-surface"}`}
+            className={`min-h-[44px] min-w-0 flex-1 rounded-full px-1 text-[13px] font-semibold ${i === filter ? "bg-fg text-bg" : "border border-line bg-surface"}`}
           >
             {f.label}
           </button>

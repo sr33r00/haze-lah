@@ -1,12 +1,21 @@
 import type { NewsItem } from "../types";
 import { getText } from "../util";
 
-// Official news: NEA news RSS and the Meteorological Service Singapore 24-hour forecast Atom feed.
+// Official news: NEA news RSS and the Meteorological Service Singapore 24-hour forecast Atom feed,
+// plus haze headlines from CNA and The Straits Times.
 const NEA_RSS = "https://www.nea.gov.sg/rss/news_update";
 const MSS_ATOM = "https://www.weather.gov.sg/files/rss/rss24HrForecast.xml";
 const MSS_PAGE = "https://www.weather.gov.sg/weather-forecast-24hrs/";
 const FALLBACK = "https://www.nea.gov.sg/media/news/advisories";
-const HOSTS = ["nea.gov.sg", "www.nea.gov.sg", "www.weather.gov.sg"];
+const OUTLETS = {
+  CNA: { feed: "https://www.channelnewsasia.com/api/v1/rss-outbound-feed?_format=xml&category=10416", host: "www.channelnewsasia.com" },
+  ST: { feed: "https://www.straitstimes.com/news/singapore/rss.xml", host: "www.straitstimes.com" },
+} as const;
+type Outlet = keyof typeof OUTLETS;
+const HOSTS = ["nea.gov.sg", "www.nea.gov.sg", "www.weather.gov.sg", OUTLETS.CNA.host, OUTLETS.ST.host];
+const OUTLET_HAZE = /\bhaze\b|\bPSI\b|air quality|N95|hotspots?\b|transboundary/i; // title only, to keep noise out
+const OUTLET_DAYS = 7;
+const OUTLET_MAX = 6;
 const HAZE = /haze|psi|air quality|smoke|hotspot|pm2\.5/i;
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const NAMED: Record<string, string> = {
@@ -25,7 +34,7 @@ const stripTags = (s: string) => s.replace(/<[^>]*>/g, " ");
 /** HTML to plain text. Entities are decoded twice because NEA sometimes double-escapes. */
 export const toText = (html: string) => stripTags(decode(stripTags(decode(html)))).replace(/\s+/g, " ").replace(/\s+([.,;:!?])/g, "$1").trim();
 
-/** Only NEA and MSS pages are linked; http is upgraded to https. */
+/** Only NEA, MSS and the two outlets are linked; http is upgraded to https. */
 export function safeUrl(u: string | undefined): string {
   try {
     const url = new URL(u ?? "");
@@ -89,11 +98,26 @@ export function parseMss(xml: string): NewsItem[] {
   return [{ source: "MSS", title: "Weather outlook", summary, date: updated, url: MSS_PAGE }];
 }
 
+/** Haze headlines from a CNA or ST feed: last 7 days, newest first. Links must be on the outlet's own host. */
+export function parseOutlet(xml: string, source: Outlet, now = Date.now()): NewsItem[] {
+  const out: NewsItem[] = [];
+  for (const [, item] of xml.matchAll(/<item>([\s\S]*?)<\/item>/g)) {
+    const title = toText(tag(item, "title"));
+    const t = Date.parse(tag(item, "pubDate"));
+    const url = safeUrl(toText(tag(item, "link")));
+    if (!OUTLET_HAZE.test(title) || isNaN(t) || now - t > OUTLET_DAYS * 864e5 || new URL(url).hostname !== OUTLETS[source].host) continue;
+    out.push({ source, title, summary: summarise(toText(tag(item, "description"))), date: new Date(t).toISOString(), url });
+  }
+  return out.sort((a, b) => b.date.localeCompare(a.date)).slice(0, OUTLET_MAX);
+}
+
 export async function fetchNews(): Promise<NewsItem[]> {
-  const [nea, mss] = await Promise.allSettled([
+  const feeds = await Promise.allSettled([
     getText(NEA_RSS, { revalidate: 900 }).then(parseNea),
     getText(MSS_ATOM, { revalidate: 900 }).then(parseMss),
+    ...(Object.keys(OUTLETS) as Outlet[]).map((o) => getText(OUTLETS[o].feed, { revalidate: 900 }).then((x) => parseOutlet(x, o))),
   ]);
-  if (nea.status === "rejected" && mss.status === "rejected") throw nea.reason;
-  return [...(nea.status === "fulfilled" ? nea.value : []), ...(mss.status === "fulfilled" ? mss.value : [])];
+  const failed = feeds.filter((f) => f.status === "rejected");
+  if (failed.length === feeds.length) throw failed[0].reason;
+  return feeds.flatMap((f) => (f.status === "fulfilled" ? f.value : []));
 }

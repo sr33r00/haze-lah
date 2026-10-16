@@ -10,6 +10,7 @@ export type AlertState = {
   psiLevel: number | null;
   pm25Band?: number | null;
   neaUrl: string | null;
+  newsUrls?: string[]; // CNA/ST stories already seen, newest first
   briefDate?: string | null;
   outlookDate?: string | null;
 };
@@ -30,6 +31,11 @@ export function islandMax(psi24: Record<Region, number>): { psi: number; region:
 }
 
 export const latestNea = (news: NewsItem[]) => news.find((n) => n.source === "NEA");
+
+const NEWS_SEEN = 30;
+const OUTLET_NAME = { CNA: "CNA", ST: "Straits Times" } as const;
+
+const isOutlet = (n: NewsItem): n is NewsItem & { source: "CNA" | "ST" } => n.source === "CNA" || n.source === "ST";
 
 const firstSentence = (s: string) => s.split(/(?<=[.!?])\s/)[0].trim();
 
@@ -71,7 +77,7 @@ export function confirmedPm25Band(history: HazeData["history"], known: number | 
 }
 
 /** pm25 holds the band index it moved from. */
-export type Triggers = { psi: boolean; pm25: number | null; nea: NewsItem | null; brief: boolean; outlook: boolean };
+export type Triggers = { psi: boolean; pm25: number | null; nea: NewsItem | null; news: NewsItem | null; brief: boolean; outlook: boolean };
 
 /** Messages to send: the triggers that fired and the next state. Null when NEA is unavailable (state kept). */
 export function detect(data: HazeData, prev: AlertState | null, now = new Date()): { fired: Triggers; next: AlertState } | null {
@@ -82,6 +88,8 @@ export function detect(data: HazeData, prev: AlertState | null, now = new Date()
   const todayOutlook = data.forecast.days.find((d) => d.date === today);
   const level = psiLevel(top.psi);
   const nea = latestNea(data.news);
+  const outlets = data.news.filter(isOutlet).sort((a, b) => b.date.localeCompare(a.date));
+  const unseen = prev?.newsUrls ? outlets.filter((n) => !prev.newsUrls!.includes(n.url)) : [];
   const band = confirmedPm25Band(data.history, prev?.pm25Band);
   const hour = sgHour(now);
   const briefDue = hour >= BRIEF_HOUR && prev?.briefDate !== today;
@@ -90,6 +98,7 @@ export function detect(data: HazeData, prev: AlertState | null, now = new Date()
     psiLevel: level,
     pm25Band: band,
     neaUrl: nea?.url ?? prev?.neaUrl ?? null,
+    newsUrls: [...new Set([...outlets.map((n) => n.url), ...(prev?.newsUrls ?? [])])].slice(0, NEWS_SEEN),
     briefDate: briefDue ? today : (prev?.briefDate ?? null),
     outlookDate: outlookDue ? today : (prev?.outlookDate ?? null),
   };
@@ -98,6 +107,7 @@ export function detect(data: HazeData, prev: AlertState | null, now = new Date()
     psi: prev?.psiLevel != null && prev.psiLevel !== level,
     pm25: prev?.pm25Band != null && band != null && prev.pm25Band !== band ? prev.pm25Band : null,
     nea: prev && nea && prev.neaUrl != null && nea.url !== prev.neaUrl ? nea : null,
+    news: unseen[0] ?? null,
     brief: briefDue && prev?.briefDate !== undefined && (top.psi > 100 || (todayOutlook?.psiMax ?? 0) > 100),
     outlook: outlookDue && prev?.outlookDate !== undefined && (tomorrow?.psiMax ?? 0) > 100,
   };
@@ -118,6 +128,7 @@ export function caption(data: HazeData, fired: Triggers, site: string, now = new
   const lines: string[] = [];
   if (fired.brief) lines.push(`Morning brief · ${new Intl.DateTimeFormat("en-SG", { timeZone: "Asia/Singapore", weekday: "long" }).format(now)}`);
   if (fired.nea) lines.push(`NEA: ${fired.nea.title}`, firstSentence(fired.nea.summary));
+  if (fired.news) lines.push(`${OUTLET_NAME[fired.news.source as "CNA" | "ST"]}: ${fired.news.title}`, fired.news.url);
   if (fired.pm25 != null && peak) {
     const b = pm25Band(peak.value);
     lines.push(`PM2.5 ${b.index > fired.pm25! ? "rose to" : "eased to"} ${b.name} (band ${b.band}) · ${Math.round(peak.value)} ${cap(peak.region)}`);

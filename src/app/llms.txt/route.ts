@@ -32,7 +32,7 @@ Canonical site: ${SITE_URL}
 - [Now](${SITE_URL}/): the verdict for your region and group, current PSI and PM2.5, practical tips
 - [Forecast](${SITE_URL}/forecast): next 48 hours of PM2.5 and a 5-day PSI outlook, with measured accuracy
 - [Map](${SITE_URL}/map): smoke forecast, satellite-detected fires, air-quality stations and wind
-- [News](${SITE_URL}/news): NEA haze updates and a timeline of changes
+- [News](${SITE_URL}/news): NEA haze updates, CNA and Straits Times haze headlines, and a timeline of changes
 - [About](${SITE_URL}/about): NEA advisory table, forecast method, data sources and FAQ
 
 ## How the advice works

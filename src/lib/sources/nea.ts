@@ -19,9 +19,18 @@ function regionValues(r: Record<string, number> | undefined): RegionValues {
   return out;
 }
 
+/**
+ * Latest PSI reading. The undated endpoint has been seen serving a reading hours old from cache, so
+ * today's dated feed (also used by fetchPsiDaily) is read too and the newest item wins.
+ */
 export async function fetchNeaNow(): Promise<NeaNow> {
-  const j = await getJson<Resp>(`${BASE}/psi`, { headers: headers() });
-  const item = j.data.items[0];
+  const resps = await Promise.allSettled([
+    getJson<Resp>(`${BASE}/psi`, { headers: headers() }),
+    getJson<Resp>(`${BASE}/psi?date=${sgDate(0)}`, { headers: headers() }),
+  ]);
+  const item = resps
+    .flatMap((r) => (r.status === "fulfilled" ? r.value.data.items : []))
+    .reduce<Item | undefined>((a, b) => (!a || Date.parse(b.timestamp) > Date.parse(a.timestamp) ? b : a), undefined);
   if (!item) throw new Error("NEA PSI: no items");
   return {
     time: item.timestamp,

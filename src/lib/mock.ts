@@ -134,6 +134,20 @@ function mockNews(): NewsItem[] {
       url: "https://www.nea.gov.sg/media/news/news/index/singapore-ready-to-step-up-haze-response",
     },
     {
+      source: "CNA",
+      title: "Singapore haze: Air quality unhealthy in central region as hotspots rise in Sumatra",
+      summary: "The 24-hour PSI in central Singapore was in the unhealthy range on Thursday.",
+      date: new Date(Date.now() - 3 * 36e5).toISOString(),
+      url: "https://www.channelnewsasia.com/singapore/haze-psi-unhealthy-central-region",
+    },
+    {
+      source: "ST",
+      title: "N95 masks to be distributed at community clubs as haze persists",
+      summary: "Residents can collect masks from vending machines at selected community clubs.",
+      date: new Date(Date.now() - 20 * 36e5).toISOString(),
+      url: "https://www.straitstimes.com/singapore/n95-masks-community-clubs-haze",
+    },
+    {
       source: "MSS",
       title: "Weather outlook",
       summary: "Cloudy. For tomorrow, thundery showers mainly over northern, western and central Singapore in the afternoon.",
