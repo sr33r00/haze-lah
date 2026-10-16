@@ -3,7 +3,7 @@ import AppShell from "@/components/AppShell";
 import GuideView from "@/components/GuideView";
 import JsonLd from "@/components/JsonLd";
 import { getHazeData } from "@/lib/data";
-import { GUIDE } from "@/lib/guide";
+import { GUIDE, answerText } from "@/lib/guide";
 
 export const metadata = pageMeta(
   "Singapore haze guide: masks, exercise, schools and health advice",
@@ -22,7 +22,7 @@ export default async function Guide() {
         data={{
           "@context": "https://schema.org",
           "@type": "FAQPage",
-          mainEntity: items.map(({ q, a }) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })),
+          mainEntity: items.map((it) => ({ "@type": "Question", name: it.q, acceptedAnswer: { "@type": "Answer", text: answerText(it) } })),
         }}
       />
     </AppShell>

@@ -1,4 +1,4 @@
-import { Coffee } from "lucide-react";
+import { Coffee, Info } from "lucide-react";
 import Link from "next/link";
 import { ALERTS_URL, BMC_URL } from "@/lib/links";
 import { newestTime } from "@/lib/situation";
@@ -30,6 +30,14 @@ export default function AppShell({ data, title, children }: { data: HazeData; ti
             <TopNav newest={newestTime(data)} />
             <div className="flex shrink-0 items-center gap-1.5 min-[400px]:gap-2">
               {ALERTS_URL && <AlertsButton href={ALERTS_URL} />}
+              <Link
+                href="/about"
+                aria-label="About and data sources"
+                title="About and data sources"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-line bg-surface"
+              >
+                <Info size={16} aria-hidden />
+              </Link>
               <a
                 href={BMC_URL}
                 target="_blank"
