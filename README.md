@@ -77,6 +77,7 @@ All variables are optional. Copy `.env.example` to `.env.local` to set them.
 | `HAZE_MOCK` | `1` renders synthetic demo data |
 | `NEXT_PUBLIC_ALERTS_URL` | Telegram channel link (`https://t.me/...`) for the "Get alerts" button |
 | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` | Bot and channel used by `scripts/alert.ts` |
+| `FEEDBACK_CHAT_ID` | Your own Telegram chat id; the feedback form sends messages there through the same bot |
 | `SITE_URL` | Site link in alert messages |
 
 ## Project structure

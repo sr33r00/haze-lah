@@ -1,7 +1,6 @@
-import { Bell, Coffee, MessageSquare } from "lucide-react";
+import { Bell, Coffee } from "lucide-react";
 import { ALERTS_URL, BMC_URL } from "@/lib/links";
-
-const FEEDBACK_URL = "https://github.com/sr33r00/haze-lah/issues/new?template=feedback.yml";
+import FeedbackForm from "./FeedbackForm";
 
 const pill = "inline-flex items-center gap-2 rounded-full border border-line bg-surface px-4 py-2 text-[14px] font-semibold text-fg";
 
@@ -15,10 +14,7 @@ export default function SupportLinks() {
           Get alerts
         </a>
       )}
-      <a className={pill} href={FEEDBACK_URL} target="_blank" rel="noreferrer">
-        <MessageSquare size={16} aria-hidden />
-        Send feedback
-      </a>
+      <FeedbackForm pill={pill} />
       <a className={pill} href={BMC_URL} target="_blank" rel="noreferrer">
         <Coffee size={16} aria-hidden />
         Buy me a coffee
