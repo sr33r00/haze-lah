@@ -131,21 +131,60 @@ export type Verdict = {
   detail: string;
 };
 
+/** NEA's advice steps, mildest first. The 24-hr PSI advisory rows above use these exact phrases. */
+export const STEP_TEXT = [
+  "Normal activities",
+  "Reduce prolonged or strenuous outdoor physical exertion",
+  "Minimise prolonged or strenuous outdoor physical exertion",
+  "Avoid prolonged or strenuous outdoor physical exertion",
+  "Minimise outdoor activity",
+  "Avoid outdoor activity",
+] as const;
+export type Step = 0 | 1 | 2 | 3 | 4 | 5;
+
+const psiStep = (level: Level, group: Group) => STEP_TEXT.indexOf(NEA_ADVICE[group][level] as (typeof STEP_TEXT)[number]) as Step;
+
 /**
- * Plain-language verdict for a group at a level, derived from the NEA advice row. Short trips such as
- * commuting are fine under every row below Hazardous; what changes is how long and how hard to be outdoors.
+ * NEA's personal guide for the 1-hr PM2.5 bands I to IV (haze.gov.sg PSI and PM2.5 guide, June 2026; MOH haze advisory):
+ * everyone reduces, then avoids, strenuous outdoor activity, then minimises all outdoor activity; vulnerable persons
+ * (elderly, pregnant women, children, heart or lung disease) avoid strenuous outdoor activity from band II and all
+ * outdoor activity from band III.
  */
-export function verdict(level: Level, group: Group): Verdict {
-  const advice = NEA_ADVICE[group][level];
-  if (advice === "Normal activities") return { tone: "go", headline: "Go ahead.", detail: "The air is fine for normal activities." };
-  if (advice.startsWith("Reduce"))
-    return { tone: "easy", headline: "Cut back outdoors.", detail: "Short trips are fine. Skip long runs and hard exercise outside." };
-  if (advice.startsWith("Minimise prolonged"))
-    return { tone: "limit", headline: "Keep outings short.", detail: "Keep long or hard exercise outdoors to a minimum." };
-  if (advice.startsWith("Avoid prolonged")) return { tone: "limit", headline: "Keep outings short.", detail: "No long or hard exercise outdoors." };
-  if (advice.startsWith("Minimise")) return { tone: "stay", headline: "Stay in if you can.", detail: "Keep time outdoors to a minimum." };
-  return { tone: "stay", headline: "Stay indoors.", detail: "Avoid going outside." };
+const PM25_STEP: Record<"general" | "vulnerable", Step[]> = { general: [0, 1, 3, 4], vulnerable: [0, 3, 5, 5] };
+
+export const pm25Step = (pm: number, group: Group): Step => PM25_STEP[group === "healthy" ? "general" : "vulnerable"][pm25Band(pm).index];
+
+/** Advice for now: the stricter of the 1-hr PM2.5 guide (next few hours) and the 24-hr PSI advisory (the day). */
+export function adviceStep(pm25: number | null, psi: number | null, group: Group): Step | null {
+  const steps: Step[] = [];
+  if (pm25 != null && Number.isFinite(pm25)) steps.push(pm25Step(pm25, group));
+  if (psi != null && Number.isFinite(psi)) steps.push(psiStep(psiLevel(psi), group));
+  return steps.length ? (Math.max(...steps) as Step) : null;
 }
+
+/**
+ * Plain-language verdict for an advice step. MOH: unless PM2.5 is in band IV or the PSI forecast is Hazardous, healthy
+ * people can generally carry on outdoors at reduced intensity or duration, so short trips stay fine below that.
+ */
+export function verdictFor(step: Step): Verdict {
+  switch (step) {
+    case 0:
+      return { tone: "go", headline: "Go ahead.", detail: "The air is fine for normal activities." };
+    case 1:
+      return { tone: "easy", headline: "Cut back outdoors.", detail: "Short trips are fine. Skip long runs and hard exercise outside." };
+    case 2:
+      return { tone: "limit", headline: "Keep outings short.", detail: "Keep long or hard exercise outdoors to a minimum." };
+    case 3:
+      return { tone: "limit", headline: "Keep outings short.", detail: "No long or hard exercise outdoors." };
+    case 4:
+      return { tone: "stay", headline: "Stay in if you can.", detail: "Keep time outdoors to a minimum." };
+    case 5:
+      return { tone: "stay", headline: "Stay indoors.", detail: "Avoid going outside." };
+  }
+}
+
+/** Verdict for a 24-hr PSI level (forecast days, island summaries). */
+export const verdict = (level: Level, group: Group): Verdict => verdictFor(psiStep(level, group));
 
 /** Hero and plan colours per verdict tone; text colours pass WCAG AA on their background. */
 export const TONE_COLOR: Record<Verdict["tone"], { bg: string; fg: string }> = {

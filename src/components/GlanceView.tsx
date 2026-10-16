@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { TONE_COLOR, verdict } from "@/lib/bands";
+import { TONE_COLOR, adviceStep, verdictFor } from "@/lib/bands";
 import { fmtTime } from "@/lib/format";
 import { currentReading } from "@/lib/situation";
 import type { HazeData } from "@/lib/types";
@@ -13,8 +13,10 @@ import { usePrefs } from "./usePrefs";
 /** Full-screen reading for a home-screen shortcut or a wall display. */
 export default function GlanceView({ data }: { data: HazeData }) {
   const { region, group } = usePrefs();
-  const { latest, psi, level } = currentReading(data, region);
-  const tone = level != null ? TONE_COLOR[verdict(level, group).tone] : null;
+  const { latest, psi } = currentReading(data, region);
+  const step = adviceStep(latest?.value ?? null, psi, group);
+  const v = step != null ? verdictFor(step) : null;
+  const tone = v ? TONE_COLOR[v.tone] : null;
 
   return (
     <main
@@ -29,7 +31,7 @@ export default function GlanceView({ data }: { data: HazeData }) {
         <p className="text-[17px] opacity-80">{cap(region)}, PM2.5 now</p>
         <p className="tabular text-[clamp(7rem,38vw,16rem)] font-light leading-none tracking-tight">{latest ? Math.round(latest.value) : "–"}</p>
         <h1 className="mt-4 text-[clamp(2.5rem,9vw,5rem)] font-extrabold leading-[1.02] tracking-[-0.02em]">
-          {level != null ? verdict(level, group).headline : "No reading yet."}
+          {v ? v.headline : "No reading yet."}
         </h1>
         <p className="tabular mt-3 text-[clamp(1.25rem,4vw,2rem)] opacity-80">PSI {psi ?? "–"}, 24-hour</p>
       </div>

@@ -24,8 +24,8 @@ export const GUIDE: GuideSection[] = [
       {
         id: "go-out",
         q: "Is it safe to go out or exercise?",
-        a: "Healthy adults can do normal activities when the 24-hour PSI is 100 or below. At 101 to 200 reduce prolonged or strenuous outdoor exertion, and at 201 to 300 avoid it. The elderly, pregnant women and children should minimise it from 101, and people with chronic lung or heart disease should avoid it from 101.",
-        sources: [NEA_GUIDE, NEA_FAQ],
+        a: "For the next few hours, check the 1-hour PM2.5. Healthy people reduce strenuous outdoor activity in band II, avoid it in band III and minimise all outdoor activity in band IV. The elderly, pregnant women, children and people with heart or lung disease avoid strenuous outdoor activity in band II and all outdoor activity from band III. For the day ahead, the 24-hour PSI advisory applies; this app follows whichever of the two is stricter.",
+        sources: [NEA_GUIDE, MOH],
       },
       {
         id: "psi-pm25",
@@ -54,8 +54,8 @@ export const GUIDE: GuideSection[] = [
       {
         id: "n95",
         q: "Do I need an N95 mask?",
-        a: "Not for short trips like commuting. A healthy person outdoors for several hours may wear one when the forecast is Hazardous (PSI above 300), and vulnerable people when it is Very unhealthy (above 200). Surgical masks do not filter fine particles, and an N95 only works with a good fit.",
-        sources: [NEA_FAQ, NEA_RELEASE],
+        a: "Not for short trips like commuting, or indoors. A healthy person who must be outdoors for several hours may wear one when the PSI forecast is Hazardous (above 300) or the 1-hour PM2.5 is in band IV. The elderly, pregnant women and people with heart or lung disease may wear one when the PSI forecast is above 200 or PM2.5 is in band III. Surgical masks do not filter fine particles, and an N95 only works with a good fit.",
+        sources: [NEA_FAQ, MOH],
       },
       {
         id: "n95-doctor",
@@ -66,7 +66,7 @@ export const GUIDE: GuideSection[] = [
       {
         id: "free-masks",
         q: "Where can I get free N95 masks?",
-        a: "When the PSI enters Very unhealthy (above 200), the People's Association gives N95 masks to eligible Singaporeans, and vending machines open at selected transport hubs and Social Service Offices. Bring your NRIC and check gov.sg for current details.",
+        a: "When the PSI enters Very unhealthy (above 200), People's Association grassroots organisations give N95 masks to eligible Singaporeans, with mask vending machines at selected transport hubs, Social Service Offices and PA venues. Collect with the eligible person's NRIC, and check gov.sg for current details.",
         sources: [NEA_RELEASE, ["gov.sg", "https://www.gov.sg"]],
       },
     ],
@@ -78,7 +78,7 @@ export const GUIDE: GuideSection[] = [
       {
         id: "windows",
         q: "Should I close windows and use the aircon?",
-        a: "Close doors and windows when the air outside is getting worse, and stay indoors. Fans or aircon are fine, but if the aircon draws in outside air, close its outdoor air intake.",
+        a: "Close doors and windows when the air outside is getting worse, and open them again when it improves. Fans or aircon are fine, but if the aircon draws in unfiltered outside air, such as a window unit, close its outdoor air intake.",
         sources: [NEA_FAQ],
       },
       {
@@ -90,7 +90,7 @@ export const GUIDE: GuideSection[] = [
       {
         id: "shelter",
         q: "Where can I get away from the haze?",
-        a: "When the air is Very unhealthy, selected Community Clubs and Residents' Committee centres open air-conditioned haze shelters for anyone. Opening hours extend to 10pm if it turns Hazardous.",
+        a: "When the PSI enters Very unhealthy (above 200), air-conditioned rooms in Community Clubs and selected Residents' Committee and Residents' Network centres open as haze shelters for the public. Shelters in Community Clubs stay open until 10pm if the PSI turns Hazardous.",
         sources: [NEA_RELEASE],
       },
     ],
@@ -102,7 +102,7 @@ export const GUIDE: GuideSection[] = [
       {
         id: "children",
         q: "How do I protect my child?",
-        a: "The key step is to limit prolonged or strenuous outdoor exertion when the forecast 24-hour PSI is above 100. MOH says a well-fitted AIR+ Smart Mask can be used only where necessary by children without heart or lung conditions; N95 masks are not certified for children.",
+        a: "Minimise prolonged or strenuous outdoor exertion when the 24-hour PSI forecast is above 100, and avoid outdoor activity when it is above 300. There is no certified mask standard, such as N95, for children; MOH says the AIR+ Smart Mask can be used only where necessary by children without heart or lung conditions, if it keeps a good seal.",
         sources: [NEA_FAQ, MOH],
       },
       {
@@ -114,7 +114,7 @@ export const GUIDE: GuideSection[] = [
       {
         id: "preschools",
         q: "What do preschools do?",
-        a: "At Very unhealthy, preschools stop all outdoor and strenuous indoor activity, keep children indoors with doors and windows closed, and set aside a room with an air purifier.",
+        a: "At Very unhealthy, preschools stop all outdoor and strenuous indoor activity, keep children indoors with doors and windows closed, and set aside a room with an air purifier. Children with heart or lung conditions skip all indoor physical activity.",
         sources: [ECDA],
       },
     ],
@@ -126,7 +126,7 @@ export const GUIDE: GuideSection[] = [
       {
         id: "work-rules",
         q: "What must my employer do?",
-        a: "Employers should reduce prolonged or strenuous outdoor work at PSI 101 to 200, avoid it at 201 to 300 and minimise outdoor work above 300. They should fit-test masks for staff still working outdoors, keep a 1-week supply of N95s, and provide rest breaks, rotation and water.",
+        a: "For healthy staff, MOM's guidelines say to reduce prolonged or strenuous outdoor work at PSI 101 to 200, avoid it at 201 to 300 and minimise outdoor work above 300, with stricter limits for vulnerable staff. Employers should fit-test masks for staff still working outdoors, keep at least a 1-week supply of N95s, and use measures such as job rotation, indoor rest breaks and enough water.",
         sources: [MOM, NEA_RELEASE],
       },
     ],
@@ -138,19 +138,19 @@ export const GUIDE: GuideSection[] = [
       {
         id: "symptoms",
         q: "When should I see a doctor?",
-        a: "A few days of haze usually only irritates the eyes, nose and throat, which resolves on its own. See a doctor if you feel unwell, especially if you are elderly, a child or have a chronic heart or lung condition, or if you have trouble breathing.",
+        a: "In healthy people, a few days of haze may irritate the eyes, nose and throat, which usually clears on its own. It can worsen heart and lung disease, and symptoms may show up 1 to 3 days after exposure. See a doctor if you feel unwell or have trouble breathing, especially if you are elderly, a child or have a heart or lung condition.",
         sources: [MOH, NEA_FAQ],
       },
       {
         id: "pregnancy",
         q: "Is haze a risk in pregnancy?",
-        a: "NEA advises pregnant women to reduce exposure to haze for the health of the unborn baby. They should minimise prolonged or strenuous outdoor exertion from PSI 101 and minimise outdoor activity above 200.",
+        a: "NEA advises pregnant women to reduce exposure to haze for the health of the unborn baby: minimise prolonged or strenuous outdoor exertion at PSI 101 to 200, minimise outdoor activity at 201 to 300, and avoid it above 300. In the 2nd and 3rd trimesters, stop using an N95 if it feels uncomfortable.",
         sources: [NEA_FAQ, NEA_GUIDE],
       },
       {
         id: "subsidy",
         q: "Is treatment subsidised?",
-        a: "Only when MOH activates the Haze Subsidy Scheme, which it did from 12 Oct 2026. At polyclinics all Singapore Citizens qualify. At Public Health Preparedness Clinics it covers children 18 and below, seniors 65 and above and some card holders such as CHAS Blue and Orange, who pay no more than $10 (Pioneer and Merdeka Generation no more than $5) for conditions like asthma and bronchitis. Look for the PHPC decal.",
+        a: "Only when MOH activates the Haze Subsidy Scheme, which it did from 12 Oct 2026. All Singapore Citizens qualify at polyclinics. At participating Public Health Preparedness Clinics (look for the PHPC decal) it covers children 18 and below, seniors 65 and above and some card holders such as CHAS Blue and Orange. For conditions like asthma and bronchitis, eligible citizens pay no more than $10, Pioneer and Merdeka Generation no more than $5, and Public Assistance card holders nothing.",
         sources: [HSS, MOH],
       },
     ],

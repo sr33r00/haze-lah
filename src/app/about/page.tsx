@@ -51,10 +51,10 @@ export default async function About() {
         <h2 className="text-lg font-semibold">The answer at the top</h2>
         <p>
           &ldquo;Should I go out?&rdquo; looks at two NEA readings for your region: the latest <b>1-hour PM2.5</b>, which NEA
-          recommends for deciding on immediate activities, and the <b>24-hour PSI</b>, which it recommends for planning the day. Each
-          PM2.5 band is matched to the advisory row it corresponds to (Normal → Moderate, Elevated → Unhealthy, High → Very unhealthy,
-          Very high → Hazardous), and the advice follows whichever of the two is worse, so a brief dip in PM2.5 is not shown as all
-          clear while the day&apos;s PSI is still high. The 5-day outlook uses the expected 24-hour PSI.
+          recommends for deciding on immediate activities, and the <b>24-hour PSI</b>, which it recommends for planning the day. The
+          PM2.5 band is read with NEA&apos;s personal guide for the 1-hour PM2.5 (stricter for the elderly, pregnant women, children and
+          people with heart or lung disease), the PSI with the advisory table below, and the advice follows whichever of the two is
+          stricter. The 5-day outlook uses the expected 24-hour PSI; the hourly plan uses the PM2.5 guide.
         </p>
       </section>
 
@@ -94,6 +94,13 @@ export default async function About() {
         </div>
         <p className="mt-2 text-xs text-muted">
           1-hr PM2.5 bands (µg/m³): Band I Normal 0–55, Band II Elevated 56–150, Band III High 151–250, Band IV Very high ≥251.
+          Personal guide for the next hour: band II reduce strenuous outdoor activity (vulnerable persons avoid it), band III avoid
+          strenuous outdoor activity (vulnerable persons avoid all outdoor activity), band IV minimise all outdoor activity (vulnerable
+          persons avoid it). Source:{" "}
+          <a href="https://www.haze.gov.sg/docs/default-source/posters/haze-pm-psi-guide-a4-english.pdf" className="text-accent underline">
+            NEA PSI and PM2.5 guide
+          </a>
+          .
         </p>
       </section>
 

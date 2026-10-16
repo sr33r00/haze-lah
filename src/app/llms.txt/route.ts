@@ -37,7 +37,7 @@ Canonical site: ${SITE_URL}
 - [About](${SITE_URL}/about): NEA advisory table, forecast method, data sources and measured accuracy
 
 ## How the advice works
-- "Should I go out now?" uses NEA's latest 1-hr PM2.5 for the region, mapped to the matching NEA advisory row (Normal to Moderate, Elevated to Unhealthy, High to Very unhealthy, Very high to Hazardous).
+- "Should I go out now?" follows the stricter of NEA's personal guide for the region's latest 1-hr PM2.5 band and the NEA advisory for its 24-hr PSI. For the next hour, band II: reduce strenuous outdoor activity (vulnerable persons avoid it); band III: avoid it (vulnerable persons avoid all outdoor activity); band IV: minimise all outdoor activity (vulnerable persons avoid it).
 - Planning ahead uses the 24-hr PSI. NEA bands: Good 0-50, Moderate 51-100, Unhealthy 101-200, Very unhealthy 201-300, Hazardous above 300.
 - 1-hr PM2.5 bands (µg/m³): Normal 0-55, Elevated 56-150, High 151-250, Very high 251 and above.
 - The forecast is the Copernicus CAMS PM2.5 model calibrated against live NEA readings; accuracy is measured and published on the About page.
