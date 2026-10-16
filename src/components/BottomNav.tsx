@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarDays, CircleGauge, Map, Newspaper } from "lucide-react";
+import { BookOpen, CalendarDays, CircleGauge, Map, Newspaper } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -11,6 +11,7 @@ export const ITEMS = [
   { href: "/forecast", label: "Forecast", icon: CalendarDays },
   { href: "/map", label: "Map", icon: Map },
   { href: "/news", label: "News", icon: Newspaper },
+  { href: "/guide", label: "Guide", icon: BookOpen },
 ];
 
 /** Thumb-reach tabs for phones; News shows a dot when something is newer than the last visit. */
@@ -32,7 +33,7 @@ export default function BottomNav({ newest }: { newest: number | null }) {
       aria-label="Sections"
       className="fixed inset-x-0 bottom-0 z-[1000] border-t border-line bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur"
     >
-      <ul className="mx-auto grid max-w-lg grid-cols-4">
+      <ul className="mx-auto grid max-w-lg grid-cols-5">
         {ITEMS.map(({ href, label, icon: Icon }) => {
           const on = href === path;
           return (

@@ -6,6 +6,7 @@ const PAGES: [string, MetadataRoute.Sitemap[number]["changeFrequency"], number][
   ["/forecast", "hourly", 0.9],
   ["/map", "hourly", 0.7],
   ["/news", "hourly", 0.7],
+  ["/guide", "weekly", 0.7],
   ["/about", "weekly", 0.5],
 ];
 

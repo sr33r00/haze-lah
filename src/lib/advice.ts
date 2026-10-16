@@ -3,8 +3,11 @@ import type { Group, Level } from "./bands";
 export type More = { label: string; points: string[]; sources: [string, string][] };
 export type Tip = { kind: "home" | "mask" | "child" | "meds" | "people" | "help" | "exercise"; text: string; more?: More };
 
-const NEA_FAQ: [string, string] = ["NEA", "https://www.nea.gov.sg/our-services/pollution-control/air-pollution/faqs"];
-const MOH: [string, string] = ["MOH", "https://www.moh.gov.sg/others/haze/"];
+export const NEA_FAQ: [string, string] = ["NEA", "https://www.nea.gov.sg/our-services/pollution-control/air-pollution/faqs"];
+export const MOH: [string, string] = ["MOH", "https://www.moh.gov.sg/others/haze/"];
+export const MOE: [string, string] = ["MOE", "https://www.moe.gov.sg/about-us/emergency-preparedness/haze-management"];
+// ECDA preschool rules are published in the Haze Task Force release.
+export const ECDA: [string, string] = ["ECDA", "https://www.nea.gov.sg/media/news/news/index/singapore-ready-to-step-up-haze-response"];
 
 // Source: NEA air pollution FAQ (N95 fit and surgical masks, doctor first, HEPA and smoke CADR); MOH haze page (N95 not certified for children).
 const MASK_MORE: More = {
@@ -26,10 +29,7 @@ const PURIFIER_MORE: More = {
 const SCHOOL_MORE: More = {
   label: "",
   points: [],
-  sources: [
-    ["MOE", "https://www.moe.gov.sg/haze-management-measures"],
-    ["ECDA", "https://www.msf.gov.sg/docs/default-source/student-care/haze-pm-psi-guide-a4-english-v16.pdf"],
-  ],
+  sources: [MOE, ECDA],
 };
 const SCHOOL_TEXT: Record<number, string> = {
   2: "Schools and preschools cut long or hard outdoor activity.",
