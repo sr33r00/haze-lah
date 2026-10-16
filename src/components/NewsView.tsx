@@ -98,12 +98,11 @@ export default function NewsView({ items, streak, psi }: { items: TimelineItem[]
           </div>
         )}
 
-        <div role="radiogroup" aria-label="Filter updates" className="flex gap-1.5 px-4 pt-4 lg:px-0 lg:pt-0">
+        <div role="group" aria-label="Filter updates" className="flex gap-1.5 px-4 pt-4 lg:px-0 lg:pt-0">
           {FILTERS.map((f, i) => (
             <button
               key={f.label}
-              role="radio"
-              aria-checked={i === filter}
+              aria-pressed={i === filter}
               onClick={() => setFilter(i)}
               className={`min-h-[44px] min-w-0 flex-1 rounded-full px-1 text-[13px] font-semibold ${i === filter ? "bg-fg text-bg" : "border border-line bg-surface"}`}
             >

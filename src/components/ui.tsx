@@ -5,7 +5,7 @@ export function Section(props: { title: string; aside?: React.ReactNode; childre
   return (
     <section id={props.id} className={`mt-10 scroll-mt-20 ${props.className ?? ""}`}>
       <div className="mb-3 flex items-baseline justify-between gap-3 px-4">
-        <h2 className="text-[22px] font-bold tracking-tight">{props.title}</h2>
+        <h2 className="text-balance text-[22px] font-bold tracking-tight">{props.title}</h2>
         {props.aside && <div className="text-[13px] text-muted">{props.aside}</div>}
       </div>
       {props.children}

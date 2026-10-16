@@ -4,6 +4,7 @@ import "@fontsource-variable/atkinson-hyperlegible-next";
 import "./globals.css";
 import JsonLd from "@/components/JsonLd";
 import { SITE_URL } from "@/lib/links";
+import { THEME_COLOR } from "@/lib/theme";
 
 const DESCRIPTION =
   "Live NEA PSI and PM2.5 for Singapore, a clear should-I-go-out answer, a 5-day haze forecast and a smoke map of fires and wind across the region.";
@@ -61,8 +62,8 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#e9eef1" },
-    { media: "(prefers-color-scheme: dark)", color: "#0d161d" },
+    { media: "(prefers-color-scheme: light)", color: THEME_COLOR.light },
+    { media: "(prefers-color-scheme: dark)", color: THEME_COLOR.dark },
   ],
 };
 

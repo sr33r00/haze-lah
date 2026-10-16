@@ -9,7 +9,6 @@ import AirDetail from "./AirDetail";
 import Advice from "./Advice";
 import CigaretteCard from "./CigaretteCard";
 import Hero from "./Hero";
-import NewCard from "./NewCard";
 import PlanDay from "./PlanDay";
 import RegionChips from "./RegionChips";
 import { Section, cap } from "./ui";
@@ -41,8 +40,6 @@ export default function NowView({ history, nea, hourly }: { history: NeaPm25Hist
       </div>
 
       <div className="lg:[&>:first-child]:mt-3">
-        <NewCard />
-
         {level != null && step != null && (
           <Section id="what-to-do" title="What to do">
             <Advice items={tips(level, step, group, psi != null ? psiLevel(psi) : null)} />
