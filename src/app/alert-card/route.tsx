@@ -6,6 +6,7 @@ import { windFrom, windSource } from "@/lib/context";
 import { getHazeData } from "@/lib/data";
 import { fmtHour, fmtTime } from "@/lib/format";
 import { islandSummary } from "@/lib/situation";
+import { sgDate } from "@/lib/util";
 
 export const revalidate = 300;
 
@@ -281,7 +282,7 @@ export async function GET() {
               justifyContent: "center",
             }}
           >
-            <div>Best time out</div>
+            <div>{sgDate(0, new Date(win.start)) === sgDate(0) ? "Best time out" : "Best time out tomorrow"}</div>
             <div
               style={{
                 fontSize: 52,
