@@ -2,11 +2,11 @@ import { LEVEL_COLOR, psiLevel, type Region } from "@/lib/bands";
 import type { NeaNow } from "@/lib/types";
 
 const POLLUTANTS: { key: keyof NeaNow["sub"]; name: string; note: string }[] = [
-  { key: "pm25", name: "PM2.5", note: "Fine smoke particles, 24-hour average" },
-  { key: "pm10", name: "PM10", note: "Coarser dust and smoke, 24-hour average" },
-  { key: "o3", name: "Ozone", note: "8-hour maximum" },
-  { key: "co", name: "Carbon monoxide", note: "8-hour maximum" },
-  { key: "so2", name: "Sulphur dioxide", note: "24-hour average" },
+  { key: "pm25", name: "PM2.5", note: "Fine smoke particles; sub-index of the 24-hour average" },
+  { key: "pm10", name: "PM10", note: "Coarser dust and smoke; sub-index of the 24-hour average" },
+  { key: "o3", name: "Ozone", note: "Sub-index of the 8-hour maximum" },
+  { key: "co", name: "Carbon monoxide", note: "Sub-index of the 8-hour maximum" },
+  { key: "so2", name: "Sulphur dioxide", note: "Sub-index of the 24-hour average" },
 ];
 
 /** PSI sub-index for each pollutant in one region; the highest sets the PSI. */

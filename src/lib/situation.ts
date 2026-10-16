@@ -93,9 +93,8 @@ export function unhealthyStreak(days: DayPsi[]): number {
 export const newestTime = (data: HazeData): number | null => buildTimeline(data).find((i) => i.time <= Date.now())?.time ?? null;
 
 /**
- * Latest 1-hr PM2.5 reading, 24-hr PSI and advisory level for a region. NEA uses 1-hr PM2.5 for immediate
- * activities and 24-hr PSI for the day; the advice follows whichever is worse, so a short dip in PM2.5
- * never reads as all clear while the day's PSI is still unhealthy.
+ * Latest 1-hr PM2.5 reading, 24-hr PSI and an overall severity level for a region (the worse of the PM2.5 band's
+ * matching PSI row and the PSI itself), used to pick tips. The advice itself comes from adviceStep in bands.ts.
  */
 export function currentReading(data: Pick<HazeData, "history" | "nea">, region: Region): { latest: HourPoint | null; psi: number | null; level: Level | null } {
   const latest = data.history?.regions[region].at(-1) ?? null;

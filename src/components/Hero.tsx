@@ -1,7 +1,7 @@
 import { Info, Maximize2 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
-import { GROUP_LABEL, LEVEL_COLOR, LEVEL_NAME, NEA_ADVICE, TONE_COLOR, pm25Band, pm25Color, psiLevel, verdict, type Group, type Level } from "@/lib/bands";
+import { GROUP_LABEL, LEVEL_COLOR, LEVEL_NAME, STEP_TEXT, TONE_COLOR, adviceStep, pm25Band, pm25Color, psiLevel, verdictFor, type Group } from "@/lib/bands";
 import { fmtHour } from "@/lib/format";
 import type { ForecastPoint } from "@/lib/types";
 import { cap } from "./ui";
@@ -22,14 +22,14 @@ export default function Hero(props: {
   pm25: number | null;
   psi: number | null;
   trend: string | null;
-  level: Level | null;
   group: Group;
   onGroup: (g: Group) => void;
   next: ForecastPoint[];
 }) {
-  const { pm25, psi, level, group } = props;
+  const { pm25, psi, group } = props;
   const [open, setOpen] = useState<keyof typeof EXPLAIN | null>(null);
-  const v = level != null ? verdict(level, group) : null;
+  const step = adviceStep(pm25, psi, group);
+  const v = step != null ? verdictFor(step) : null;
   const pm = useCountUp(pm25 != null ? Math.round(pm25) : null);
   const psiShown = useCountUp(psi);
   // Solid verdict colour with a subtle same-hue shade; neutral when there is no reading.
@@ -146,9 +146,9 @@ export default function Hero(props: {
         </div>
       )}
 
-      {level != null && (
+      {step != null && (
         <p className="mt-5 text-[13px] leading-snug" style={{ color: soft }}>
-          NEA advice for {GROUP_LABEL[group].toLowerCase()}: {NEA_ADVICE[group][level].toLowerCase()}.
+          NEA advice for {GROUP_LABEL[group].toLowerCase()}: {STEP_TEXT[step].toLowerCase()}.
         </p>
       )}
     </section>

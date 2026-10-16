@@ -2,7 +2,7 @@
 
 import { tips } from "@/lib/advice";
 import { trend3h } from "@/lib/format";
-import { psiLevel } from "@/lib/bands";
+import { adviceStep, psiLevel } from "@/lib/bands";
 import { currentReading } from "@/lib/situation";
 import type { ForecastPoint, NeaNow, NeaPm25History } from "@/lib/types";
 import AirDetail from "./AirDetail";
@@ -20,6 +20,7 @@ export default function NowView({ history, nea, hourly }: { history: NeaPm25Hist
   const { region, setRegion, group, setGroup, locating, locate } = usePrefs();
 
   const { latest, psi, level } = currentReading({ history, nea }, region);
+  const step = adviceStep(latest?.value ?? null, psi, group);
 
   return (
     <>
@@ -30,7 +31,6 @@ export default function NowView({ history, nea, hourly }: { history: NeaPm25Hist
         pm25={latest?.value ?? null}
         psi={psi}
         trend={trend3h(history?.regions[region])}
-        level={level}
         group={group}
         onGroup={setGroup}
         next={hourly.slice(0, 6)}
@@ -40,9 +40,9 @@ export default function NowView({ history, nea, hourly }: { history: NeaPm25Hist
 
       <NewCard />
 
-      {level != null && (
+      {level != null && step != null && (
         <Section id="what-to-do" title="What to do">
-          <Advice items={tips(level, group, psi != null ? psiLevel(psi) : null)} />
+          <Advice items={tips(level, step, group, psi != null ? psiLevel(psi) : null)} />
         </Section>
       )}
 
