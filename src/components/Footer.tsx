@@ -22,7 +22,7 @@ export default function Footer({ errors }: { errors: string[] }) {
       </p>
       <p>
         <Link className="font-semibold text-accent underline" href="/about">
-          How the forecast works
+          About and data sources
         </Link>
         {" · "}
         <Link className="font-semibold text-accent underline" href="/glance">

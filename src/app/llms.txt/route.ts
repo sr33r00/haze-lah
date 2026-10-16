@@ -34,7 +34,7 @@ Canonical site: ${SITE_URL}
 - [Map](${SITE_URL}/map): smoke forecast, satellite-detected fires, air-quality stations and wind
 - [News](${SITE_URL}/news): NEA haze updates, CNA and Straits Times haze headlines, and a timeline of changes
 - [Guide](${SITE_URL}/guide): short answers on masks, exercise, air purifiers, schools, work and health, each with NEA, MOH, MOE or MOM sources
-- [About](${SITE_URL}/about): NEA advisory table, forecast method, data sources and measured accuracy
+- [About](${SITE_URL}/about): where the data comes from, how the advice and forecast work, and measured accuracy
 
 ## How the advice works
 - "Should I go out now?" follows the stricter of NEA's personal guide for the region's latest 1-hr PM2.5 band and the NEA advisory for its 24-hr PSI. For the next hour, band II: reduce strenuous outdoor activity (vulnerable persons avoid it); band III: avoid it (vulnerable persons avoid all outdoor activity); band IV: minimise all outdoor activity (vulnerable persons avoid it).
