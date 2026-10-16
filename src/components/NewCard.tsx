@@ -51,7 +51,7 @@ export default function NewCard() {
           Community sensors
         </Link>
       </div>
-      <p className="mt-3 text-[13px] text-muted">Tip: swipe left or right to switch tabs.</p>
+      <p className="mt-3 text-[13px] text-muted lg:hidden">Tip: swipe left or right to switch tabs.</p>
     </div>
   );
 }

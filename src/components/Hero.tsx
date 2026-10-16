@@ -41,7 +41,7 @@ export default function Hero(props: {
   return (
     <section
       id="now"
-      className="relative mt-3 overflow-hidden rounded-b-[32px] px-5 pb-6 pt-5"
+      className="relative mt-3 overflow-hidden rounded-b-[32px] px-5 pb-6 pt-5 lg:mx-4 lg:rounded-[32px]"
       style={{ background: bg, color: ink }}
     >
       <Link href="/glance" aria-label="Big screen view" className="absolute right-3 top-3 flex h-10 w-10 items-center justify-center" style={{ color: soft }}>
