@@ -1,8 +1,8 @@
 {
- "updated": "2026-10-16T07:02:29.345Z",
- "forecasts": 6,
+ "updated": "2026-10-16T12:16:25.138Z",
+ "forecasts": 7,
  "from": "2026-10-15T19:00:00+08:00",
- "to": "2026-10-16T15:00:00+08:00",
+ "to": "2026-10-16T20:00:00+08:00",
  "leads": [
   {
    "lead": 6,
@@ -34,28 +34,28 @@
   {
    "lead": 24,
    "ours": {
-    "n": 0,
-    "mae": null,
-    "rmse": null,
-    "bias": null
+    "n": 1,
+    "mae": 35.8,
+    "rmse": 35.8,
+    "bias": -35.8
    },
    "cams": {
-    "n": 0,
-    "mae": null,
-    "rmse": null,
-    "bias": null
+    "n": 1,
+    "mae": 79.8,
+    "rmse": 79.8,
+    "bias": -79.8
    },
    "persistence": {
-    "n": 0,
-    "mae": null,
-    "rmse": null,
-    "bias": null
+    "n": 1,
+    "mae": 24.8,
+    "rmse": 24.8,
+    "bias": 24.8
    },
    "event": {
-    "n": 0,
-    "precision": null,
-    "recall": null,
-    "f1": null
+    "n": 1,
+    "precision": 1,
+    "recall": 1,
+    "f1": 1
    }
   },
   {
@@ -141,14 +141,14 @@
   }
  ],
  "hazyDays": {
-  "days": 0,
-  "hazy": 0,
+  "days": 1,
+  "hazy": 1,
   "ours": {
-   "hits": 0,
+   "hits": 1,
    "clearRight": 0
   },
   "persistence": {
-   "hits": 0,
+   "hits": 1,
    "clearRight": 0
   }
  }
