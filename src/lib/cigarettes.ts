@@ -27,10 +27,16 @@ export function cigarettes(pm25_24h: number): number | null {
   return n < 1 ? Math.round(n * 10) / 10 : Math.round(n);
 }
 
-/** Cigarettes so far today: hourly readings since 00:00 SGT summed, over 24 hours. Null before 1am or with no readings. */
-export function cigarettesSoFar(points: HourPoint[] | undefined, now = new Date()): number | null {
+/** Cigarettes so far today, unrounded: hourly readings since 00:00 SGT summed, over 24 hours, per cigarette. Null before 1am or with no readings. */
+export function exactSoFar(points: HourPoint[] | undefined, now = new Date()): number | null {
   const today = sgDate(0, now);
   const mine = (points ?? []).filter((p) => sgDate(0, new Date(p.time)) === today && Number.isFinite(p.value));
   if (!mine.length || (now.getTime() + 8 * 3600_000) % 86400_000 < 3600_000) return null;
-  return cigarettes(mine.reduce((a, p) => a + p.value, 0) / 24);
+  return mine.reduce((a, p) => a + p.value, 0) / 24 / PM25_PER_CIGARETTE;
+}
+
+/** Cigarettes so far today, rounded like cigarettes(). */
+export function cigarettesSoFar(points: HourPoint[] | undefined, now = new Date()): number | null {
+  const x = exactSoFar(points, now);
+  return x == null ? null : cigarettes(x * PM25_PER_CIGARETTE);
 }

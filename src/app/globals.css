@@ -55,7 +55,7 @@
   --font-sans: "Atkinson Hyperlegible Next Variable", ui-sans-serif, system-ui, sans-serif;
 }
 
-/* Motion: transform and opacity only. Each says something: rise = new content, grow = a value, pop = a count, ring = look here. */
+/* Motion: transform and opacity only. Each says something: rise = new content, grow = a value, pop = a count, ring = look here, ember and wisp = burning now. */
 @theme {
   --animate-rise: rise 450ms ease-out both;
   --animate-grow: grow 600ms ease-out both;
@@ -63,6 +63,8 @@
   --animate-pop: pop 350ms ease-out both;
   --animate-ring: ring 700ms ease-out 1;
   --animate-flow: flow 1.2s linear infinite;
+  --animate-ember: ember 1.8s ease-in-out infinite;
+  --animate-wisp: wisp 3s ease-out infinite;
 
   @keyframes rise {
     from {
@@ -103,6 +105,24 @@
   @keyframes flow {
     to {
       stroke-dashoffset: -12;
+    }
+  }
+  @keyframes ember {
+    50% {
+      opacity: 0.55;
+    }
+  }
+  @keyframes wisp {
+    from {
+      opacity: 0;
+      transform: translate(0, 0) scale(0.6);
+    }
+    25% {
+      opacity: 0.6;
+    }
+    to {
+      opacity: 0;
+      transform: translate(8px, -40px) scale(1.8);
     }
   }
 }
