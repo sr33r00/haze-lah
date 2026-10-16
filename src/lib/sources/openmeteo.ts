@@ -86,6 +86,17 @@ export async function fetchUpwindModel(): Promise<Station[]> {
 
 const GRID = { lat: [-6, 7], lon: [95, 120], step: 1 };
 
+/** 850 hPa wind for many points. Open-Meteo sometimes answers a large request with 503 "overloaded", so it is tried twice. */
+async function fetchGridWind(where: string): Promise<GridWind[]> {
+  const url = `https://api.open-meteo.com/v1/forecast?${where}&hourly=wind_speed_850hPa,wind_direction_850hPa&wind_speed_unit=ms&timezone=GMT&forecast_days=4`;
+  try {
+    return await getJson<GridWind[]>(url, { revalidate: 10800 });
+  } catch {
+    await new Promise((r) => setTimeout(r, 3000));
+    return getJson<GridWind[]>(url, { revalidate: 10800 });
+  }
+}
+
 /** Regional CAMS PM2.5 forecast on a 1° grid, sampled every 3 h for the next 72 h. */
 export async function fetchSmokeGrid(): Promise<SmokeGrid> {
   const lats: number[] = [];
@@ -99,10 +110,7 @@ export async function fetchSmokeGrid(): Promise<SmokeGrid> {
     getJson<AQ[]>(`https://air-quality-api.open-meteo.com/v1/air-quality?${where}&hourly=pm2_5&domains=cams_global&timezone=GMT&forecast_days=4`, {
       revalidate: 10800,
     }),
-    getJson<GridWind[]>(
-      `https://api.open-meteo.com/v1/forecast?${where}&hourly=wind_speed_850hPa,wind_direction_850hPa&wind_speed_unit=ms&timezone=GMT&forecast_days=4`,
-      { revalidate: 10800 },
-    ).catch(() => null), // smoke is still useful without wind
+    fetchGridWind(where).catch(() => null), // smoke is still useful without wind
   ]);
   const times0 = j[0].hourly.time;
   const now = Date.now() - 3600_000;

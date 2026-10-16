@@ -33,7 +33,8 @@ Canonical site: ${SITE_URL}
 - [Forecast](${SITE_URL}/forecast): next 48 hours of PM2.5 and a 5-day PSI outlook, with measured accuracy
 - [Map](${SITE_URL}/map): smoke forecast, satellite-detected fires, air-quality stations and wind
 - [News](${SITE_URL}/news): NEA haze updates, CNA and Straits Times haze headlines, and a timeline of changes
-- [About](${SITE_URL}/about): NEA advisory table, forecast method, data sources and FAQ
+- [Guide](${SITE_URL}/guide): short answers on masks, exercise, air purifiers, schools, work and health, each with NEA, MOH, MOE or MOM sources
+- [About](${SITE_URL}/about): NEA advisory table, forecast method, data sources and measured accuracy
 
 ## How the advice works
 - "Should I go out now?" uses NEA's latest 1-hr PM2.5 for the region, mapped to the matching NEA advisory row (Normal to Moderate, Elevated to Unhealthy, High to Very unhealthy, Very high to Hazardous).
