@@ -1,8 +1,20 @@
 {
   "psiLevel": 3,
-  "pm25Band": 2,
-  "neaUrl": "https://www.nea.gov.sg/media/news/advisories/index/haze-situation-update-15-october-2026",
+  "pm25Band": 1,
+  "neaUrl": "https://www.nea.gov.sg/media/news/news/index/nea-to-issue-notices-under-the-transboundary-haze-pollution-act-2026",
   "newsUrls": [
+    "https://www.straitstimes.com/singapore/environment/employers-need-to-plan-how-to-protect-workers-if-haze-situation-worsens-mom",
+    "https://www.channelnewsasia.com/singapore/haze-indonesia-companies-fire-grace-fu-6465556",
+    "https://www.channelnewsasia.com/singapore/haze-singapore-platform-workers-wfh-6465216",
+    "https://www.channelnewsasia.com/singapore/haze-o-level-exam-schools-close-preschools-open-6465126",
+    "https://www.straitstimes.com/singapore/psi-could-go-over-300-before-haze-improves-once-inter-monsoon-period-starts-grace-fu",
+    "https://www.straitstimes.com/singapore/schools-to-stay-open-despite-haze-o-level-a-level-exams-to-proceed-next-week-desmond-lee",
+    "https://www.straitstimes.com/singapore/nea-to-send-legal-notices-to-7-companies-under-haze-law-will-take-further-action-where-warranted",
+    "https://www.channelnewsasia.com/singapore/haze-hazardous-air-quality-masks-grace-fu-6465121",
+    "https://www.channelnewsasia.com/singapore/haze-singapore-n95-masks-moh-6465101",
+    "https://www.straitstimes.com/singapore/purple-parade-postponed-to-first-half-of-2027-amid-haze-concerns",
+    "https://www.straitstimes.com/singapore/some-retailers-capping-purchases-of-n95-masks-as-haze-drives-surge-in-demand",
+    "https://www.channelnewsasia.com/singapore/haze-sports-coaches-activesg-facilities-closure-6464996",
     "https://www.channelnewsasia.com/singapore/activesg-outdoor-facilities-closed-haze-6465086",
     "https://www.channelnewsasia.com/living/singapore-haze-tracker-ntu-student-6464691",
     "https://www.channelnewsasia.com/singapore/haze-el-nino-first-resources-indonesia-6464761",
@@ -21,5 +33,5 @@
   ],
   "briefDate": "2026-10-16",
   "outlookDate": "2026-10-16",
-  "hourTime": "2026-10-16T14:00:00+08:00"
+  "hourTime": "2026-10-16T21:00:00+08:00"
 }
