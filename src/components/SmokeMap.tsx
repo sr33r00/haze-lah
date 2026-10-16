@@ -43,8 +43,8 @@ export default function SmokeMap(props: { fires: FireSummary; stations: Station[
   const image = useMemo(() => (grid ? renderFrame(grid, frame, scale) : null), [grid, frame, scale]);
 
   return (
-    <div>
-      <div className="relative h-[420px] overflow-hidden">
+    <div className="lg:contents">
+      <div className="relative h-[420px] overflow-hidden lg:col-start-1 lg:row-span-3 lg:h-[max(560px,calc(100vh-15rem))] lg:rounded-3xl">
         <MapContainer
           center={[1.0, 106]}
           zoom={5}
@@ -120,7 +120,7 @@ export default function SmokeMap(props: { fires: FireSummary; stations: Station[
         )}
       </div>
 
-      <div className="px-4 pt-3">
+      <div className="px-4 pt-3 lg:col-start-2 lg:px-0 lg:pt-0">
         <div className="flex items-center gap-3">
           <button
             onClick={() => setPlaying((p) => !p)}

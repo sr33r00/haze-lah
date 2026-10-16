@@ -24,6 +24,7 @@ export default function SwipeTabs() {
   useEffect(() => {
     let start: { x: number; y: number; t: number } | null = null;
     const down = (e: TouchEvent) => {
+      if (window.matchMedia("(min-width: 1024px)").matches) return; // desktop nav is in the header
       const t = e.touches[0];
       start = e.touches.length === 1 && !blocksSwipe(e.target) ? { x: t.clientX, y: t.clientY, t: Date.now() } : null;
     };

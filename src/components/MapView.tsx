@@ -10,7 +10,7 @@ import WindDial from "./WindDial";
 
 const SmokeMap = dynamic(() => import("./SmokeMap"), {
   ssr: false,
-  loading: () => <div className="h-[420px] animate-pulse bg-line" />,
+  loading: () => <div className="h-[420px] animate-pulse bg-line lg:col-start-1 lg:row-span-3 lg:h-[max(560px,calc(100vh-15rem))]" />,
 });
 
 /** The Map tab: smoke forecast, wind, fires and neighbouring readings. */
@@ -27,15 +27,17 @@ export default function MapView(props: {
   return (
     <>
       <Section title="Next 72 hours" aside="PM2.5 forecast">
-        <SmokeMap fires={props.fires} stations={props.stations} sensors={props.sensors} psi24={props.psi24} biasFactor={props.biasFactor} />
-        <div className="mt-4 flex items-center gap-4 px-4">
-          {windDir != null && <WindDial windDir={windDir} />}
-          <div className="min-w-0 text-[15px]">
-            {windDir != null && <p className="font-bold">{windVerdict(windDir)}</p>}
-            {context && <p className="mt-1 text-muted">{context}</p>}
+        <div className="lg:grid lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] lg:grid-rows-[auto_auto_1fr] lg:gap-x-8 lg:gap-y-6 lg:px-4">
+          <SmokeMap fires={props.fires} stations={props.stations} sensors={props.sensors} psi24={props.psi24} biasFactor={props.biasFactor} />
+          <div className="mt-4 flex items-center gap-4 px-4 lg:col-start-2 lg:mt-0 lg:px-0">
+            {windDir != null && <WindDial windDir={windDir} />}
+            <div className="min-w-0 text-[15px]">
+              {windDir != null && <p className="font-bold">{windVerdict(windDir)}</p>}
+              {context && <p className="mt-1 text-muted">{context}</p>}
+            </div>
           </div>
+          {props.fires.available && <FireTrend daily={props.fires.daily} />}
         </div>
-        {props.fires.available && <FireTrend daily={props.fires.daily} />}
       </Section>
 
       <Section title="Neighbours">

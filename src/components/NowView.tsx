@@ -23,38 +23,42 @@ export default function NowView({ history, nea, hourly }: { history: NeaPm25Hist
   const step = adviceStep(latest?.value ?? null, psi, group);
 
   return (
-    <>
-      <RegionChips history={history} region={region} onPick={setRegion} onLocate={locate} locating={locating} />
-      <Hero
-        region={region}
-        readingTime={latest?.time ?? null}
-        pm25={latest?.value ?? null}
-        psi={psi}
-        trend={trend3h(history?.regions[region])}
-        group={group}
-        onGroup={setGroup}
-        next={hourly.slice(0, 6)}
-      />
+    <div className="lg:grid lg:grid-cols-2 lg:items-start lg:gap-x-8">
+      <div>
+        <RegionChips history={history} region={region} onPick={setRegion} onLocate={locate} locating={locating} />
+        <Hero
+          region={region}
+          readingTime={latest?.time ?? null}
+          pm25={latest?.value ?? null}
+          psi={psi}
+          trend={trend3h(history?.regions[region])}
+          group={group}
+          onGroup={setGroup}
+          next={hourly.slice(0, 6)}
+        />
 
-      <CigaretteCard region={region} pm25={nea?.pm25_24h[region]} today={history?.regions[region]} />
+        <CigaretteCard region={region} pm25={nea?.pm25_24h[region]} today={history?.regions[region]} />
+      </div>
 
-      <NewCard />
+      <div className="lg:[&>:first-child]:mt-3">
+        <NewCard />
 
-      {level != null && step != null && (
-        <Section id="what-to-do" title="What to do">
-          <Advice items={tips(level, step, group, psi != null ? psiLevel(psi) : null)} />
+        {level != null && step != null && (
+          <Section id="what-to-do" title="What to do">
+            <Advice items={tips(level, step, group, psi != null ? psiLevel(psi) : null)} />
+          </Section>
+        )}
+
+        <Section title="Plan your day">
+          <PlanDay hourly={hourly} group={group} />
         </Section>
-      )}
 
-      <Section title="Plan your day">
-        <PlanDay hourly={hourly} group={group} />
-      </Section>
-
-      {nea && (
-        <Section title={`What is in the air, ${cap(region)}`}>
-          <AirDetail nea={nea} region={region} />
-        </Section>
-      )}
-    </>
+        {nea && (
+          <Section title={`What is in the air, ${cap(region)}`}>
+            <AirDetail nea={nea} region={region} />
+          </Section>
+        )}
+      </div>
+    </div>
   );
 }

@@ -33,7 +33,7 @@ export default async function About() {
   const accuracy = await fetchAccuracy(1);
   const groups = Object.keys(GROUP_LABEL) as Group[];
   return (
-    <main className="mx-auto max-w-lg space-y-5 px-4 pb-16 pt-4 text-sm leading-relaxed">
+    <main className="mx-auto max-w-lg space-y-5 px-4 pb-16 pt-4 text-sm lg:max-w-3xl lg:text-base leading-relaxed">
       <Link href="/" className="text-accent">
         ← Back
       </Link>

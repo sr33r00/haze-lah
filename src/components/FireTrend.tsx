@@ -10,7 +10,7 @@ export default function FireTrend({ daily }: { daily: FireSummary["daily"] }) {
   if (!daily.length) return null;
   const top = Math.max(1, ...daily.flatMap((d) => [d.sumatra, d.borneo]));
   return (
-    <div className="px-4 pt-5">
+    <div className="px-4 pt-5 lg:col-start-2 lg:px-0 lg:pt-0">
       <div className="flex items-baseline justify-between">
         <h3 className="text-[15px] font-bold">Fire hotspots per day</h3>
         <ul className="flex gap-3 text-[12px] text-muted">
