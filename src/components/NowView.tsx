@@ -3,7 +3,7 @@
 import { tips } from "@/lib/advice";
 import { trend3h } from "@/lib/format";
 import { adviceStep, psiLevel } from "@/lib/bands";
-import { currentReading } from "@/lib/situation";
+import { currentReading, islandMax } from "@/lib/situation";
 import type { ForecastPoint, NeaNow, NeaPm25History } from "@/lib/types";
 import AirDetail from "./AirDetail";
 import Advice from "./Advice";
@@ -17,7 +17,7 @@ import { usePrefs } from "./usePrefs";
 
 /** The Now tab: the answer for the chosen region, what to do, and what is in the air. */
 export default function NowView({ history, nea, hourly }: { history: NeaPm25History | null; nea: NeaNow | null; hourly: ForecastPoint[] }) {
-  const { region, setRegion, group, setGroup, locating, locate } = usePrefs();
+  const { region, setRegion, group, setGroup, locating, locate } = usePrefs(nea ? islandMax(nea.psi24)?.region : undefined);
 
   const { latest, psi, level } = currentReading({ history, nea }, region);
   const step = adviceStep(latest?.value ?? null, psi, group);

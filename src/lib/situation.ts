@@ -117,3 +117,11 @@ export function islandSummary(data: Pick<HazeData, "history" | "nea">) {
   }
   return { psi, level: psiLevel(psi.max), peak };
 }
+
+/** Highest 24-hr PSI across regions, and where; null when no region has a reading. */
+export function islandMax(psi24: Record<Region, number>): { psi: number; region: Region } | null {
+  const valid = REGIONS.filter((r) => Number.isFinite(psi24[r]));
+  if (!valid.length) return null;
+  const region = valid.reduce((a, b) => (psi24[b] > psi24[a] ? b : a));
+  return { psi: psi24[region], region };
+}

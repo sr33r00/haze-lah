@@ -33,9 +33,12 @@ function nearestRegion(lat: number, lon: number): Region {
   });
 }
 
-/** The visitor's remembered region and health group, plus "use my location". */
-export function usePrefs() {
-  const [region, setRegion] = useStored<Region>("region", REGIONS, "central");
+/**
+ * The visitor's remembered region and health group, plus "use my location". Until the visitor picks a region,
+ * `defaultRegion` (the one with the highest PSI) is shown and nothing is stored, so it follows the haze.
+ */
+export function usePrefs(defaultRegion: Region = "central") {
+  const [region, setRegion] = useStored<Region>("region", REGIONS, defaultRegion);
   const [group, setGroup] = useStored<Group>("group", GROUPS, "healthy");
   const [locating, setLocating] = useState(false);
 

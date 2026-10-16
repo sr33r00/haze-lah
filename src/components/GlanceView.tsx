@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { TONE_COLOR, adviceStep, verdictFor } from "@/lib/bands";
 import { fmtTime } from "@/lib/format";
-import { currentReading } from "@/lib/situation";
+import { currentReading, islandMax } from "@/lib/situation";
 import type { HazeData } from "@/lib/types";
 import Freshness from "./Freshness";
 import Logo from "./Logo";
@@ -12,7 +12,7 @@ import { usePrefs } from "./usePrefs";
 
 /** Full-screen reading for a home-screen shortcut or a wall display. */
 export default function GlanceView({ data }: { data: HazeData }) {
-  const { region, group } = usePrefs();
+  const { region, group } = usePrefs(data.nea ? islandMax(data.nea.psi24)?.region : undefined);
   const { latest, psi } = currentReading(data, region);
   const step = adviceStep(latest?.value ?? null, psi, group);
   const v = step != null ? verdictFor(step) : null;
