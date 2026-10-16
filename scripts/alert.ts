@@ -1,5 +1,5 @@
 // Sends haze alerts to a Telegram channel: a card image plus a short caption.
-// Run every 10 minutes by .github/workflows/alerts.yml; posts at least once per new NEA hourly reading. State lives in data/alert-state.json.
+// Run hourly at :10 by .github/workflows/alerts.yml, once the last hour's NEA reading is on the site; one post per new reading. State lives in data/alert-state.json.
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { caption, detect, quietHours, type AlertState, type Triggers } from "../src/lib/alerts";
 import { SITE_URL } from "../src/lib/links";
