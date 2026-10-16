@@ -44,7 +44,7 @@ export default function Hero(props: {
   return (
     <section id="now" className="relative mt-3 overflow-hidden lg:mx-4 lg:rounded-2xl">
       {/* Bottom padding (a share of the width) keeps the text above the buildings at every size. */}
-      <div className="relative px-5 pb-[30%] pt-5" style={{ color: ink }}>
+      <div className="relative px-5 pb-[58%] pt-5" style={{ color: ink }}>
         <SkyScene pm25={pm25} night={night} />
         <div className="relative pr-16">
           <p className="text-[15px]" style={{ color: soft }}>
@@ -53,7 +53,8 @@ export default function Hero(props: {
           </p>
           <div key={`${props.region}-${group}-${v?.headline}`} className="animate-rise">
             <h1 className="mt-1 text-balance text-[40px] font-extrabold leading-[1.02] tracking-[-0.02em]">{v ? v.headline : "No reading yet."}</h1>
-            <p className="mt-2 max-w-[30ch] text-[17px] leading-snug">{v ? v.detail : "NEA data is temporarily unavailable."}</p>
+            {v && <div className="mt-3 h-1.5 w-14 rounded-full" style={{ background: TONE_COLOR[v.tone].bg }} />}
+            <p className="mt-3 max-w-[30ch] text-[17px] leading-snug">{v ? v.detail : "NEA data is temporarily unavailable."}</p>
           </div>
         </div>
         <Link href="/glance" aria-label="Big screen view" className="absolute right-3 top-3 flex h-10 w-10 items-center justify-center" style={{ color: soft }}>

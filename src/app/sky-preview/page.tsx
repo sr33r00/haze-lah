@@ -19,6 +19,7 @@ const STATES = [
   { label: "Good, day", pm25: 18, psi: 38, hour: 14 },
   { label: "Elevated, day", pm25: 80, psi: 88, hour: 14 },
   { label: "Unhealthy, day", pm25: 108, psi: 194, hour: 14 },
+  { label: "High, day", pm25: 180, psi: 240, hour: 14 },
   { label: "Hazardous, day", pm25: 280, psi: 320, hour: 14 },
   { label: "Unhealthy, night", pm25: 108, psi: 194, hour: 21 },
   { label: "No reading", pm25: null, psi: null, hour: null },
