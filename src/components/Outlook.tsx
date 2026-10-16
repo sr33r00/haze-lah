@@ -1,13 +1,16 @@
+"use client";
+
 import { CloudRain } from "lucide-react";
-import { LEVEL_NAME, LEVEL_TEXT, pm25Color, psiLevel, verdict, type Group } from "@/lib/bands";
+import { useState } from "react";
+import { LEVEL_TEXT, pm25Color, psiLevel, verdict, type Group } from "@/lib/bands";
 import { fmtDay } from "@/lib/format";
 import type { DayOutlook } from "@/lib/types";
-import InfoNote from "./InfoNote";
 
 const PARTS = ["Morning", "Afternoon", "Evening"];
 
-/** One row per day: morning/afternoon/evening strip, peak range, chance of high PM2.5, expected PSI. */
+/** One row per day: morning/afternoon/evening strip, advice, expected PSI; peak and chance of high PM2.5 on request. */
 export default function Outlook({ days, group }: { days: DayOutlook[]; group: Group }) {
+  const [open, setOpen] = useState(false);
   if (!days.length) return <p className="px-4 text-[15px] text-muted">The forecast is not available right now.</p>;
   return (
     <div className="px-4">
@@ -18,7 +21,7 @@ export default function Outlook({ days, group }: { days: DayOutlook[]; group: Gr
             <li key={d.date} className="grid grid-cols-[3.6rem_1fr_auto] items-center gap-x-3 py-3.5">
               <div className="text-[15px] font-bold">{fmtDay(d.date, i)}</div>
               <div>
-                <div className="flex gap-1" aria-label={PARTS.map((p, k) => `${p} ${d.parts[k] ?? "no data"}`).join(", ")}>
+                <div className="flex gap-1" role="img" aria-label={PARTS.map((p, k) => `${p} ${d.parts[k] ?? "no data"}`).join(", ")}>
                   {d.parts.map((p, k) => (
                     <span
                       key={k}
@@ -27,34 +30,36 @@ export default function Outlook({ days, group }: { days: DayOutlook[]; group: Gr
                     />
                   ))}
                 </div>
-                <div className="mt-1.5 text-[13px] text-muted">
-                  Peak <span className="tabular font-semibold text-fg">{d.low === d.high ? d.high : `${d.low}–${d.high}`}</span> µg/m³
+                <div className="mt-1.5 text-[14px] font-semibold">
+                  {verdict(lv, group).headline.replace(".", "")}
                   {d.rainProb != null && d.rainProb >= 40 && (
-                    <span className="ml-2 inline-flex items-center gap-1">
+                    <span className="ml-2 inline-flex items-center gap-1 text-[13px] font-normal text-muted">
                       <CloudRain size={13} aria-hidden />
-                      {d.rainProb}%
+                      Rain {d.rainProb}%
                     </span>
                   )}
                 </div>
               </div>
-              <div className="text-right">
-                <div className="tabular text-[17px] font-bold" style={{ color: LEVEL_TEXT[lv] }}>
-                  PSI {d.psiMax}
+              <div className="tabular text-right text-[17px] font-bold" style={{ color: LEVEL_TEXT[lv] }}>
+                PSI {d.psiMax}
+              </div>
+              {open && (
+                <div className="col-span-3 mt-1 text-[12px] text-muted">
+                  Peak hour {d.low === d.high ? d.high : `${d.low}–${d.high}`} µg/m³, {Math.round(d.pHigh * 100)}% chance above 55
                 </div>
-                <div className="text-[12px] text-muted">{verdict(lv, group).headline.replace(".", "")}</div>
-              </div>
-              <div className="col-span-3 mt-1 text-[12px] text-muted">
-                {Math.round(d.pHigh * 100)}% chance PM2.5 goes above 55, {LEVEL_NAME[lv].toLowerCase()} by 24-hour PSI
-              </div>
+              )}
             </li>
           );
         })}
       </ul>
-      <div className="mt-2 px-1">
-        <InfoNote>
-          <p>Strips show morning, afternoon and evening. Peak is the likely range of the day&apos;s highest hour.</p>
-        </InfoNote>
-      </div>
+      <button
+        onClick={() => setOpen(!open)}
+        aria-expanded={open}
+        className="mt-1 flex min-h-[44px] items-center px-1 text-[13px] font-semibold text-accent"
+      >
+        {open ? "Hide details" : "Show details"}
+      </button>
+      {open && <p className="px-1 text-[12px] text-muted">Strips show morning, afternoon and evening. Peak is the likely range of the day&apos;s highest hour.</p>}
     </div>
   );
 }

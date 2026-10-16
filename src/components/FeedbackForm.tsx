@@ -1,7 +1,7 @@
 "use client";
 
 import { MessageSquare } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 // Shown if sending fails, so the message is never lost.
 const ISSUE_URL = "https://github.com/sr33r00/haze-lah/issues/new?template=feedback.yml";
@@ -13,6 +13,12 @@ export default function FeedbackForm({ pill }: { pill: string }) {
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState("");
+  const messageRef = useRef<HTMLTextAreaElement>(null);
+
+  // Only where there is a hardware keyboard; on phones it would pop the keyboard open.
+  useEffect(() => {
+    if (open && matchMedia("(pointer: fine)").matches) messageRef.current?.focus();
+  }, [open]);
 
   async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -48,12 +54,12 @@ export default function FeedbackForm({ pill }: { pill: string }) {
           </label>
           <textarea
             id="fb-message"
+            ref={messageRef}
             name="message"
             required
             minLength={3}
             maxLength={2000}
             rows={4}
-            autoFocus
             className="w-full rounded-2xl border border-line bg-bg p-3 text-[15px]"
             placeholder="A bug, an idea, something confusing…"
           />
@@ -61,6 +67,9 @@ export default function FeedbackForm({ pill }: { pill: string }) {
             name="contact"
             maxLength={200}
             aria-label="Email or Telegram, optional"
+            spellCheck={false}
+            autoCapitalize="off"
+            autoComplete="email"
             className="w-full rounded-2xl border border-line bg-bg p-3 text-[15px]"
             placeholder="Email or Telegram for a reply (optional)"
           />
@@ -78,15 +87,17 @@ export default function FeedbackForm({ pill }: { pill: string }) {
               Cancel
             </button>
           </div>
-          {status === "error" && (
-            <p className="text-[13px]" style={{ color: "var(--lv3)" }}>
-              {error}. You can also{" "}
-              <a href={ISSUE_URL} target="_blank" rel="noreferrer" className="underline">
-                post it on GitHub
-              </a>
-              .
-            </p>
-          )}
+          <div aria-live="polite">
+            {status === "error" && (
+              <p className="text-[13px]" style={{ color: "var(--lv3)" }}>
+                {error}. You can also{" "}
+                <a href={ISSUE_URL} target="_blank" rel="noreferrer" className="underline">
+                  post it on GitHub
+                </a>
+                .
+              </p>
+            )}
+          </div>
         </form>
       )}
     </div>

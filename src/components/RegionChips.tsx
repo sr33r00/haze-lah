@@ -13,13 +13,14 @@ export default function RegionChips(props: {
 }) {
   return (
     <>
-      <nav className="mt-3 flex gap-1.5 px-4" aria-label="Choose your part of Singapore">
+      <div role="group" className="mt-3 flex gap-1.5 px-4" aria-label="Choose your part of Singapore">
         <button
           onClick={props.onLocate}
           aria-label="Use my location"
+          title="Use my location"
           className="grid w-10 shrink-0 place-items-center rounded-2xl border border-line bg-surface text-muted"
         >
-          <LocateFixed size={18} className={props.locating ? "animate-pulse" : ""} />
+          <LocateFixed size={18} aria-hidden className={props.locating ? "animate-pulse" : ""} />
         </button>
         {REGIONS.map((r) => {
           const v = props.history?.regions[r].at(-1)?.value;
@@ -44,7 +45,7 @@ export default function RegionChips(props: {
             </button>
           );
         })}
-      </nav>
+      </div>
       {/* The chips show PM2.5, not PSI; say so, since the hero shows both. */}
       <p className="mt-1 px-4 text-right text-[11px] text-muted">PM2.5 now, µg/m³</p>
     </>

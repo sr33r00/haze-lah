@@ -52,16 +52,15 @@ export default function Hero(props: {
         {props.readingTime ? `, ${fmtHour(props.readingTime)}` : ""}. Should I go out?
       </p>
       <div key={`${props.region}-${group}-${v?.headline}`} className="animate-rise">
-        <h1 className="mt-1 text-[40px] font-extrabold leading-[1.02] tracking-[-0.02em]">{v ? v.headline : "No reading yet."}</h1>
+        <h1 className="mt-1 text-balance text-[40px] font-extrabold leading-[1.02] tracking-[-0.02em]">{v ? v.headline : "No reading yet."}</h1>
         <p className="mt-2 max-w-[34ch] text-[17px] leading-snug">{v ? v.detail : "NEA data is temporarily unavailable."}</p>
       </div>
 
-      <div role="radiogroup" aria-label="Advice for" className="mt-5 grid grid-cols-3 gap-1 rounded-2xl p-1" style={{ background: `color-mix(in srgb, ${ink} 14%, transparent)` }}>
+      <div role="group" aria-label="Advice for" className="mt-5 grid grid-cols-3 gap-1 rounded-2xl p-1" style={{ background: `color-mix(in srgb, ${ink} 14%, transparent)` }}>
         {GROUPS.map((g) => (
           <button
             key={g}
-            role="radio"
-            aria-checked={g === group}
+            aria-pressed={g === group}
             onClick={() => props.onGroup(g)}
             className="rounded-xl px-1 py-2 text-[13px] font-semibold leading-tight transition-colors"
             style={g === group ? { background: ink, color: tone ? tone.bg : "var(--surface)" } : { color: soft }}
@@ -130,7 +129,7 @@ export default function Hero(props: {
       {props.next.length > 0 && (
         // A neutral panel, so the PM2.5 band colours stay visible on every verdict colour.
         <div className="mt-6 rounded-2xl bg-surface p-3 text-fg">
-          <p className="mb-2 text-[13px] text-muted">Next {props.next.length} hours, island-wide forecast</p>
+          <p className="mb-2 text-[13px] text-muted">Next {props.next.length} hours, PM2.5 µg/m³, island-wide</p>
           <ol className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${props.next.length}, minmax(0, 1fr))` }}>
             {props.next.map((p, i) => (
               <li key={p.time} className="text-center">

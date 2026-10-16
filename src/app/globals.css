@@ -12,10 +12,16 @@
   --lv2: #8f6a06;
   --lv3: #b4511c;
   --lv4: #9e2b35;
+  color-scheme: light dark;
 }
 
 /* Dark values appear twice: CSS cannot share a selector list across a media query. */
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
 :root[data-theme="dark"] {
+  color-scheme: dark;
   --bg: #0d161d;
   --surface: #15212a;
   --fg: #e6edf1;
@@ -129,7 +135,8 @@
 
 html {
   scroll-behavior: smooth;
-  scroll-padding-top: 12px;
+  scroll-padding-top: calc(4.5rem + env(safe-area-inset-top));
+  touch-action: manipulation;
 }
 
 body {

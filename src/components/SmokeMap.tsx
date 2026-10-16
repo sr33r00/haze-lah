@@ -114,8 +114,8 @@ export default function SmokeMap(props: { fires: FireSummary; stations: Station[
             })}
         </MapContainer>
         {!grid && (
-          <div className="pointer-events-none absolute inset-x-0 top-3 z-[500] mx-auto w-fit rounded-full bg-surface px-3 py-1 text-[13px] text-muted shadow">
-            {failed ? "Smoke forecast unavailable; showing live readings only" : "Loading smoke forecast"}
+          <div role="status" className="pointer-events-none absolute inset-x-0 top-3 z-[500] mx-auto w-fit rounded-full bg-surface px-3 py-1 text-[13px] text-muted shadow">
+            {failed ? "Smoke forecast unavailable; showing live readings only" : "Loading smoke forecast…"}
           </div>
         )}
       </div>
@@ -128,7 +128,7 @@ export default function SmokeMap(props: { fires: FireSummary; stations: Station[
             aria-label={playing ? "Pause" : "Play forecast"}
             className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-fg text-bg disabled:opacity-40"
           >
-            {playing ? <Pause size={18} /> : <Play size={18} />}
+            {playing ? <Pause size={18} aria-hidden /> : <Play size={18} aria-hidden />}
           </button>
           <div className="flex-1">
             <div className="flex justify-between text-[13px]">
