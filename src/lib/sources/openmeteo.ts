@@ -123,7 +123,8 @@ export async function fetchSmokeGrid(): Promise<SmokeGrid> {
   const comp = (t: number, f: (s: number, rad: number) => number) =>
     j.map((_, k) => {
       const h = w?.[k]?.hourly;
-      const i = wIdx.get(t);
+      // An older cached copy may not reach the last frames: hold its last hour rather than show calm air.
+      const i = wIdx.get(t) ?? (h ? h.time.length - 1 : undefined);
       const s = h && i != null ? h.wind_speed_850hPa[i] : null;
       const d = h && i != null ? h.wind_direction_850hPa[i] : null;
       return s == null || d == null ? 0 : Math.round(f(s, (d * Math.PI) / 180) * 10) / 10;

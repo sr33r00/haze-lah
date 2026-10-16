@@ -1,9 +1,10 @@
 import { mockGrid } from "@/lib/mock";
 import { fetchSmokeGrid } from "@/lib/sources/openmeteo";
 
-// CAMS updates twice a day and the upstream requests are cached for 3 hours, but the response itself is
-// rebuilt every 10 minutes, so one failed wind request does not hide the wind layer for hours.
-export const revalidate = 600;
+// Built on every request (the CDN still caches it for 10 minutes). The upstream smoke and wind requests sit in
+// the fetch cache for 3 hours, and when a refresh fails (Open-Meteo sometimes answers "overloaded") the last good
+// copy keeps being served. Under ISR a rebuild would refetch without that fallback and could drop the wind.
+export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
