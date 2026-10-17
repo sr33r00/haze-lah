@@ -44,7 +44,7 @@ export default function Hero(props: {
   return (
     <section id="now" className="relative mt-3 overflow-hidden lg:mx-4 lg:rounded-2xl">
       {/* Bottom padding (a share of the width) keeps the text above the buildings at every size. */}
-      <div className="relative px-5 pb-[58%] pt-5" style={{ color: ink }}>
+      <div className="relative px-5 pb-[44%] pt-5" style={{ color: ink }}>
         <SkyScene pm25={pm25} night={night} />
         <div className="relative pr-16">
           <p className="text-[15px]" style={{ color: soft }}>
