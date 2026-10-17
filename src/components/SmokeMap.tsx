@@ -3,13 +3,17 @@
 import "leaflet/dist/leaflet.css";
 import { Pause, Play } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { CircleMarker, ImageOverlay, MapContainer, TileLayer, Tooltip } from "react-leaflet";
-import { LEVEL_COLOR, REGIONS, REGION_POINT, pm25Color, psiLevel, stationLevel } from "@/lib/bands";
+import { CircleMarker, ImageOverlay, MapContainer, Polyline, TileLayer, Tooltip } from "react-leaflet";
+import { LEVEL_COLOR, LEVEL_NAME, LEVEL_TEXT, REGIONS, REGION_POINT, pm25Color, psiLevel, stationLevel } from "@/lib/bands";
 import { fmtDay, fmtHour } from "@/lib/format";
-import type { FireSummary, NeaNow, Sensor, SmokeGrid, Station } from "@/lib/types";
+import { islandMax } from "@/lib/situation";
+import type { DayPsi, FireSummary, NeaNow, Replay, ReplayDay, Sensor, SmokeGrid, Station } from "@/lib/types";
 import { sgDate } from "@/lib/util";
 import InfoNote from "./InfoNote";
 import WindLayer from "./WindLayer";
+
+const FIRE = "#c2410c";
+const TRAIL = "#a855f7";
 
 function frameLabel(t: string) {
   const day = sgDate(0, new Date(t));
@@ -17,30 +21,63 @@ function frameLabel(t: string) {
   return `${fmtDay(day, offset)} ${fmtHour(t)}`;
 }
 
-/** Regional smoke forecast (CAMS, calibrated to NEA) with fires, stations and a time slider. */
-export default function SmokeMap(props: { fires: FireSummary; stations: Station[]; sensors: Sensor[]; psi24: NeaNow["psi24"] | null; biasFactor: number | null }) {
+const pastLabel = (date: string) =>
+  new Intl.DateTimeFormat("en-SG", { weekday: "short", day: "numeric", month: "short" }).format(new Date(`${date}T12:00:00+08:00`));
+
+/** One line on where the day's air came from. */
+function trailCaption(d: ReplayDay) {
+  if (!d.from) return "Light winds: the air stayed around Singapore.";
+  const via = d.area && d.near > 0 ? ` via ${d.area}, past ${d.near.toLocaleString("en-SG")} fires` : "";
+  return `Air came from the ${d.from}${via}.`;
+}
+
+/** Past days of fires and air trails, then the regional smoke forecast (CAMS, calibrated to NEA), on one time slider. */
+export default function SmokeMap(props: {
+  fires: FireSummary;
+  stations: Station[];
+  sensors: Sensor[];
+  psi24: NeaNow["psi24"] | null;
+  psiDaily: DayPsi[];
+  biasFactor: number | null;
+}) {
   const { fires, stations, sensors, psi24 } = props;
   const [grid, setGrid] = useState<SmokeGrid | null>(null);
+  const [replay, setReplay] = useState<Replay | null>(null);
   const [failed, setFailed] = useState(false);
-  const [frame, setFrame] = useState(0);
+  const [frame, setFrame] = useState<number | null>(null); // null until loaded: then "now"
   const [playing, setPlaying] = useState(false);
   const scale = props.biasFactor ?? 1;
 
   useEffect(() => {
-    fetch("/api/smoke")
-      .then((r) => (r.ok ? r.json() : Promise.reject()))
+    const get = (url: string) => fetch(url).then((r) => (r.ok ? r.json() : Promise.reject()));
+    get("/api/smoke")
       .then(setGrid)
       .catch(() => setFailed(true));
+    get("/api/replay")
+      .then(setReplay)
+      .catch(() => {});
   }, []);
 
+  // Past days come first; the last replay day is today and shares the "now" frame with the forecast.
+  const past = replay?.days.slice(0, -1) ?? [];
+  const today = replay?.days.at(-1) ?? null;
+  const nowIdx = past.length;
+  const total = nowIdx + (grid?.times.length ?? 1);
+  const f = frame ?? nowIdx;
+  const day = f < nowIdx ? past[f] : f === nowIdx ? today : null;
+  const ahead = f - nowIdx; // forecast step, 3 h each
+
   useEffect(() => {
-    if (!playing || !grid) return;
-    const id = setInterval(() => setFrame((f) => (f + 1) % grid.times.length), 700);
+    if (!playing) return;
+    const id = setInterval(() => setFrame((k) => ((k ?? nowIdx) + 1) % total), 700);
     return () => clearInterval(id);
-  }, [playing, grid]);
+  }, [playing, total, nowIdx]);
 
   // One pixel per grid cell; the browser's smoothing turns the 1° grid into a soft smoke field.
-  const image = useMemo(() => (grid ? renderFrame(grid, frame, scale) : null), [grid, frame, scale]);
+  const image = useMemo(() => (grid && ahead >= 0 ? renderFrame(grid, ahead, scale) : null), [grid, ahead, scale]);
+  const wind = day && replay ? { lats: replay.lats, lons: replay.lons, ...day.wind } : grid?.wind && ahead >= 0 ? { lats: grid.lats, lons: grid.lons, u: grid.wind.u[ahead], v: grid.wind.v[ahead] } : null;
+  const live = ahead === 0;
+  const psi = f < nowIdx ? props.psiDaily.find((p) => p.date === day?.date)?.max : psi24 ? islandMax(psi24)?.psi : undefined;
 
   return (
     <div className="lg:contents">
@@ -61,12 +98,20 @@ export default function SmokeMap(props: { fires: FireSummary; stations: Station[
             maxZoom={19}
           />
           {image && <ImageOverlay url={image.url} bounds={image.bounds} opacity={0.75} />}
-          {grid?.wind && <WindLayer grid={grid as Parameters<typeof WindLayer>[0]["grid"]} frame={frame} />}
-          {frame === 0 &&
-            fires.points.map((f, i) => (
-              <CircleMarker key={i} center={[f.lat, f.lon]} radius={2.5} pathOptions={{ color: "#c2410c", weight: 0, fillOpacity: 0.85 }} />
+          {wind && <WindLayer {...wind} />}
+          {day && day.trail.length > 1 && (
+            <>
+              <Polyline positions={day.trail} pathOptions={{ color: TRAIL, weight: 18, opacity: 0.3, lineCap: "round" }} />
+              <Polyline positions={day.trail} pathOptions={{ color: TRAIL, weight: 2.5, opacity: 0.95 }} />
+            </>
+          )}
+          {f < nowIdx &&
+            day?.fires.map((p, i) => <CircleMarker key={i} center={p} radius={2.5} pathOptions={{ color: FIRE, weight: 0, fillOpacity: 0.85 }} />)}
+          {live &&
+            fires.points.map((p, i) => (
+              <CircleMarker key={i} center={[p.lat, p.lon]} radius={2.5} pathOptions={{ color: FIRE, weight: 0, fillOpacity: 0.85 }} />
             ))}
-          {frame === 0 &&
+          {live &&
             stations.map((s) => {
               const lv = stationLevel(s);
               return (
@@ -82,7 +127,7 @@ export default function SmokeMap(props: { fires: FireSummary; stations: Station[
                 </CircleMarker>
               );
             })}
-          {frame === 0 &&
+          {live &&
             sensors.map((s, i) => (
               <CircleMarker
                 key={i}
@@ -95,7 +140,7 @@ export default function SmokeMap(props: { fires: FireSummary; stations: Station[
                 </Tooltip>
               </CircleMarker>
             ))}
-          {frame === 0 &&
+          {live &&
             psi24 &&
             REGIONS.map((r) => {
               const p = psi24![r];
@@ -113,6 +158,16 @@ export default function SmokeMap(props: { fires: FireSummary; stations: Station[
               );
             })}
         </MapContainer>
+        {day && (
+          <div aria-live="polite" className="pointer-events-none absolute inset-x-3 bottom-3 z-[500] rounded-2xl bg-surface/90 px-3 py-2 text-[13px] leading-snug shadow">
+            {psi != null && (
+              <p className="font-bold">
+                {f < nowIdx ? "Highest PSI" : "PSI now"} {psi}, <span style={{ color: LEVEL_TEXT[psiLevel(psi)] }}>{LEVEL_NAME[psiLevel(psi)]}</span>
+              </p>
+            )}
+            <p className="text-muted">{trailCaption(day)}</p>
+          </div>
+        )}
         {!grid && (
           <div role="status" className="pointer-events-none absolute inset-x-0 top-3 z-[500] mx-auto w-fit rounded-full bg-surface px-3 py-1 text-[13px] text-muted shadow">
             {failed ? "Smoke forecast unavailable; showing live readings only" : "Loading smoke forecast…"}
@@ -124,29 +179,29 @@ export default function SmokeMap(props: { fires: FireSummary; stations: Station[
         <div className="flex items-center gap-3">
           <button
             onClick={() => setPlaying((p) => !p)}
-            disabled={!grid}
-            aria-label={playing ? "Pause" : "Play forecast"}
+            disabled={!grid && !replay}
+            aria-label={playing ? "Pause" : "Play"}
             className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-fg text-bg disabled:opacity-40"
           >
             {playing ? <Pause size={18} aria-hidden /> : <Play size={18} aria-hidden />}
           </button>
           <div className="flex-1">
             <div className="flex justify-between text-[13px]">
-              <span className="font-bold">{grid ? frameLabel(grid.times[frame]) : "Now"}</span>
-              <span className="text-muted">{grid && frame > 0 ? `in ${frame * 3} h` : "now"}</span>
+              <span className="font-bold">{day && f < nowIdx ? pastLabel(day.date) : grid ? frameLabel(grid.times[ahead]) : "Now"}</span>
+              <span className="text-muted">{ahead < 0 ? `${-ahead} ${ahead === -1 ? "day" : "days"} ago` : ahead > 0 ? `in ${ahead * 3} h` : "now"}</span>
             </div>
             <input
               type="range"
               className="slider w-full"
               min={0}
-              max={grid ? grid.times.length - 1 : 0}
-              value={frame}
+              max={total - 1}
+              value={f}
               onChange={(e) => {
                 setPlaying(false);
                 setFrame(Number(e.target.value));
               }}
-              aria-label="Forecast time"
-              disabled={!grid}
+              aria-label="Time: past days, now and forecast"
+              disabled={total < 2}
             />
           </div>
         </div>
@@ -163,9 +218,15 @@ export default function SmokeMap(props: { fires: FireSummary; stations: Station[
             </span>
           ))}
           <span className="flex items-center gap-1.5">
-            <span className="h-2 w-2 rounded-full bg-[#c2410c]" />
+            <span className="h-2 w-2 rounded-full" style={{ background: FIRE }} />
             Fires
           </span>
+          {replay && (
+            <span className="flex items-center gap-1.5">
+              <span className="h-1 w-4 rounded-full" style={{ background: TRAIL }} />
+              Air&apos;s path
+            </span>
+          )}
           <span className="flex items-center gap-1.5">
             <span className="h-2.5 w-2.5 rounded-full border-2 border-white bg-[var(--muted)]" />
             Stations
@@ -201,7 +262,8 @@ export default function SmokeMap(props: { fires: FireSummary; stations: Station[
           >
             <p>
               Shading is the Copernicus PM2.5 forecast, scaled by how far it has been off from NEA&apos;s readings recently. Lines show the wind
-              at about 1.5 km up. Fires and stations show at the current time.
+              at about 1.5 km up. Drag back to see past days: the purple trail is where the air reaching Singapore that afternoon had been over
+              the 3 days before, traced back along that wind. It is an estimate, and fires near its path are a likely but not certain source.
             </p>
             {sensors.length > 0 && (
               <p>Community sensors are low-cost and can read high in humid air; NEA&apos;s readings are the official measure.</p>

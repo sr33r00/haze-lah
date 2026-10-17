@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useRef } from "react";
 import { useMap } from "react-leaflet";
-import type { SmokeGrid } from "@/lib/types";
 import { sample, type Field } from "@/lib/wind";
 
 const COUNT = 600;
@@ -13,13 +12,10 @@ const ARROW_STEP = 2; // degrees between static arrows
 type Particle = { lat: number; lon: number; pLat: number; pLon: number; age: number };
 type Wind = { u: Field; v: Field };
 
-/** Animated wind particles over the map for one forecast frame; static arrows under reduced motion. */
-export default function WindLayer({ grid, frame }: { grid: SmokeGrid & { wind: NonNullable<SmokeGrid["wind"]> }; frame: number }) {
+/** Animated wind particles over the map (u and v in m/s on a lat/lon grid); static arrows under reduced motion. */
+export default function WindLayer({ lats, lons, u, v }: { lats: number[]; lons: number[]; u: number[]; v: number[] }) {
   const map = useMap();
-  const wind = useMemo<Wind>(() => {
-    const { lats, lons } = grid;
-    return { u: { lats, lons, data: grid.wind.u[frame] }, v: { lats, lons, data: grid.wind.v[frame] } };
-  }, [grid, frame]);
+  const wind = useMemo<Wind>(() => ({ u: { lats, lons, data: u }, v: { lats, lons, data: v } }), [lats, lons, u, v]);
   const windRef = useRef(wind);
   const redraw = useRef<() => void>(() => {});
 

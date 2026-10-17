@@ -21,6 +21,7 @@ export default async function MapPage() {
         stations={data.stations}
         sensors={data.sensors}
         psi24={data.nea?.psi24 ?? null}
+        psiDaily={data.psiDaily}
         biasFactor={data.forecast.biasFactor}
         windDir={wind?.windDir ?? null}
         context={mapContext(data)}

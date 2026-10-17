@@ -1,10 +1,11 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { tips } from "@/lib/advice";
 import { trend3h } from "@/lib/format";
 import { adviceStep, psiLevel } from "@/lib/bands";
 import { currentReading, islandMax } from "@/lib/situation";
-import type { ForecastPoint, NeaNow, NeaPm25History } from "@/lib/types";
+import type { ForecastPoint, NeaNow, NeaPm25History, Sensor, Station } from "@/lib/types";
 import AirDetail from "./AirDetail";
 import Advice from "./Advice";
 import CigaretteCard from "./CigaretteCard";
@@ -14,8 +15,13 @@ import RegionChips from "./RegionChips";
 import { Section, cap } from "./ui";
 import { usePrefs } from "./usePrefs";
 
+const SgMap = dynamic(() => import("./SgMap"), {
+  ssr: false,
+  loading: () => <div className="mx-4 h-[300px] animate-pulse rounded-3xl bg-line" />,
+});
+
 /** The Now tab: the answer for the chosen region, what to do, and what is in the air. */
-export default function NowView({ history, nea, hourly }: { history: NeaPm25History | null; nea: NeaNow | null; hourly: ForecastPoint[] }) {
+export default function NowView({ history, nea, hourly, sensors, stations }: { history: NeaPm25History | null; nea: NeaNow | null; hourly: ForecastPoint[]; sensors: Sensor[]; stations: Station[] }) {
   const { region, setRegion, group, setGroup, locating, locate } = usePrefs(nea ? islandMax(nea.psi24)?.region : undefined);
 
   const { latest, psi, level } = currentReading({ history, nea }, region);
@@ -37,6 +43,10 @@ export default function NowView({ history, nea, hourly }: { history: NeaPm25Hist
         />
 
         <CigaretteCard region={region} pm25={nea?.pm25_24h[region]} today={history?.regions[region]} />
+
+        <Section title="Across Singapore">
+          <SgMap history={history} region={region} onPick={setRegion} sensors={sensors} stations={stations} />
+        </Section>
       </div>
 
       <div className="lg:[&>:first-child]:mt-3">

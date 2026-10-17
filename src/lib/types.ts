@@ -99,6 +99,21 @@ export type SmokeGrid = {
   wind: { u: number[][]; v: number[][] } | null; // null when the wind request failed
 };
 
+/** One day of the past-week replay; the last day is today, up to the latest 3-hour step. */
+export type ReplayDay = {
+  date: string; // YYYY-MM-DD, SGT
+  arrival: string; // ISO; when the traced air reached Singapore
+  trail: [number, number][]; // where that air was, hourly going back up to 72 h, Singapore first
+  from: string | null; // compass point the air came from, e.g. "south-east"
+  near: number; // fires within reach of the trail while the air passed
+  area: string | null; // province or state with most of those fires
+  fires: [number, number][]; // that UTC day's strongest fires, for the map
+  total: number; // all fires that UTC day in Sumatra and Borneo
+  wind: { u: number[]; v: number[] }; // on the smoke grid, at `arrival`
+};
+
+export type Replay = { lats: number[]; lons: number[]; days: ReplayDay[] };
+
 export type HazeData = {
   generatedAt: string;
   mock: boolean;
