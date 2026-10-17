@@ -1,5 +1,6 @@
 import type { HourPoint, SmokeGrid, Station, WeatherHour } from "../types";
 import { SG, getJson, haversineKm } from "../util";
+import type { WindFrame } from "../wind";
 
 // Open-Meteo: ECMWF weather and Copernicus CAMS air-quality forecasts (CC BY 4.0).
 
@@ -97,14 +98,35 @@ async function fetchGridWind(where: string): Promise<GridWind[]> {
   }
 }
 
-/** Regional CAMS PM2.5 forecast on a 1° grid, sampled every 3 h for the next 72 h. */
-export async function fetchSmokeGrid(): Promise<SmokeGrid> {
+/** The 1° regional grid, and its points as an Open-Meteo multi-location query. */
+function gridQuery() {
   const lats: number[] = [];
   const lons: number[] = [];
   for (let la = GRID.lat[0]; la <= GRID.lat[1]; la += GRID.step) lats.push(la);
   for (let lo = GRID.lon[0]; lo <= GRID.lon[1]; lo += GRID.step) lons.push(lo);
   const pts = lats.flatMap((la) => lons.map((lo) => [la, lo]));
-  const where = `latitude=${pts.map((p) => p[0]).join(",")}&longitude=${pts.map((p) => p[1]).join(",")}`;
+  return { lats, lons, where: `latitude=${pts.map((p) => p[0]).join(",")}&longitude=${pts.map((p) => p[1]).join(",")}` };
+}
+
+/** u (towards the east) and v (towards the north) in m/s from speed and the direction the wind comes from. */
+const toUV = (s: number, d: number) => [-s * Math.sin((d * Math.PI) / 180), -s * Math.cos((d * Math.PI) / 180)];
+
+/** 850 hPa wind over the grid for the past week, every 3 hours (ECMWF analysis and short-range forecast). */
+export async function fetchPastWind(): Promise<WindFrame[]> {
+  const { lats, lons, where } = gridQuery();
+  const w = await getJson<GridWind[]>(
+    `https://api.open-meteo.com/v1/forecast?${where}&hourly=wind_speed_850hPa,wind_direction_850hPa&wind_speed_unit=ms&timezone=GMT&past_days=7&forecast_days=1&temporal_resolution=hourly_3`,
+    { revalidate: 10800 },
+  );
+  return w[0].hourly.time.map((t, i) => {
+    const uv = w.map(({ hourly: h }) => toUV(h.wind_speed_850hPa[i] ?? 0, h.wind_direction_850hPa[i] ?? 0));
+    return { t: Date.parse(z(t)), u: { lats, lons, data: uv.map((x) => x[0]) }, v: { lats, lons, data: uv.map((x) => x[1]) } };
+  });
+}
+
+/** Regional CAMS PM2.5 forecast on a 1° grid, sampled every 3 h for the next 72 h. */
+export async function fetchSmokeGrid(): Promise<SmokeGrid> {
+  const { lats, lons, where } = gridQuery();
   // The air-quality API has no wind, so the same points are asked of the weather API (same level as the wind dial).
   const [j, w] = await Promise.all([
     getJson<AQ[]>(`https://air-quality-api.open-meteo.com/v1/air-quality?${where}&hourly=pm2_5&domains=cams_global&timezone=GMT&forecast_days=4`, {
@@ -120,14 +142,14 @@ export async function fetchSmokeGrid(): Promise<SmokeGrid> {
     .slice(0, 25);
   const wIdx = new Map(w?.[0].hourly.time.map((t, i) => [Date.parse(z(t)), i]));
   // Wind comes "from" a direction; u and v point where it blows to.
-  const comp = (t: number, f: (s: number, rad: number) => number) =>
+  const comp = (t: number, c: 0 | 1) =>
     j.map((_, k) => {
       const h = w?.[k]?.hourly;
       // An older cached copy may not reach the last frames: hold its last hour rather than show calm air.
       const i = wIdx.get(t) ?? (h ? h.time.length - 1 : undefined);
       const s = h && i != null ? h.wind_speed_850hPa[i] : null;
       const d = h && i != null ? h.wind_direction_850hPa[i] : null;
-      return s == null || d == null ? 0 : Math.round(f(s, (d * Math.PI) / 180) * 10) / 10;
+      return s == null || d == null ? 0 : Math.round(toUV(s, d)[c] * 10) / 10;
     });
   return {
     lats,
@@ -136,7 +158,7 @@ export async function fetchSmokeGrid(): Promise<SmokeGrid> {
     values: idx.map(({ i }) => j.map((loc) => Math.round(loc.hourly.pm2_5[i] ?? 0))),
     // No wind rather than zero wind, so a failed request never looks like calm air.
     wind: w
-      ? { u: idx.map(({ t }) => comp(t, (s, r) => -s * Math.sin(r))), v: idx.map(({ t }) => comp(t, (s, r) => -s * Math.cos(r))) }
+      ? { u: idx.map(({ t }) => comp(t, 0)), v: idx.map(({ t }) => comp(t, 1)) }
       : null,
   };
 }
