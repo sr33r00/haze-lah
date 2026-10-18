@@ -81,7 +81,7 @@ export default function SmokeMap(props: {
 
   return (
     <div className="lg:contents">
-      <div className="relative h-[420px] overflow-hidden lg:col-start-1 lg:row-span-3 lg:h-[max(560px,calc(100vh-15rem))] lg:rounded-3xl">
+      <div className="relative isolate h-[420px] overflow-hidden lg:col-start-1 lg:row-span-3 lg:h-[max(560px,calc(100vh-15rem))] lg:rounded-3xl">
         <MapContainer
           center={[1.0, 106]}
           zoom={5}

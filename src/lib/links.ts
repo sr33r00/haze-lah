@@ -8,3 +8,6 @@ export const SITE_URL = process.env.SITE_URL || "https://www.hazelah.app";
 
 /** Tip jar, shown in the title bar and footer. */
 export const BMC_URL = "https://buymeacoffee.com/hazelah";
+
+/** OpenStreetMap page centred on a point, with a pin. */
+export const mapLink = (lat: number, lon: number) => `https://www.openstreetmap.org/?mlat=${lat.toFixed(5)}&mlon=${lon.toFixed(5)}#map=16/${lat.toFixed(5)}/${lon.toFixed(5)}`;

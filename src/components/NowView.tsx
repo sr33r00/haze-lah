@@ -5,11 +5,12 @@ import { tips } from "@/lib/advice";
 import { trend3h } from "@/lib/format";
 import { adviceStep, psiLevel } from "@/lib/bands";
 import { currentReading, islandMax } from "@/lib/situation";
-import type { ForecastPoint, NeaNow, NeaPm25History, Sensor, Station } from "@/lib/types";
+import type { Camera, ForecastPoint, NeaNow, NeaPm25History, Sensor, Station } from "@/lib/types";
 import AirDetail from "./AirDetail";
 import Advice from "./Advice";
 import CigaretteCard from "./CigaretteCard";
 import Hero from "./Hero";
+import LiveViews from "./LiveViews";
 import PlanDay from "./PlanDay";
 import RegionChips from "./RegionChips";
 import { Section, cap } from "./ui";
@@ -21,7 +22,7 @@ const SgMap = dynamic(() => import("./SgMap"), {
 });
 
 /** The Now tab: the answer for the chosen region, what to do, and what is in the air. */
-export default function NowView({ history, nea, hourly, sensors, stations }: { history: NeaPm25History | null; nea: NeaNow | null; hourly: ForecastPoint[]; sensors: Sensor[]; stations: Station[] }) {
+export default function NowView({ history, nea, hourly, sensors, stations, cameras }: { history: NeaPm25History | null; nea: NeaNow | null; hourly: ForecastPoint[]; sensors: Sensor[]; stations: Station[]; cameras: Camera[] }) {
   const { region, setRegion, group, setGroup, locating, locate } = usePrefs(nea ? islandMax(nea.psi24)?.region : undefined);
 
   const { latest, psi, level } = currentReading({ history, nea }, region);
@@ -45,8 +46,14 @@ export default function NowView({ history, nea, hourly, sensors, stations }: { h
         <CigaretteCard region={region} pm25={nea?.pm25_24h[region]} today={history?.regions[region]} />
 
         <Section title="Across Singapore">
-          <SgMap history={history} psi24={nea?.psi24 ?? null} region={region} onPick={setRegion} sensors={sensors} stations={stations} />
+          <SgMap history={history} psi24={nea?.psi24 ?? null} region={region} onPick={setRegion} sensors={sensors} stations={stations} cameras={cameras} />
         </Section>
+
+        {cameras.length > 0 && (
+          <Section title="Live views">
+            <LiveViews cameras={cameras} region={region} />
+          </Section>
+        )}
       </div>
 
       <div className="lg:[&>:first-child]:mt-3">
