@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell } from "lucide-react";
+import { ArrowUpRight, Bell } from "lucide-react";
 import { useState } from "react";
 import { LEVEL_NAME, LEVEL_TEXT, psiLevel } from "@/lib/bands";
 import { ALERTS_URL } from "@/lib/links";
@@ -9,8 +9,6 @@ import type { TimelineItem } from "@/lib/situation";
 import { sgDate } from "@/lib/util";
 
 const ADVISORIES = "https://www.nea.gov.sg/media/news/advisories";
-const LONG = 140; // about three lines on a phone
-
 const FILTERS: { label: string; sources: TimelineItem["source"][] | null }[] = [
   { label: "All", sources: null },
   { label: "NEA", sources: ["NEA"] },
@@ -19,33 +17,51 @@ const FILTERS: { label: string; sources: TimelineItem["source"][] | null }[] = [
   { label: "Live", sources: ["NEA readings", "NASA FIRMS"] },
 ];
 
-function Item({ n, i }: { n: TimelineItem; i: number }) {
-  const [open, setOpen] = useState(false);
-  const long = n.summary.length > LONG;
+const SOURCE_NAME: Record<TimelineItem["source"], string> = {
+  NEA: "NEA",
+  MSS: "Met Service",
+  CNA: "CNA",
+  ST: "Straits Times",
+  "NEA readings": "Readings",
+  "NASA FIRMS": "Fires",
+};
+
+/** Events worked out from the readings and fires, not published by anyone: shown small so the news reads clearly. */
+const isDerived = (n: TimelineItem) => n.source === "NEA readings" || n.source === "NASA FIRMS";
+
+function Derived({ n }: { n: TimelineItem }) {
   return (
-    <li className="flex animate-rise gap-3 px-4 py-4" style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}>
+    <li className="flex gap-3 px-4 py-3">
+      <span className="tabular w-14 shrink-0 text-[13px] text-muted">{n.hasHour ? fmtTime(n.time) : ""}</span>
+      <p className="min-w-0 flex-1 text-[14px] leading-snug">
+        <span aria-hidden className="mr-2 inline-block size-1.5 rounded-full bg-muted align-middle" />
+        <span className="font-semibold">{n.title}.</span> <span className="text-muted">{n.summary}</span>
+      </p>
+    </li>
+  );
+}
+
+function Item({ n, i }: { n: TimelineItem; i: number }) {
+  if (isDerived(n)) return <Derived n={n} />;
+  const official = n.source === "NEA";
+  return (
+    <li className="relative flex animate-rise gap-3 px-4 py-4 active:bg-surface" style={{ animationDelay: `${Math.min(i, 8) * 40}ms` }}>
       <span className="tabular w-14 shrink-0 pt-0.5 text-[13px] text-muted">{n.hasHour ? fmtTime(n.time) : ""}</span>
       <div className="min-w-0 flex-1">
-        <span className="rounded-full bg-line px-2 py-0.5 text-[12px] font-semibold">{n.source}</span>
-        <p className="mt-1.5 text-[16px] font-bold leading-snug">{n.title}</p>
-        {n.summary && <p className={`mt-1 text-[14px] leading-snug text-muted ${open ? "" : "line-clamp-3"}`}>{n.summary}</p>}
-        <div className="flex flex-wrap gap-x-4">
-          {long && (
-            <button onClick={() => setOpen(!open)} aria-expanded={open} className="min-h-[44px] text-[14px] font-semibold text-accent">
-              {open ? "Less" : "More"}
-            </button>
-          )}
-          {n.url && (
-            <a
-              href={n.url}
-              target="_blank"
-              rel="noreferrer"
-              className="flex min-h-[44px] items-center text-[14px] font-semibold text-accent underline"
-            >
-              Read on {new URL(n.url).hostname.replace(/^www\./, "")}
+        <span className={`rounded-full px-2 py-0.5 text-[12px] font-semibold ${official ? "bg-accent text-bg" : "bg-line"}`}>{SOURCE_NAME[n.source]}</span>
+        <p className="mt-1.5 text-[16px] font-bold leading-snug">
+          {n.url ? (
+            // The link covers the whole row, so the headline is the only link a screen reader hears.
+            <a href={n.url} target="_blank" rel="noreferrer" className="after:absolute after:inset-0">
+              {n.title}
+              <ArrowUpRight size={15} aria-hidden className="ml-1 inline align-[-2px] text-muted" />
+              <span className="sr-only"> (opens {new URL(n.url).hostname.replace(/^www\./, "")})</span>
             </a>
+          ) : (
+            n.title
           )}
-        </div>
+        </p>
+        {n.summary && <p className="mt-1 line-clamp-3 text-[14px] leading-snug text-muted">{n.summary}</p>}
       </div>
     </li>
   );
@@ -67,38 +83,35 @@ export default function NewsView({ items, streak, psi }: { items: TimelineItem[]
 
   const lv = psi ? psiLevel(psi.max) : null;
   return (
-    <div className="mt-4 lg:grid lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start lg:gap-x-8 lg:px-4">
+    <div className="mt-3 lg:grid lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start lg:gap-x-8 lg:px-4">
       <div className="lg:sticky lg:top-[calc(4.5rem+env(safe-area-inset-top))] lg:col-start-2 lg:row-start-1 lg:space-y-4 lg:[&>*]:mx-0 lg:[&>*]:mt-0">
-        {(streak > 0 || psi) && (
-          <div className="mx-4 rounded-3xl bg-surface p-4">
-            {streak > 0 && <p className="text-[20px] font-bold">{streak >= 7 ? "7+ days of unhealthy air" : `Day ${streak} of unhealthy air`}</p>}
-            {psi && lv != null && (
-              <p className={`text-[15px] ${streak > 0 ? "mt-1 text-muted" : ""}`}>
-                24-hr PSI {psi.min === psi.max ? psi.max : `${psi.min}–${psi.max}`}, <b style={{ color: LEVEL_TEXT[lv] }}>{LEVEL_NAME[lv]}</b>
-              </p>
+        {(streak > 0 || psi || ALERTS_URL) && (
+          <div className="mx-4 flex items-center gap-3 rounded-3xl bg-surface p-4">
+            <div className="min-w-0 flex-1">
+              {streak > 0 && <p className="text-[20px] font-bold leading-tight">{streak >= 7 ? "7+ days of unhealthy air" : `Day ${streak} of unhealthy air`}</p>}
+              {psi && lv != null && (
+                <p className={`text-[15px] ${streak > 0 ? "mt-1 text-muted" : ""}`}>
+                  24-hr PSI {psi.min === psi.max ? psi.max : `${psi.min}–${psi.max}`}, <b style={{ color: LEVEL_TEXT[lv] }}>{LEVEL_NAME[lv]}</b>
+                </p>
+              )}
+            </div>
+            {ALERTS_URL && (
+              <a
+                href={ALERTS_URL}
+                target="_blank"
+                rel="noreferrer"
+                aria-label="Get haze alerts on Telegram"
+                title="A Telegram message when the PSI band changes or NEA posts an update"
+                className="flex min-h-[44px] shrink-0 items-center gap-1.5 rounded-full bg-accent px-4 text-[14px] font-semibold text-bg"
+              >
+                <Bell size={16} aria-hidden />
+                Alerts
+              </a>
             )}
           </div>
         )}
 
-        {ALERTS_URL && (
-          <div className="mx-4 mt-4 flex items-center gap-3 rounded-3xl bg-surface p-4">
-            <Bell size={20} className="shrink-0 text-accent" aria-hidden />
-            <p className="min-w-0 flex-1 text-[14px] leading-snug">
-              <b>Get alerts on Telegram</b>
-              <span className="text-muted"> — a message when the PSI band changes or NEA posts an update.</span>
-            </p>
-            <a
-              href={ALERTS_URL}
-              target="_blank"
-              rel="noreferrer"
-              className="shrink-0 rounded-full bg-accent px-4 py-2 text-[14px] font-semibold text-bg"
-            >
-              Join
-            </a>
-          </div>
-        )}
-
-        <div role="group" aria-label="Filter updates" className="flex gap-1.5 px-4 pt-4 lg:px-0 lg:pt-0">
+        <div role="group" aria-label="Filter updates" className="mt-3 flex gap-1.5 px-4 lg:mt-0 lg:px-0">
           {FILTERS.map((f, i) => (
             <button
               key={f.label}
@@ -125,7 +138,7 @@ export default function NewsView({ items, streak, psi }: { items: TimelineItem[]
             <section key={d.key} className="mt-2">
               <h2
                 suppressHydrationWarning
-                className="sticky top-[calc(3.5rem+env(safe-area-inset-top))] z-10 bg-bg px-4 py-2 text-[14px] font-bold text-muted"
+                className="sticky top-[calc(3.5rem+env(safe-area-inset-top))] z-10 bg-bg px-4 py-2 text-[13px] font-bold uppercase tracking-wide text-muted"
               >
                 {d.label}
               </h2>

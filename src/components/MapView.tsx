@@ -27,7 +27,7 @@ export default function MapView(props: {
   const { windDir, context } = props;
   return (
     <>
-      <Section title="Smoke map" aside="Past 5 days to next 3">
+      <Section title="Smoke and fires" aside="Past 5 days to next 3">
         <div className="lg:grid lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] lg:grid-rows-[auto_auto_1fr] lg:gap-x-8 lg:gap-y-6 lg:px-4">
           <SmokeMap fires={props.fires} stations={props.stations} sensors={props.sensors} psi24={props.psi24} psiDaily={props.psiDaily} biasFactor={props.biasFactor} />
           <div className="mt-4 flex items-center gap-4 px-4 lg:col-start-2 lg:mt-0 lg:px-0">

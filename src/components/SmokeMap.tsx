@@ -3,12 +3,13 @@
 import "leaflet/dist/leaflet.css";
 import { Pause, Play } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { CircleMarker, ImageOverlay, MapContainer, Polyline, TileLayer, Tooltip } from "react-leaflet";
-import { LEVEL_COLOR, LEVEL_NAME, LEVEL_TEXT, REGIONS, REGION_POINT, pm25Color, psiLevel, stationLevel } from "@/lib/bands";
+import { CircleMarker, ImageOverlay, MapContainer, Polyline, TileLayer, Tooltip, useMapEvents } from "react-leaflet";
+import { LEVEL_COLOR, LEVEL_NAME, LEVEL_TEXT, REGIONS, REGION_POINT, pm25Band, pm25Color, psiLevel, stationLevel } from "@/lib/bands";
 import { fmtDay, fmtHour } from "@/lib/format";
 import { islandMax } from "@/lib/situation";
 import type { DayPsi, FireSummary, NeaNow, Replay, ReplayDay, Sensor, SmokeGrid, Station } from "@/lib/types";
 import { sgDate } from "@/lib/util";
+import { sample } from "@/lib/wind";
 import InfoNote from "./InfoNote";
 import WindLayer from "./WindLayer";
 
@@ -31,6 +32,12 @@ function trailCaption(d: ReplayDay) {
   return `Air came from the ${d.from}${via}.`;
 }
 
+/** Reports where the map is clicked. */
+function Tap({ onTap }: { onTap: (at: [number, number]) => void }) {
+  useMapEvents({ click: (e) => onTap([e.latlng.lat, e.latlng.lng]) });
+  return null;
+}
+
 /** Past days of fires and air trails, then the regional smoke forecast (CAMS, calibrated to NEA), on one time slider. */
 export default function SmokeMap(props: {
   fires: FireSummary;
@@ -46,6 +53,7 @@ export default function SmokeMap(props: {
   const [failed, setFailed] = useState(false);
   const [frame, setFrame] = useState<number | null>(null); // null until loaded: then "now"
   const [playing, setPlaying] = useState(false);
+  const [spot, setSpot] = useState<[number, number] | null>(null);
   const scale = props.biasFactor ?? 1;
 
   useEffect(() => {
@@ -77,6 +85,10 @@ export default function SmokeMap(props: {
   const image = useMemo(() => (grid && ahead >= 0 ? renderFrame(grid, ahead, scale) : null), [grid, ahead, scale]);
   const wind = day && replay ? { lats: replay.lats, lons: replay.lons, ...day.wind } : grid?.wind && ahead >= 0 ? { lats: grid.lats, lons: grid.lons, u: grid.wind.u[ahead], v: grid.wind.v[ahead] } : null;
   const live = ahead === 0;
+  // The smoke level at the tapped spot for the frame on screen (the forecast grid starts at now, so not for past days).
+  const here = grid && spot && ahead >= 0 ? sample({ lats: grid.lats, lons: grid.lons, data: grid.values[ahead] }, spot[0], spot[1]) : null;
+  const smokeHere = here != null ? Math.round(here * scale) : null;
+  const read = stations.filter((s) => s.api != null || s.pm25 != null); // a station without a reading says nothing
   const psi = f < nowIdx ? props.psiDaily.find((p) => p.date === day?.date)?.max : psi24 ? islandMax(psi24)?.psi : undefined;
 
   return (
@@ -111,8 +123,12 @@ export default function SmokeMap(props: {
             fires.points.map((p, i) => (
               <CircleMarker key={i} center={[p.lat, p.lon]} radius={2.5} pathOptions={{ color: FIRE, weight: 0, fillOpacity: 0.85 }} />
             ))}
+          <Tap onTap={setSpot} />
+          {smokeHere != null && spot && (
+            <CircleMarker center={spot} radius={7} pathOptions={{ color: "#fff", weight: 3, fillColor: "#2563eb", fillOpacity: 1 }} interactive={false} />
+          )}
           {live &&
-            stations.map((s) => {
+            read.map((s) => {
               const lv = stationLevel(s);
               return (
                 <CircleMarker
@@ -158,14 +174,20 @@ export default function SmokeMap(props: {
               );
             })}
         </MapContainer>
-        {day && (
+        {(day || smokeHere != null) && (
           <div aria-live="polite" className="pointer-events-none absolute inset-x-3 bottom-3 z-[500] rounded-2xl bg-surface/90 px-3 py-2 text-[13px] leading-snug shadow">
-            {psi != null && (
+            {smokeHere != null && (
+              <p className="font-bold">
+                Smoke at this spot: about {smokeHere} µg/m³, {pm25Band(smokeHere).name.toLowerCase()}
+                <span className="font-normal text-muted"> (model)</span>
+              </p>
+            )}
+            {day && psi != null && (
               <p className="font-bold">
                 {f < nowIdx ? "Highest PSI" : "PSI now"} {psi}, <span style={{ color: LEVEL_TEXT[psiLevel(psi)] }}>{LEVEL_NAME[psiLevel(psi)]}</span>
               </p>
             )}
-            <p className="text-muted">{trailCaption(day)}</p>
+            {day && <p className="text-muted">{trailCaption(day)}</p>}
           </div>
         )}
         {!grid && (
@@ -188,7 +210,20 @@ export default function SmokeMap(props: {
           <div className="flex-1">
             <div className="flex justify-between text-[13px]">
               <span className="font-bold">{day && f < nowIdx ? pastLabel(day.date) : grid ? frameLabel(grid.times[ahead]) : "Now"}</span>
-              <span className="text-muted">{ahead < 0 ? `${-ahead} ${ahead === -1 ? "day" : "days"} ago` : ahead > 0 ? `in ${ahead * 3} h` : "now"}</span>
+              <span className="flex items-center gap-3 text-muted">
+                {ahead < 0 ? `${-ahead} ${ahead === -1 ? "day" : "days"} ago` : ahead > 0 ? `in ${ahead * 3} h` : "now"}
+                {f !== nowIdx && (
+                  <button
+                    onClick={() => {
+                      setPlaying(false);
+                      setFrame(nowIdx);
+                    }}
+                    className="-my-3 min-h-[44px] font-semibold text-accent"
+                  >
+                    Back to now
+                  </button>
+                )}
+              </span>
             </div>
             <input
               type="range"
@@ -205,7 +240,9 @@ export default function SmokeMap(props: {
             />
           </div>
         </div>
+        {grid && ahead >= 0 && <p className="mt-2 text-[13px] text-muted">Tap the map to read the smoke level at a spot.</p>}
         <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-[12px] text-muted">
+          <span className="font-semibold">Smoke PM2.5</span>
           {[
             [LEVEL_COLOR[0], "Normal"],
             [LEVEL_COLOR[2], "Elevated"],
