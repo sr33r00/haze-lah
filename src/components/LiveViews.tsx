@@ -1,7 +1,7 @@
 import { MapPin } from "lucide-react";
 import { REGION_POINT, type Region } from "@/lib/bands";
 import { cap, fmtTime } from "@/lib/format";
-import { mapLink } from "@/lib/links";
+import { OPEN_DATA_LICENCE, mapLink } from "@/lib/links";
 import type { Camera } from "@/lib/types";
 
 /** Latest LTA traffic camera photos, nearest to the chosen region first; haze shows as a grey, washed-out view. */
@@ -47,11 +47,11 @@ export default function LiveViews({ cameras, region }: { cameras: Camera[]; regi
         ))}
       </ul>
       <p className="mt-1 px-5 text-[12px] text-muted">
-        Grey, washed-out views mean haze. Photos from LTA traffic cameras via{" "}
-        <a href="https://data.gov.sg" target="_blank" rel="noreferrer" className="underline">
-          data.gov.sg
+        Grey, washed-out views mean haze. Contains information from LTA&apos;s traffic images, made available under the{" "}
+        <a href={OPEN_DATA_LICENCE} target="_blank" rel="noreferrer" className="underline">
+          Singapore Open Data Licence
         </a>
-        , updated every few minutes.
+        . Updated every few minutes.
       </p>
     </div>
   );

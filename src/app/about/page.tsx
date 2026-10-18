@@ -1,5 +1,6 @@
 import { Activity, BookOpen, Camera, CloudSun, Flame, History, Newspaper } from "lucide-react";
 import Link from "next/link";
+import { OPEN_DATA_LICENCE } from "@/lib/links";
 import { pageMeta } from "@/lib/seo";
 import { GROUP_LABEL, LEVEL_COLOR, LEVEL_NAME, NEA_ADVICE, type Group } from "@/lib/bands";
 import AccuracyTable from "@/components/AccuracyTable";
@@ -153,7 +154,11 @@ export default async function About() {
                 </div>
               ))}
               <p className="text-[13px] text-muted">
-                Contains information from NEA and LTA made available under the Singapore Open Data Licence. Contains modified Copernicus Atmosphere
+                Contains information from NEA and LTA made available under the{" "}
+                <a href={OPEN_DATA_LICENCE} target="_blank" rel="noreferrer" className="underline">
+                  Singapore Open Data Licence
+                </a>
+                . Contains modified Copernicus Atmosphere
                 Monitoring Service information. Weather data by Open-Meteo.com (CC BY 4.0). Fire data from NASA FIRMS. Community sensor data
                 from OpenAQ.
               </p>
