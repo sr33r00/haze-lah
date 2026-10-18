@@ -162,12 +162,14 @@ const PM25_STEP: Record<"general" | "vulnerable", Step[]> = { general: [0, 1, 3,
 
 export const pm25Step = (pm: number, group: Group): Step => PM25_STEP[group === "healthy" ? "general" : "vulnerable"][pm25Band(pm).index];
 
-/** Advice for now: the stricter of the 1-hr PM2.5 guide (next few hours) and the 24-hr PSI advisory (the day). */
+/**
+ * Advice for now. NEA's guide: for activities in the next few hours use the latest 1-hr PM2.5 and the personal guide;
+ * the 24-hr PSI forecast is for planning the next day. The 24-hr PSI is used only when there is no PM2.5 reading.
+ */
 export function adviceStep(pm25: number | null, psi: number | null, group: Group): Step | null {
-  const steps: Step[] = [];
-  if (pm25 != null && Number.isFinite(pm25)) steps.push(pm25Step(pm25, group));
-  if (psi != null && Number.isFinite(psi)) steps.push(psiStep(psiLevel(psi), group));
-  return steps.length ? (Math.max(...steps) as Step) : null;
+  if (pm25 != null && Number.isFinite(pm25)) return pm25Step(pm25, group);
+  if (psi != null && Number.isFinite(psi)) return psiStep(psiLevel(psi), group);
+  return null;
 }
 
 /**

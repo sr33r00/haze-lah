@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import type { Fire, FireSummary } from "../types";
 
 // NASA FIRMS VIIRS active fires. Needs a free MAP_KEY: https://firms.modaps.eosdis.nasa.gov/api/map_key/
@@ -14,37 +15,52 @@ export function classify(lat: number, lon: number): Area | null {
 }
 
 const SPAN = 5; // days requested (the area API allows 1 to 5); the map and counts use the last `days`
+const AREAS: Area[] = ["sumatra", "borneo", "peninsula"];
+/** Compact fire: lat, lon, frp, epoch ms, index in AREAS, confidence. */
+type Row = [number, number, number, number, number, string];
+
+/**
+ * The 5-day CSV is over 2 MB, above Next's fetch cache limit, so it is fetched uncached and only the parsed rows,
+ * a fraction of the size, are cached.
+ */
+const cachedRows = unstable_cache(
+  async (key: string, source: string): Promise<Row[]> => {
+    const url = `https://firms.modaps.eosdis.nasa.gov/api/area/csv/${key}/${source}/${BBOX}/${SPAN}`;
+    const res = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(20_000) });
+    if (!res.ok) throw new Error(`FIRMS ${res.status}`);
+    const lines = (await res.text()).trim().split("\n");
+    const head = lines[0].split(",");
+    const iLat = head.indexOf("latitude");
+    const iLon = head.indexOf("longitude");
+    const iFrp = head.indexOf("frp");
+    const iConf = head.indexOf("confidence");
+    const iDate = head.indexOf("acq_date");
+    const iTime = head.indexOf("acq_time");
+    if (iLat < 0 || iLon < 0) throw new Error(`FIRMS: unexpected response`);
+    const rows: Row[] = [];
+    for (const line of lines.slice(1)) {
+      const c = line.split(",");
+      const conf = c[iConf] ?? "";
+      if (conf === "l" || conf === "low") continue;
+      const lat = parseFloat(c[iLat]);
+      const lon = parseFloat(c[iLon]);
+      const where = classify(lat, lon);
+      if (!where) continue;
+      const t = (c[iTime] ?? "0000").padStart(4, "0");
+      rows.push([lat, lon, parseFloat(c[iFrp]) || 0, Date.parse(`${c[iDate]}T${t.slice(0, 2)}:${t.slice(2)}:00Z`), AREAS.indexOf(where), conf]);
+    }
+    return rows;
+  },
+  ["firms-rows"],
+  { revalidate: 1800 },
+);
 
 /** Every fire of the last `SPAN` days, except low-confidence ones and those outside the three areas; null without a key. */
 export async function fetchFirePoints(): Promise<(Fire & { where: Area })[] | null> {
   const key = process.env.FIRMS_MAP_KEY;
   if (!key) return null;
-  const source = process.env.FIRMS_SOURCE || "VIIRS_SNPP_NRT";
-  const url = `https://firms.modaps.eosdis.nasa.gov/api/area/csv/${key}/${source}/${BBOX}/${SPAN}`;
-  const res = await fetch(url, { next: { revalidate: 1800 }, signal: AbortSignal.timeout(20_000) });
-  if (!res.ok) throw new Error(`FIRMS ${res.status}`);
-  const lines = (await res.text()).trim().split("\n");
-  const head = lines[0].split(",");
-  const iLat = head.indexOf("latitude");
-  const iLon = head.indexOf("longitude");
-  const iFrp = head.indexOf("frp");
-  const iConf = head.indexOf("confidence");
-  const iDate = head.indexOf("acq_date");
-  const iTime = head.indexOf("acq_time");
-  if (iLat < 0 || iLon < 0) throw new Error(`FIRMS: unexpected response`);
-  const pts: (Fire & { where: Area })[] = [];
-  for (const line of lines.slice(1)) {
-    const c = line.split(",");
-    const conf = c[iConf] ?? "";
-    if (conf === "l" || conf === "low") continue;
-    const lat = parseFloat(c[iLat]);
-    const lon = parseFloat(c[iLon]);
-    const where = classify(lat, lon);
-    if (!where) continue;
-    const t = (c[iTime] ?? "0000").padStart(4, "0");
-    pts.push({ lat, lon, where, frp: parseFloat(c[iFrp]) || 0, confidence: conf, time: `${c[iDate]}T${t.slice(0, 2)}:${t.slice(2)}:00Z` });
-  }
-  return pts;
+  const rows = await cachedRows(key, process.env.FIRMS_SOURCE || "VIIRS_SNPP_NRT");
+  return rows.map(([lat, lon, frp, t, a, confidence]) => ({ lat, lon, frp, confidence, where: AREAS[a], time: new Date(t).toISOString().slice(0, 19) + "Z" }));
 }
 
 export async function fetchFires(days = 2): Promise<FireSummary> {
