@@ -115,7 +115,7 @@ export default function SgMap(props: {
               position={[c.lat, c.lon]}
               icon={CAMERA_ICON}
               title={`Camera: ${c.name}`}
-              eventHandlers={{ click: () => window.open(c.image, "_blank", "noopener") }}
+              eventHandlers={{ click: () => (location.href = `/photos?cam=${c.id}#ground`) }}
             />
           ))}
           <SpotControl spot={spot} onSpot={pickSpot} />
