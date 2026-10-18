@@ -4,15 +4,17 @@ import { cap, fmtTime } from "@/lib/format";
 import { OPEN_DATA_LICENCE, mapLink } from "@/lib/links";
 import type { Camera } from "@/lib/types";
 
+const byDistance = (cameras: Camera[], [la, lo]: [number, number]) =>
+  [...cameras].sort((a, b) => (a.lat - la) ** 2 + (a.lon - lo) ** 2 - ((b.lat - la) ** 2 + (b.lon - lo) ** 2));
+
 /** Latest LTA traffic camera photos, nearest to the chosen region first; haze shows as a grey, washed-out view. */
-export default function LiveViews({ cameras, region }: { cameras: Camera[]; region: Region }) {
-  const [la, lo] = REGION_POINT[region];
-  const sorted = [...cameras].sort((a, b) => (a.lat - la) ** 2 + (a.lon - lo) ** 2 - ((b.lat - la) ** 2 + (b.lon - lo) ** 2));
+export default function LiveViews({ cameras, region, grid = false }: { cameras: Camera[]; region?: Region; grid?: boolean }) {
+  const sorted = region ? byDistance(cameras, REGION_POINT[region]) : cameras;
   return (
     <div>
-      <ul className="flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-px-4 px-4 pb-2">
+      <ul className={grid ? "grid gap-4 px-4 sm:grid-cols-2" : "flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-px-4 px-4 pb-2"}>
         {sorted.map((c) => (
-          <li key={c.id} className="w-[80%] max-w-[360px] shrink-0 snap-start">
+          <li key={c.id} className={grid ? "" : "w-[80%] max-w-[360px] shrink-0 snap-start"}>
             <a href={c.image} target="_blank" rel="noreferrer" className="block overflow-hidden rounded-2xl bg-line">
               {/* eslint-disable-next-line @next/next/no-img-element -- photos change every few minutes, so they skip image optimisation */}
               <img

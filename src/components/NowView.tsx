@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import Link from "next/link";
 import { tips } from "@/lib/advice";
 import { trend3h } from "@/lib/format";
 import { adviceStep, psiLevel } from "@/lib/bands";
@@ -52,6 +53,9 @@ export default function NowView({ history, nea, hourly, sensors, stations, camer
         {cameras.length > 0 && (
           <Section title="Live views">
             <LiveViews cameras={cameras} region={region} />
+            <Link href="/photos" className="mt-2 block px-5 text-[14px] font-semibold text-accent">
+              Satellite images and all cameras
+            </Link>
           </Section>
         )}
       </div>
