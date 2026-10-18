@@ -35,6 +35,9 @@ export type Station = {
 /** Low-cost community air sensor (OpenAQ); pm25 in µg/m³. */
 export type Sensor = { name: string; lat: number; lon: number; pm25: number; time: string };
 
+/** A public traffic camera photo (LTA). */
+export type Camera = { id: string; name: string; region: Region; lat: number; lon: number; image: string; time: string };
+
 export type Fire = { lat: number; lon: number; frp: number; time: string; confidence: string };
 
 export type FireSummary = {
@@ -121,6 +124,7 @@ export type HazeData = {
   history: NeaPm25History | null;
   stations: Station[];
   sensors: Sensor[];
+  cameras: Camera[];
   fires: FireSummary;
   news: NewsItem[];
   psiDaily: DayPsi[];

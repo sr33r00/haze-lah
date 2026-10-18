@@ -1,4 +1,4 @@
-import { Activity, BookOpen, CloudSun, Flame, History, Newspaper } from "lucide-react";
+import { Activity, BookOpen, Camera, CloudSun, Flame, History, Newspaper } from "lucide-react";
 import Link from "next/link";
 import { pageMeta } from "@/lib/seo";
 import { GROUP_LABEL, LEVEL_COLOR, LEVEL_NAME, NEA_ADVICE, type Group } from "@/lib/bands";
@@ -57,6 +57,11 @@ const SOURCE_GROUPS = [
       ["ECMWF via Open-Meteo", "Wind at 850 hPa (about 1.5 km up) and rain forecast", "https://open-meteo.com"],
       ["Meteorological Service Singapore", "24-hour weather forecast", "https://www.weather.gov.sg/weather-forecast-24hrs/"],
     ],
+  },
+  {
+    title: "Photos",
+    icon: Camera,
+    items: [["LTA traffic cameras via data.gov.sg", "Live photos at Woodlands, Tuas and Sentosa Gateway, updated every few minutes", "https://data.gov.sg"]],
   },
   {
     title: "Fires",
@@ -148,7 +153,7 @@ export default async function About() {
                 </div>
               ))}
               <p className="text-[13px] text-muted">
-                Contains information from NEA made available under the Singapore Open Data Licence. Contains modified Copernicus Atmosphere
+                Contains information from NEA and LTA made available under the Singapore Open Data Licence. Contains modified Copernicus Atmosphere
                 Monitoring Service information. Weather data by Open-Meteo.com (CC BY 4.0). Fire data from NASA FIRMS. Community sensor data
                 from OpenAQ.
               </p>

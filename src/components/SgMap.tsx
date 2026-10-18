@@ -7,7 +7,7 @@ import { useEffect, useMemo, useState } from "react";
 import { CircleMarker, MapContainer, Marker, TileLayer, Tooltip, useMap, useMapEvents } from "react-leaflet";
 import { LEVEL_COLOR, LEVEL_NAME, LEVEL_TEXT, REGIONS, REGION_POINT, nearestRegion, pm25Color, psiLevel, stationLevel, type Region } from "@/lib/bands";
 import { cap } from "@/lib/format";
-import type { NeaNow, NeaPm25History, Sensor, Station } from "@/lib/types";
+import type { Camera, NeaNow, NeaPm25History, Sensor, Station } from "@/lib/types";
 import { SG, haversineKm } from "@/lib/util";
 
 const BOUNDS: L.LatLngBoundsExpression = [
@@ -18,6 +18,14 @@ const MAX_SENSOR_AGE_MS = 3 * 3600_000;
 const SENSOR_KM = 3; // a community sensor this close is worth showing next to the regional reading
 
 type Spot = { lat: number; lon: number; mine: boolean };
+
+// lucide "camera" glyph, so the marker matches the app's icons.
+const CAMERA_ICON = L.divIcon({
+  className: "",
+  iconSize: [24, 24],
+  iconAnchor: [12, 12],
+  html: `<div style="width:24px;height:24px;border-radius:7px;background:#13232e;display:grid;place-items:center;box-shadow:0 0 0 1.5px #fff"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg></div>`,
+});
 
 function pill(value: number | null, active: boolean) {
   const bg = value == null ? "#8a8f98" : pm25Color(value);
@@ -48,6 +56,7 @@ export default function SgMap(props: {
   onPick: (r: Region) => void;
   sensors: Sensor[];
   stations: Station[];
+  cameras: Camera[];
 }) {
   const { history, region, onPick } = props;
   const [spot, setSpot] = useState<Spot | null>(null);
@@ -76,7 +85,7 @@ export default function SgMap(props: {
 
   return (
     <div className="px-4">
-      <div className="relative h-[300px] overflow-hidden rounded-3xl">
+      <div className="relative isolate h-[300px] overflow-hidden rounded-3xl">
         <button
           onClick={locate}
           className="absolute right-3 top-3 z-[500] flex min-h-[40px] items-center gap-1.5 rounded-full bg-surface px-3 text-[13px] font-semibold shadow"
@@ -99,6 +108,15 @@ export default function SgMap(props: {
             <CircleMarker key={`${s.name}${s.lat}${s.lon}`} center={[s.lat, s.lon]} radius={5} pathOptions={{ color: "#fff", weight: 1, fillColor: pm25Color(s.pm25), fillOpacity: 0.9 }}>
               <Tooltip>{`${s.name}: PM2.5 ${s.pm25} µg/m³ (community sensor)`}</Tooltip>
             </CircleMarker>
+          ))}
+          {props.cameras.map((c) => (
+            <Marker
+              key={c.id}
+              position={[c.lat, c.lon]}
+              icon={CAMERA_ICON}
+              title={`Camera: ${c.name}`}
+              eventHandlers={{ click: () => window.open(c.image, "_blank", "noopener") }}
+            />
           ))}
           <SpotControl spot={spot} onSpot={pickSpot} />
           {spot && (
@@ -143,6 +161,12 @@ export default function SgMap(props: {
           <span className="h-2.5 w-2.5 rounded-full border-2 border-white bg-[#d9a118]" />
           Malaysia API
         </span>
+        {props.cameras.length > 0 && (
+          <span className="flex items-center gap-1.5">
+            <span className="h-2.5 w-2.5 rounded-[3px] bg-[#13232e] ring-1 ring-white" />
+            Cameras
+          </span>
+        )}
       </div>
     </div>
   );

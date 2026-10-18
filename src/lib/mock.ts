@@ -73,6 +73,7 @@ export function mockInputs(): Inputs {
       { id: "palembang", name: "Palembang", state: "South Sumatra", country: "ID", lat: -2.98, lon: 104.78, api: null, pm25: 240, time: null, distanceKm: 492 },
       { id: "pontianak", name: "Pontianak", state: "West Kalimantan", country: "ID", lat: -0.03, lon: 109.34, api: null, pm25: 60, time: null, distanceKm: 632 },
     ],
+    cameras: [],
     sensors: [
       ["4 Haig Road", 1.3125, 103.8947, 142],
       ["Sengkang West Way", 1.3920, 103.8800, 118],
