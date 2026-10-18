@@ -23,6 +23,14 @@ export const GROUP_LABEL: Record<Group, string> = {
 
 export type Level = 0 | 1 | 2 | 3 | 4; // good, moderate, unhealthy, very unhealthy, hazardous
 
+/** The NEA region whose label point is nearest. */
+export function nearestRegion(lat: number, lon: number): Region {
+  return REGIONS.reduce((best, r) => {
+    const d = (p: [number, number]) => (p[0] - lat) ** 2 + (p[1] - lon) ** 2;
+    return d(REGION_POINT[r]) < d(REGION_POINT[best]) ? r : best;
+  });
+}
+
 export const LEVEL_NAME = ["Good", "Moderate", "Unhealthy", "Very unhealthy", "Hazardous"] as const;
 
 // Colours follow NEA's PSI legend (green, blue, yellow, orange, red).

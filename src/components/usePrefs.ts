@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { REGIONS, REGION_POINT, type Group, type Region } from "@/lib/bands";
+import { REGIONS, nearestRegion, type Group, type Region } from "@/lib/bands";
 import { SG } from "@/lib/util";
 
 const GROUPS: Group[] = ["healthy", "sensitive", "chronic"];
@@ -24,13 +24,6 @@ function useStored<T extends string>(key: string, allowed: readonly T[], fallbac
     [key],
   );
   return [value, set] as const;
-}
-
-function nearestRegion(lat: number, lon: number): Region {
-  return REGIONS.reduce((best, r) => {
-    const d = (p: [number, number]) => (p[0] - lat) ** 2 + (p[1] - lon) ** 2;
-    return d(REGION_POINT[r]) < d(REGION_POINT[best]) ? r : best;
-  });
 }
 
 /**
