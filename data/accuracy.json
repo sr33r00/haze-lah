@@ -1,28 +1,55 @@
 {
- "updated": "2026-10-17T09:11:36.706Z",
- "forecasts": 12,
+ "updated": "2026-10-18T00:51:51.311Z",
+ "forecasts": 13,
  "from": "2026-10-15T19:00:00+08:00",
- "to": "2026-10-17T17:00:00+08:00",
+ "to": "2026-10-18T08:00:00+08:00",
  "leads": [
   {
    "lead": 6,
    "ours": {
+    "n": 12,
+    "mae": 32.9,
+    "rmse": 38.8,
+    "bias": -28.6
+   },
+   "cams": {
+    "n": 12,
+    "mae": 83,
+    "rmse": 84,
+    "bias": -82.9
+   },
+   "persistence": {
+    "n": 12,
+    "mae": 24.4,
+    "rmse": 30.1,
+    "bias": -0.1
+   },
+   "event": {
+    "n": 12,
+    "precision": 1,
+    "recall": 0.92,
+    "f1": 0.96
+   }
+  },
+  {
+   "lead": 24,
+   "ours": {
     "n": 10,
-    "mae": 30.6,
-    "rmse": 37.3,
-    "bias": -25.5
+    "mae": 37.3,
+    "rmse": 43.9,
+    "bias": -35.9
    },
    "cams": {
     "n": 10,
-    "mae": 81.8,
-    "rmse": 82.8,
-    "bias": -81.8
+    "mae": 74.5,
+    "rmse": 77.6,
+    "bias": -74.5
    },
    "persistence": {
     "n": 10,
-    "mae": 24.2,
-    "rmse": 30.1,
-    "bias": -3.2
+    "mae": 26.7,
+    "rmse": 30.4,
+    "bias": 10.1
    },
    "event": {
     "n": 10,
@@ -32,56 +59,29 @@
    }
   },
   {
-   "lead": 24,
-   "ours": {
-    "n": 6,
-    "mae": 26.4,
-    "rmse": 35.6,
-    "bias": -24.1
-   },
-   "cams": {
-    "n": 6,
-    "mae": 70.1,
-    "rmse": 74.8,
-    "bias": -70.1
-   },
-   "persistence": {
-    "n": 6,
-    "mae": 34.8,
-    "rmse": 37.2,
-    "bias": 26.5
-   },
-   "event": {
-    "n": 6,
-    "precision": 1,
-    "recall": 1,
-    "f1": 1
-   }
-  },
-  {
    "lead": 48,
    "ours": {
-    "n": 0,
-    "mae": null,
-    "rmse": null,
-    "bias": null
+    "n": 4,
+    "mae": 69,
+    "rmse": 72.3,
+    "bias": -69
    },
    "cams": {
-    "n": 0,
-    "mae": null,
-    "rmse": null,
-    "bias": null
+    "n": 4,
+    "mae": 93.5,
+    "rmse": 95.6,
+    "bias": -93.5
    },
    "persistence": {
-    "n": 0,
-    "mae": null,
-    "rmse": null,
-    "bias": null
+    "n": 4,
+    "mae": 26.4,
+    "rmse": 28.7,
+    "bias": 26.4
    },
    "event": {
-    "n": 0,
+    "n": 4,
     "precision": null,
-    "recall": null,
+    "recall": 0,
     "f1": null
    }
   },
