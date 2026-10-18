@@ -45,7 +45,7 @@ export default function NowView({ history, nea, hourly, sensors, stations }: { h
         <CigaretteCard region={region} pm25={nea?.pm25_24h[region]} today={history?.regions[region]} />
 
         <Section title="Across Singapore">
-          <SgMap history={history} region={region} onPick={setRegion} sensors={sensors} stations={stations} />
+          <SgMap history={history} psi24={nea?.psi24 ?? null} region={region} onPick={setRegion} sensors={sensors} stations={stations} />
         </Section>
       </div>
 
