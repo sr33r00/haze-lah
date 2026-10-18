@@ -1,12 +1,12 @@
 import type { NextConfig } from "next";
 
-// Everything is served from this origin except OpenStreetMap map tiles and NASA satellite images.
+// Everything is served from this origin except OpenStreetMap map tiles, NASA satellite images and Windy webcam images.
 const csp = [
   "default-src 'self'",
   // Next.js inline bootstrap scripts; the page renders no user input. Dev mode also needs eval.
   `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : ""}`,
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob: https://tile.openstreetmap.org https://gibs.earthdata.nasa.gov",
+  "img-src 'self' data: blob: https://tile.openstreetmap.org https://gibs.earthdata.nasa.gov https://imgproxy.windy.com",
   "font-src 'self'",
   "connect-src 'self'",
   "object-src 'none'",

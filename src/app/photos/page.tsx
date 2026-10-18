@@ -2,13 +2,14 @@ import { pageMeta } from "@/lib/seo";
 import AppShell from "@/components/AppShell";
 import LiveViews from "@/components/LiveViews";
 import SatelliteView from "@/components/SatelliteView";
+import Webcams from "@/components/Webcams";
 import { Section } from "@/components/ui";
 import { getHazeData } from "@/lib/data";
 import { dailyImages, liveImage } from "@/lib/satellite";
 
 export const metadata = pageMeta(
   "Haze photos: satellite images and live cameras in Singapore",
-  "See the haze: daily NASA satellite images of the smoke over Sumatra, Singapore and Borneo, the latest Himawari image, and live LTA camera photos.",
+  "See the haze: daily NASA satellite images of the smoke over Sumatra, Singapore and Borneo, the latest Himawari image, live LTA camera photos and webcams.",
   "/photos",
 );
 export const revalidate = 300;
@@ -27,6 +28,7 @@ export default async function Photos() {
             <LiveViews cameras={data.cameras} grid />
           </Section>
         )}
+        <Webcams />
       </div>
     </AppShell>
   );

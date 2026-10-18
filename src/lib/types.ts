@@ -38,6 +38,9 @@ export type Sensor = { name: string; lat: number; lon: number; pm25: number; tim
 /** A public traffic camera photo (LTA). */
 export type Camera = { id: string; name: string; region: Region; lat: number; lon: number; image: string; time: string };
 
+/** A third-party webcam listed by Windy; `image` must be used as given and link to `page`. */
+export type Webcam = { id: string; title: string; lat: number; lon: number; image: string; width: number; height: number; page: string; time: string };
+
 export type Fire = { lat: number; lon: number; frp: number; time: string; confidence: string };
 
 export type FireSummary = {
