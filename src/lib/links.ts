@@ -11,3 +11,5 @@ export const BMC_URL = "https://buymeacoffee.com/hazelah";
 
 /** OpenStreetMap page centred on a point, with a pin. */
 export const mapLink = (lat: number, lon: number) => `https://www.openstreetmap.org/?mlat=${lat.toFixed(5)}&mlon=${lon.toFixed(5)}#map=16/${lat.toFixed(5)}/${lon.toFixed(5)}`;
+
+export const OPEN_DATA_LICENCE = "https://data.gov.sg/open-data-licence";
