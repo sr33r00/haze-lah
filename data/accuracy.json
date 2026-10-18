@@ -1,33 +1,33 @@
 {
- "updated": "2026-10-18T10:53:26.164Z",
- "forecasts": 15,
+ "updated": "2026-10-18T14:29:40.523Z",
+ "forecasts": 16,
  "from": "2026-10-15T19:00:00+08:00",
- "to": "2026-10-18T18:00:00+08:00",
+ "to": "2026-10-18T22:00:00+08:00",
  "leads": [
   {
    "lead": 6,
    "ours": {
-    "n": 13,
-    "mae": 36.6,
-    "rmse": 43.6,
-    "bias": -20.1
+    "n": 14,
+    "mae": 34.8,
+    "rmse": 42.1,
+    "bias": -17.9
    },
    "cams": {
-    "n": 13,
-    "mae": 76.7,
-    "rmse": 80.7,
-    "bias": -76.7
+    "n": 14,
+    "mae": 72.5,
+    "rmse": 78,
+    "bias": -72.5
    },
    "persistence": {
-    "n": 13,
-    "mae": 26.4,
-    "rmse": 32.1,
-    "bias": 3.8
+    "n": 14,
+    "mae": 25.1,
+    "rmse": 31,
+    "bias": 4.1
    },
    "event": {
-    "n": 13,
+    "n": 14,
     "precision": 1,
-    "recall": 0.92,
+    "recall": 0.93,
     "f1": 0.96
    }
   },
@@ -61,54 +61,54 @@
   {
    "lead": 48,
    "ours": {
-    "n": 6,
-    "mae": 54.2,
-    "rmse": 60.8,
-    "bias": -45.1
+    "n": 7,
+    "mae": 47.9,
+    "rmse": 56.4,
+    "bias": -40.1
    },
    "cams": {
-    "n": 6,
-    "mae": 75.4,
-    "rmse": 82.4,
-    "bias": -75.4
+    "n": 7,
+    "mae": 68.9,
+    "rmse": 77.2,
+    "bias": -68.9
    },
    "persistence": {
-    "n": 6,
-    "mae": 36.6,
-    "rmse": 44.4,
-    "bias": 36.6
+    "n": 7,
+    "mae": 39.8,
+    "rmse": 46.7,
+    "bias": 39.8
    },
    "event": {
-    "n": 6,
+    "n": 7,
     "precision": 1,
-    "recall": 0.33,
-    "f1": 0.5
+    "recall": 0.29,
+    "f1": 0.44
    }
   },
   {
    "lead": 72,
    "ours": {
-    "n": 0,
-    "mae": null,
-    "rmse": null,
-    "bias": null
+    "n": 1,
+    "mae": 19.4,
+    "rmse": 19.4,
+    "bias": -19.4
    },
    "cams": {
-    "n": 0,
-    "mae": null,
-    "rmse": null,
-    "bias": null
+    "n": 1,
+    "mae": 36.4,
+    "rmse": 36.4,
+    "bias": -36.4
    },
    "persistence": {
-    "n": 0,
-    "mae": null,
-    "rmse": null,
-    "bias": null
+    "n": 1,
+    "mae": 102.2,
+    "rmse": 102.2,
+    "bias": 102.2
    },
    "event": {
-    "n": 0,
+    "n": 1,
     "precision": null,
-    "recall": null,
+    "recall": 0,
     "f1": null
    }
   },
