@@ -1,8 +1,7 @@
 import { pageMeta } from "@/lib/seo";
 import AppShell from "@/components/AppShell";
-import LiveViews from "@/components/LiveViews";
+import GroundViews from "@/components/GroundViews";
 import SatelliteView from "@/components/SatelliteView";
-import Webcams from "@/components/Webcams";
 import { Section } from "@/components/ui";
 import { getHazeData } from "@/lib/data";
 import { dailyImages, liveImage } from "@/lib/satellite";
@@ -23,12 +22,9 @@ export default async function Photos() {
         <Section title="From space">
           <SatelliteView daily={dailyImages(now)} live={liveImage(now)} />
         </Section>
-        {data.cameras.length > 0 && (
-          <Section title="Road cameras">
-            <LiveViews cameras={data.cameras} grid />
-          </Section>
-        )}
-        <Webcams />
+        <Section id="ground" title="On the ground">
+          <GroundViews cameras={data.cameras} />
+        </Section>
       </div>
     </AppShell>
   );

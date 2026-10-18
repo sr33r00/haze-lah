@@ -1,21 +1,21 @@
-import { MapPin } from "lucide-react";
+import Link from "next/link";
 import { REGION_POINT, type Region } from "@/lib/bands";
 import { cap, fmtTime } from "@/lib/format";
-import { OPEN_DATA_LICENCE, mapLink } from "@/lib/links";
+import { OPEN_DATA_LICENCE } from "@/lib/links";
 import type { Camera } from "@/lib/types";
 
 const byDistance = (cameras: Camera[], [la, lo]: [number, number]) =>
   [...cameras].sort((a, b) => (a.lat - la) ** 2 + (a.lon - lo) ** 2 - ((b.lat - la) ** 2 + (b.lon - lo) ** 2));
 
-/** Latest LTA traffic camera photos, nearest to the chosen region first; haze shows as a grey, washed-out view. */
-export default function LiveViews({ cameras, region, grid = false }: { cameras: Camera[]; region?: Region; grid?: boolean }) {
+/** Latest LTA traffic camera photos, nearest to the chosen region first; each opens in the Photos viewer. */
+export default function LiveViews({ cameras, region }: { cameras: Camera[]; region?: Region }) {
   const sorted = region ? byDistance(cameras, REGION_POINT[region]) : cameras;
   return (
     <div>
-      <ul className={grid ? "grid gap-4 px-4 sm:grid-cols-2" : "flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-px-4 px-4 pb-2"}>
+      <ul className="flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-px-4 px-4 pb-2">
         {sorted.map((c) => (
-          <li key={c.id} className={grid ? "" : "w-[80%] max-w-[360px] shrink-0 snap-start"}>
-            <a href={c.image} target="_blank" rel="noreferrer" className="block overflow-hidden rounded-2xl bg-line">
+          <li key={c.id} className="w-[75%] max-w-[320px] shrink-0 snap-start">
+            <Link href={`/photos?cam=${c.id}#ground`} className="relative block overflow-hidden rounded-2xl bg-line">
               {/* eslint-disable-next-line @next/next/no-img-element -- photos change every few minutes, so they skip image optimisation */}
               <img
                 src={c.image}
@@ -26,25 +26,13 @@ export default function LiveViews({ cameras, region, grid = false }: { cameras: 
                 decoding="async"
                 className="aspect-video h-auto w-full object-cover"
               />
-            </a>
-            <div className="mt-1.5 flex items-start justify-between gap-2 px-1">
-              <div className="min-w-0 text-[13px]">
-                <p className="truncate font-semibold">{c.name}</p>
-                <p className="text-muted">
+              <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 to-transparent px-3 pb-2 pt-8 text-white">
+                <span className="block truncate text-[14px] font-semibold">{c.name}</span>
+                <span className="block text-[12px] opacity-85">
                   {cap(c.region)} · {fmtTime(c.time)}
-                </p>
-              </div>
-              <a
-                href={mapLink(c.lat, c.lon)}
-                target="_blank"
-                rel="noreferrer"
-                aria-label={`${c.name} on a map`}
-                className="flex min-h-[36px] shrink-0 items-center gap-1 rounded-full border border-line px-2.5 text-[12px] font-semibold text-accent"
-              >
-                <MapPin size={14} aria-hidden />
-                Map
-              </a>
-            </div>
+                </span>
+              </span>
+            </Link>
           </li>
         ))}
       </ul>
@@ -53,7 +41,7 @@ export default function LiveViews({ cameras, region, grid = false }: { cameras: 
         <a href={OPEN_DATA_LICENCE} target="_blank" rel="noreferrer" className="underline">
           Singapore Open Data Licence
         </a>
-        . Updated every few minutes.
+        .
       </p>
     </div>
   );

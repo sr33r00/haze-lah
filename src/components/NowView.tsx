@@ -54,7 +54,7 @@ export default function NowView({ history, nea, hourly, sensors, stations, camer
           <Section title="Live views">
             <LiveViews cameras={cameras} region={region} />
             <Link href="/photos" className="mt-2 block px-5 text-[14px] font-semibold text-accent">
-              Satellite images and all cameras
+              Satellite images and camera viewer
             </Link>
           </Section>
         )}
