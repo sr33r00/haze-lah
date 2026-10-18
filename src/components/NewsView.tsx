@@ -29,6 +29,9 @@ const SOURCE_NAME: Record<TimelineItem["source"], string> = {
 /** Events worked out from the readings and fires, not published by anyone: shown small so the news reads clearly. */
 const isDerived = (n: TimelineItem) => n.source === "NEA readings" || n.source === "NASA FIRMS";
 
+/** Today is blue, yesterday dark, older days grey, so the feed shows at a glance how fresh each part is. */
+const dayStyle = (key: string) => (key === sgDate(0) ? "bg-accent text-bg" : key === sgDate(-1) ? "bg-fg text-bg" : "bg-line text-muted");
+
 function Derived({ n }: { n: TimelineItem }) {
   return (
     <li className="flex gap-3 px-4 py-3">
@@ -136,11 +139,10 @@ export default function NewsView({ items, streak, psi }: { items: TimelineItem[]
         ) : (
           days.map((d) => (
             <section key={d.key} className="mt-2">
-              <h2
-                suppressHydrationWarning
-                className="sticky top-[calc(3.5rem+env(safe-area-inset-top))] z-10 bg-bg px-4 py-2 text-[13px] font-bold uppercase tracking-wide text-muted"
-              >
-                {d.label}
+              <h2 suppressHydrationWarning className="sticky top-[calc(3.5rem+env(safe-area-inset-top))] z-10 bg-bg px-4 py-2">
+                <span suppressHydrationWarning className={`rounded-full px-3 py-1 text-[13px] font-bold ${dayStyle(d.key)}`}>
+                  {d.label}
+                </span>
               </h2>
               <ul className="divide-y divide-line">
                 {d.items.map((n, i) => (
