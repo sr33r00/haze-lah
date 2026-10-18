@@ -33,7 +33,7 @@ const SECTIONS = [
 const ADVICE_POINTS = [
   "The 1-hour PM2.5, for the next few hours, read with NEA's personal guide (stricter for the elderly, pregnant women, children and people with heart or lung disease).",
   "The 24-hour PSI, for planning the day, read with NEA's health advisory below.",
-  "The answer follows whichever of the two is stricter. The 5-day outlook uses the expected 24-hour PSI; the hourly plan uses the PM2.5 guide.",
+  "\"Should I go out now?\" follows the 1-hour PM2.5, as NEA advises for the next few hours; the 24-hour PSI is used only when there is no PM2.5 reading. The 5-day outlook uses the expected 24-hour PSI; the hourly plan uses the PM2.5 guide.",
 ];
 
 const SOURCE_GROUPS = [

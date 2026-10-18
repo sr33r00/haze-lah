@@ -38,7 +38,7 @@ export const GUIDE: GuideSection[] = [
           "Band II (56 to 150): healthy people reduce strenuous outdoor activity. The elderly, pregnant women, children and people with heart or lung disease avoid it.",
           "Band III (151 to 250): healthy people avoid strenuous outdoor activity. Vulnerable groups avoid all outdoor activity.",
           "Band IV (251 and above): healthy people minimise all outdoor activity. Vulnerable groups avoid it.",
-          "For the day ahead, follow the 24-hour PSI advisory. This app's answer follows whichever of the two is stricter.",
+          "For the next day, follow the 24-hour PSI forecast and advisory. This app's answer for now follows the 1-hour PM2.5.",
         ],
         sources: [NEA_GUIDE, MOH_HAZE],
       },

@@ -33,7 +33,11 @@ async function getRes(url: string, init: FetchInit): Promise<Response> {
       next: { revalidate },
       signal: AbortSignal.timeout(15_000),
     });
-  let res = await get();
+  // One retry when the connection itself fails (a timeout or reset); HTTP errors are handled below.
+  let res = await get().catch(async () => {
+    await new Promise((r) => setTimeout(r, 1000));
+    return get();
+  });
   // data.gov.sg allows 6 anonymous calls per 10 s; wait out the window once.
   if (res.status === 429) {
     await new Promise((r) => setTimeout(r, 10_000));
