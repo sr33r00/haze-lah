@@ -31,31 +31,38 @@ export default function NowView({ history, nea, hourly, days, sensors, stations,
   const { latest, psi, level } = currentReading({ history, nea }, region);
   const step = adviceStep(latest?.value ?? null, psi, group);
 
+  // Phones read one column in the order below (order-*); desktops keep two columns, where order does nothing.
   return (
-    <div className="lg:grid lg:grid-cols-2 lg:items-start lg:gap-x-8">
-      <div>
-        <RegionChips history={history} region={region} onPick={setRegion} onLocate={locate} locating={locating} />
-        <Hero
-          region={region}
-          readingTime={latest?.time ?? null}
-          pm25={latest?.value ?? null}
-          psi={psi}
-          trend={trend3h(history?.regions[region])}
-          group={group}
-          onGroup={setGroup}
-          next={hourly.slice(0, 6)}
-        />
+    <div className="flex flex-col lg:grid lg:grid-cols-2 lg:items-start lg:gap-x-8">
+      <div className="contents lg:block">
+        <div className="order-1">
+          <RegionChips history={history} region={region} onPick={setRegion} onLocate={locate} locating={locating} />
+        </div>
+        <div className="order-2">
+          <Hero
+            region={region}
+            readingTime={latest?.time ?? null}
+            pm25={latest?.value ?? null}
+            psi={psi}
+            trend={trend3h(history?.regions[region])}
+            group={group}
+            onGroup={setGroup}
+            next={hourly.slice(0, 6)}
+          />
+        </div>
+        <div className="order-3">
+          <HazeOutlook days={days} psiNow={nea ? (islandMax(nea.psi24)?.psi ?? null) : null} />
+        </div>
+        <div className="order-6">
+          <CigaretteCard region={region} pm25={nea?.pm25_24h[region]} today={history?.regions[region]} />
+        </div>
 
-        <HazeOutlook days={days} psiNow={nea ? (islandMax(nea.psi24)?.psi ?? null) : null} />
-
-        <CigaretteCard region={region} pm25={nea?.pm25_24h[region]} today={history?.regions[region]} />
-
-        <Section title="Across Singapore">
+        <Section className="order-7" title="Across Singapore">
           <SgMap history={history} psi24={nea?.psi24 ?? null} region={region} onPick={setRegion} sensors={sensors} stations={stations} cameras={cameras} />
         </Section>
 
         {cameras.length > 0 && (
-          <Section title="Live views">
+          <Section className="order-8" title="Live views">
             <LiveViews cameras={cameras} region={region} />
             <Link href="/photos" className="mt-2 block px-5 text-[14px] font-semibold text-accent">
               Satellite images and camera viewer
@@ -64,24 +71,24 @@ export default function NowView({ history, nea, hourly, days, sensors, stations,
         )}
       </div>
 
-      <div className="lg:[&>:first-child]:mt-3">
+      <div className="contents lg:block">
+        <Section className="order-4 !mt-8 lg:!mt-3" title="Plan your day">
+          <PlanDay hourly={hourly} group={group} />
+        </Section>
+
         {level != null && step != null && (
-          <Section id="what-to-do" title="What to do">
+          <Section id="what-to-do" className="order-5" title="What to do">
             <Advice items={tips(level, step, group, psi != null ? psiLevel(psi) : null)} />
           </Section>
         )}
 
-        <Section title="Plan your day">
-          <PlanDay hourly={hourly} group={group} />
-        </Section>
-
         {nea && (
-          <Section title={`What is in the air, ${cap(region)}`}>
+          <Section className="order-9" title={`What is in the air, ${cap(region)}`}>
             <AirDetail nea={nea} region={region} />
           </Section>
         )}
 
-        <SupportCard className="mt-10" />
+        <SupportCard className="order-10 mt-10" />
       </div>
     </div>
   );

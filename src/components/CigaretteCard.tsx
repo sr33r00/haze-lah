@@ -3,7 +3,7 @@ import type { HourPoint } from "@/lib/types";
 import { cap } from "./ui";
 
 const MAX_ICONS = 10;
-const PAPER = 52; // px of unburnt paper above the filter
+const PAPER = 30; // px of unburnt paper above the filter
 
 /**
  * Today's 24-hour PM2.5 as a rough cigarette equivalent, drawn as a pack that burns down through the day:
@@ -20,36 +20,34 @@ export default function CigaretteCard({ region, pm25, today }: { region: string;
   const exact = exactSoFar(today);
   const burnt = exact != null ? exact / per : null;
 
+  const notes = [sofar != null ? `About ${sofar} so far` : null, `24-hr PM2.5 ${pm25} µg/m³`, extra > 0 ? `1 icon = ${Math.round(per * 10) / 10}` : null].filter(Boolean);
+
   return (
-    <div className="mx-4 mt-4 overflow-hidden rounded-3xl p-4 text-white ring-1 ring-white/10" style={{ background: "linear-gradient(160deg, #2f241d, #17120f)" }}>
-      <p className="text-[13px] text-white/70">Today in {cap(region)}</p>
-      <div className="mt-1 flex items-end justify-between gap-3">
-        <p className="leading-none">
-          <span className="tabular text-6xl font-extrabold">{n}</span>
-          <span className="ml-2 text-lg font-semibold">{n === 1 ? "cigarette" : "cigarettes"}</span>
-        </p>
-        {extra > 0 && <span className="text-[13px] text-white/70">1 icon = {Math.round(per * 10) / 10}</span>}
+    <div className="mx-4 mt-3 overflow-hidden rounded-3xl px-4 py-3 text-white ring-1 ring-white/10" style={{ background: "linear-gradient(160deg, #2f241d, #17120f)" }}>
+      <div className="flex items-center gap-4">
+        <div className="min-w-0 flex-1">
+          <p className="text-[13px] text-white/70">Today in {cap(region)}, like smoking</p>
+          <p className="mt-1 leading-none">
+            <span className="tabular text-4xl font-extrabold">{n}</span>
+            <span className="ml-1.5 text-base font-semibold">{n === 1 ? "cigarette" : "cigarettes"}</span>
+          </p>
+          <p className="mt-1.5 text-[12px] text-white/70" suppressHydrationWarning>
+            {notes.join(" · ")}
+          </p>
+        </div>
+        <div className="flex h-[52px] shrink-0 items-end gap-1" aria-hidden>
+          {Array.from({ length: icons }, (_, i) => (
+            <Cig
+              key={i}
+              delay={i * 60}
+              length={n < 1 ? Math.max(0.2, n) : 1}
+              burnt={burnt == null ? 0 : Math.min(1, Math.max(0, burnt - i))}
+              lit={burnt != null && Math.floor(burnt) === i}
+            />
+          ))}
+        </div>
       </div>
-
-      <div className="mt-4 flex h-[84px] items-end gap-2" aria-hidden>
-        {Array.from({ length: icons }, (_, i) => (
-          <Cig
-            key={i}
-            delay={i * 60}
-            length={n < 1 ? Math.max(0.2, n) : 1}
-            burnt={burnt == null ? 0 : Math.min(1, Math.max(0, burnt - i))}
-            lit={burnt != null && Math.floor(burnt) === i}
-          />
-        ))}
-      </div>
-
-      <p className="mt-3 text-[15px]">
-        Breathing {cap(region)}&apos;s air for a day is like smoking {n} {n === 1 ? "cigarette" : "cigarettes"}.
-      </p>
-      <p className="mt-0.5 text-[13px] text-white/70" suppressHydrationWarning>
-        {sofar != null ? `About ${sofar} so far today. ` : ""}From today&apos;s 24-hour PM2.5 of {pm25} µg/m³.
-      </p>
-      <details className="mt-3 text-[13px]">
+      <details className="mt-2 text-[12px]">
         <summary className="cursor-pointer font-semibold text-[#ffb27a]">How is this worked out?</summary>
         <p className="mt-2 text-white/75">{CIGARETTE_NOTES.join(" ")}</p>
         <p className="mt-2 flex gap-3">
@@ -69,14 +67,14 @@ function Cig({ burnt, lit, length, delay }: { burnt: number; lit: boolean; lengt
   const paper = Math.round(PAPER * length * (1 - burnt));
   const done = burnt >= 1;
   return (
-    <div className="relative flex w-4 origin-bottom animate-grow flex-col items-stretch" style={{ animationDelay: `${delay}ms` }}>
+    <div className="relative flex w-2.5 origin-bottom animate-grow flex-col items-stretch" style={{ animationDelay: `${delay}ms` }}>
       {lit && (
         <div className="pointer-events-none absolute -top-3 left-1/2">
           {[0, 1, 2].map((k) => (
             <span
               key={k}
-              className="absolute block h-3 w-3 animate-wisp rounded-full bg-white/40 blur-[3px]"
-              style={{ marginLeft: -6, animationDelay: `${k}s` }}
+              className="absolute block h-2.5 w-2.5 animate-wisp rounded-full bg-white/40 blur-[3px]"
+              style={{ marginLeft: -5, animationDelay: `${k}s` }}
             />
           ))}
         </div>
@@ -90,7 +88,7 @@ function Cig({ burnt, lit, length, delay }: { burnt: number; lit: boolean; lengt
         </>
       )}
       {done && <div className="h-1 rounded-t-sm bg-[#4a3f38]" />}
-      <div className="h-[22px] rounded-b-sm bg-[#d9822b] bg-[radial-gradient(#b8661c_1px,transparent_1px)] bg-[size:4px_4px]" />
+      <div className="h-[12px] rounded-b-sm bg-[#d9822b] bg-[radial-gradient(#b8661c_1px,transparent_1px)] bg-[size:4px_4px]" />
     </div>
   );
 }
