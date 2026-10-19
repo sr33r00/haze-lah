@@ -6,10 +6,11 @@ import { tips } from "@/lib/advice";
 import { trend3h } from "@/lib/format";
 import { adviceStep, psiLevel } from "@/lib/bands";
 import { currentReading, islandMax } from "@/lib/situation";
-import type { Camera, ForecastPoint, NeaNow, NeaPm25History, Sensor, Station } from "@/lib/types";
+import type { Camera, DayOutlook, ForecastPoint, NeaNow, NeaPm25History, Sensor, Station } from "@/lib/types";
 import AirDetail from "./AirDetail";
 import Advice from "./Advice";
 import CigaretteCard from "./CigaretteCard";
+import HazeOutlook from "./HazeOutlook";
 import Hero from "./Hero";
 import LiveViews from "./LiveViews";
 import PlanDay from "./PlanDay";
@@ -24,7 +25,7 @@ const SgMap = dynamic(() => import("./SgMap"), {
 });
 
 /** The Now tab: the answer for the chosen region, what to do, and what is in the air. */
-export default function NowView({ history, nea, hourly, sensors, stations, cameras }: { history: NeaPm25History | null; nea: NeaNow | null; hourly: ForecastPoint[]; sensors: Sensor[]; stations: Station[]; cameras: Camera[] }) {
+export default function NowView({ history, nea, hourly, days, sensors, stations, cameras }: { history: NeaPm25History | null; nea: NeaNow | null; hourly: ForecastPoint[]; days: DayOutlook[]; sensors: Sensor[]; stations: Station[]; cameras: Camera[] }) {
   const { region, setRegion, group, setGroup, locating, locate } = usePrefs(nea ? islandMax(nea.psi24)?.region : undefined);
 
   const { latest, psi, level } = currentReading({ history, nea }, region);
@@ -44,6 +45,8 @@ export default function NowView({ history, nea, hourly, sensors, stations, camer
           onGroup={setGroup}
           next={hourly.slice(0, 6)}
         />
+
+        <HazeOutlook days={days} psiNow={nea ? (islandMax(nea.psi24)?.psi ?? null) : null} />
 
         <CigaretteCard region={region} pm25={nea?.pm25_24h[region]} today={history?.regions[region]} />
 

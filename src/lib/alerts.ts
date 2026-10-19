@@ -1,9 +1,9 @@
 import { LEVEL_NAME, REGIONS, pm25Band, psiLevel } from "./bands";
 import { bestWindow, planHours } from "./plan";
-import { cap, fmtHour, trend3h } from "./format";
+import { cap, fmtHour, fmtWeekday, trend3h } from "./format";
 import { islandMax, islandSummary } from "./situation";
 import type { HazeData, NewsItem } from "./types";
-import { sgDate } from "./util";
+import { sgDate, sgHour } from "./util";
 
 /** Persisted between runs. Fields added later are undefined in old files: record them without sending. */
 export type AlertState = {
@@ -23,7 +23,6 @@ export const quietHours = (now = new Date()) => sgHour(now) >= 23 || sgHour(now)
 const MAX_LINES = 6;
 
 /** Hour of day (0-23) in Singapore. */
-export const sgHour = (now = new Date()) => (now.getUTCHours() + 8) % 24;
 
 export const latestNea = (news: NewsItem[]) => news.find((n) => n.source === "NEA");
 
@@ -124,7 +123,7 @@ export function caption(data: HazeData, fired: Triggers, site: string, now = new
   const win = bestWindowFor(data, fired.outlook && !fired.psi && fired.pm25 == null && !fired.brief ? sgDate(1, now) : undefined);
 
   const lines: string[] = [];
-  if (fired.brief) lines.push(`Morning brief · ${new Intl.DateTimeFormat("en-SG", { timeZone: "Asia/Singapore", weekday: "long" }).format(now)}`);
+  if (fired.brief) lines.push(`Morning brief · ${fmtWeekday(sgDate(0, now), "long")}`);
   const only = fired.hourly && !fired.psi && fired.pm25 == null && !fired.nea && !fired.news && !fired.brief && !fired.outlook;
   if (only) lines.push(`Hourly update · ${fmtHour(data.nea!.time)}`);
   if (fired.nea) lines.push(`NEA: ${fired.nea.title}`, firstSentence(fired.nea.summary));

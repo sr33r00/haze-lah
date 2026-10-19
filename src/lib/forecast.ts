@@ -1,6 +1,6 @@
 import { pm25ToPsi } from "./bands";
 import type { DayOutlook, ForecastPoint, HourPoint, WeatherHour } from "./types";
-import { hourKey, median, sgDate } from "./util";
+import { hourKey, median, sgDate, sgHour } from "./util";
 
 export const FORECAST_METHOD =
   "Copernicus CAMS global PM2.5 forecast (0.4° grid, about 45 km, 3-hourly, interpolated to hourly), calibrated against NEA's live readings from the past 48 hours: a multiplicative bias correction, plus the current error fading out over about 12 hours. The likely range is the typical recent error, widening with lead time.";
@@ -57,8 +57,6 @@ export function buildForecast(obs: HourPoint[], cams: HourPoint[], hours = 120) 
   }
   return { bias, sigma, points };
 }
-
-const sgHour = (t: number) => (new Date(t).getUTCHours() + 8) % 24;
 
 /** Daily outlook per SGT day: peak 24-hr PSI (rolling 24-h PM2.5 mean), peak range, chance of high PM2.5, parts of day. */
 export function dailyOutlook(obs: HourPoint[], fc: ForecastPoint[], weather: WeatherHour[], days = 5): DayOutlook[] {

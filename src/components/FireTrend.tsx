@@ -1,9 +1,9 @@
 import { SOURCE_COLOR } from "@/lib/context";
+import { fmtWeekday } from "@/lib/format";
 import type { FireSummary } from "@/lib/types";
 
 const KEYS = ["sumatra", "borneo"] as const;
 const NAME = { sumatra: "Sumatra", borneo: "Borneo" };
-const day = (date: string) => new Intl.DateTimeFormat("en-SG", { timeZone: "UTC", weekday: "short" }).format(new Date(`${date}T12:00:00Z`));
 
 /** Fire hotspots per day, Sumatra and Borneo side by side. */
 export default function FireTrend({ daily }: { daily: FireSummary["daily"] }) {
@@ -24,7 +24,7 @@ export default function FireTrend({ daily }: { daily: FireSummary["daily"] }) {
       </div>
       <ol
         className="mt-2 flex gap-2"
-        aria-label={daily.map((d, i) => `${day(d.date)}${i === daily.length - 1 ? " so far" : ""}: Sumatra ${d.sumatra}, Borneo ${d.borneo}`).join(". ")}
+        aria-label={daily.map((d, i) => `${fmtWeekday(d.date)}${i === daily.length - 1 ? " so far" : ""}: Sumatra ${d.sumatra}, Borneo ${d.borneo}`).join(". ")}
       >
         {daily.map((d, i) => (
           <li key={d.date} className="min-w-0 flex-1 text-center">
@@ -40,7 +40,7 @@ export default function FireTrend({ daily }: { daily: FireSummary["daily"] }) {
               ))}
             </div>
             <div aria-hidden className="mt-1 text-[12px] text-muted">
-              {day(d.date)}
+              {fmtWeekday(d.date)}
               {i === daily.length - 1 && <span className="block text-[10px] leading-tight">so far</span>}
             </div>
           </li>

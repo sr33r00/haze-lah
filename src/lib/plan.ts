@@ -1,11 +1,11 @@
 import { pm25Step, verdictFor, type Group, type Verdict } from "./bands";
 import type { ForecastPoint } from "./types";
+import { sgHour } from "./util";
 
 export type PlanHour = { time: string; pm25: number; verdict: Verdict };
 export type Window = { start: string; end: string; startIndex: number; meanPm25: number; verdict: Verdict };
 
 const LEN = 3;
-const sgHour = (t: string) => (new Date(t).getUTCHours() + 8) % 24;
 
 /** The next 24 forecast hours with a verdict for the group, from NEA's 1-hr PM2.5 guide. */
 export const planHours = (hourly: ForecastPoint[], group: Group): PlanHour[] =>

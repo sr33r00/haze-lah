@@ -1,5 +1,5 @@
 import { Coffee } from "lucide-react";
-import { BMC_URL } from "@/lib/links";
+import { BMC_LABEL, BMC_URL } from "@/lib/links";
 
 /** A short, honest ask: the site is free and ad-free, and support pays for keeping it online. */
 export default function SupportCard({ className = "" }: { className?: string }) {
@@ -16,7 +16,7 @@ export default function SupportCard({ className = "" }: { className?: string }) 
         className="mt-3 inline-flex min-h-[44px] items-center gap-2 rounded-full bg-accent px-4 text-[14px] font-semibold text-bg transition-opacity hover:opacity-90"
       >
         <Coffee size={16} aria-hidden />
-        Buy me a coffee
+        {BMC_LABEL}
       </a>
     </div>
   );

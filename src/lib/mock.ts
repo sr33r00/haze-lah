@@ -2,14 +2,13 @@
 import { REGIONS, type Region } from "./bands";
 import type { Inputs } from "./data";
 import type { DayPsi, HourPoint, NewsItem, SmokeGrid, Station, WeatherHour } from "./types";
-import { hourKey, sgDate } from "./util";
+import { hourKey, sgDate, sgHour } from "./util";
 
 export function mockInputs(): Inputs {
   const now = Date.parse(hourKey(new Date()));
   const H = 3600_000;
   const shape = (t: number) => {
-    const sgHour = (new Date(t).getUTCHours() + 8) % 24;
-    return 1 + 0.35 * Math.cos(((sgHour - 7) / 24) * 2 * Math.PI);
+    return 1 + 0.35 * Math.cos(((sgHour(t) - 7) / 24) * 2 * Math.PI);
   };
   const regionScale: Record<Region, number> = { north: 0.7, south: 0.9, east: 0.95, west: 1.25, central: 1.05 };
   const regions = Object.fromEntries(REGIONS.map((r) => [r, [] as HourPoint[]])) as Record<Region, HourPoint[]>;

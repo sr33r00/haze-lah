@@ -1,11 +1,12 @@
 import { Coffee, Info } from "lucide-react";
 import Link from "next/link";
-import { ALERTS_URL, BMC_URL } from "@/lib/links";
+import { ALERTS_URL, BMC_LABEL, BMC_URL } from "@/lib/links";
 import { newestTime } from "@/lib/situation";
 import type { HazeData } from "@/lib/types";
 import AlertsButton from "./AlertsButton";
 import BottomNav, { TopNav } from "./BottomNav";
 import Freshness from "./Freshness";
+import InstallPrompt from "./InstallPrompt";
 import Logo from "./Logo";
 import SwipeTabs from "./SwipeTabs";
 import ShareButton from "./ShareButton";
@@ -47,8 +48,8 @@ export default function AppShell({ data, title, children }: { data: HazeData; ti
               href={BMC_URL}
               target="_blank"
               rel="noreferrer"
-              aria-label="Buy me a coffee"
-              title="Buy me a coffee"
+              aria-label={BMC_LABEL}
+              title={BMC_LABEL}
               className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-line bg-surface transition-colors hover:bg-line"
             >
               <Coffee size={16} aria-hidden />
@@ -63,6 +64,7 @@ export default function AppShell({ data, title, children }: { data: HazeData; ti
         {title && <h1 className="px-4 pt-1 text-[28px] lg:pt-4 text-balance font-extrabold leading-tight tracking-tight">{title}</h1>}
         {children}
       </main>
+      <InstallPrompt />
       <SwipeTabs />
       <BottomNav newest={newestTime(data)} />
     </div>
