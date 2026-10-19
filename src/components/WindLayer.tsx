@@ -4,20 +4,33 @@ import { useEffect, useMemo, useRef } from "react";
 import { useMap } from "react-leaflet";
 import { sample, type Field } from "@/lib/wind";
 
-const COUNT = 600;
-const MAX_AGE = 80; // frames
+const PX_PER_PARTICLE = 900; // screen area per particle, so big maps are as dense as small ones
+const MIN_COUNT = 400;
+const MAX_COUNT = 2500;
+const MAX_AGE = 80; // steps
+const STEP_MS = 16; // one step per ~60 Hz frame, so 120 and 144 Hz screens move and fade at the same speed
 const PX_PER_MS = 0.012; // screen speed per m/s of wind
 const ARROW_STEP = 2; // degrees between static arrows
 
 type Particle = { lat: number; lon: number; pLat: number; pLon: number; age: number };
 type Wind = { u: Field; v: Field };
 
-/** Animated wind particles over the map (u and v in m/s on a lat/lon grid); static arrows under reduced motion. */
-export default function WindLayer({ lats, lons, u, v }: { lats: number[]; lons: number[]; u: number[]; v: number[] }) {
+/**
+ * Animated wind particles over the map (u and v in m/s on a lat/lon grid). Under reduced motion it draws still arrows,
+ * unless `motion` says the viewer asked for the animation anyway.
+ */
+export default function WindLayer({ lats, lons, u, v, motion = false }: { lats: number[]; lons: number[]; u: number[]; v: number[]; motion?: boolean }) {
   const map = useMap();
   const wind = useMemo<Wind>(() => ({ u: { lats, lons, data: u }, v: { lats, lons, data: v } }), [lats, lons, u, v]);
   const windRef = useRef(wind);
   const redraw = useRef<() => void>(() => {});
+  const motionRef = useRef(motion);
+  const restart = useRef<() => void>(() => {});
+
+  useEffect(() => {
+    motionRef.current = motion;
+    restart.current();
+  }, [motion]);
 
   useEffect(() => {
     windRef.current = wind;
@@ -71,6 +84,7 @@ export default function WindLayer({ lats, lons, u, v }: { lats: number[]; lons: 
 
     const frameStep = (t: number) => {
       raf = requestAnimationFrame(frameStep);
+      if (t - last < STEP_MS) return;
       const dt = Math.min(50, t - last);
       last = t;
       if (n++ % 60 === 0) readInk();
@@ -135,22 +149,29 @@ export default function WindLayer({ lats, lons, u, v }: { lats: number[]; lons: 
       ctx.stroke();
     };
 
+    const still = () => reduced.matches && !motionRef.current;
+    /** Particle count for the map's size. */
+    const fit = () => {
+      const s = map.getSize();
+      const want = Math.round(Math.min(MAX_COUNT, Math.max(MIN_COUNT, (s.x * s.y) / PX_PER_PARTICLE)));
+      while (parts.length < want) {
+        const p = { lat: 0, lon: 0, pLat: 0, pLon: 0, age: 0 };
+        seed(p);
+        parts.push(p);
+      }
+      parts.length = want;
+    };
+
     const start = () => {
       cancelAnimationFrame(raf);
       clear();
-      if (reduced.matches) {
+      if (still()) {
         redraw.current = arrows;
         arrows();
         return;
       }
       redraw.current = () => {};
-      if (parts.length === 0) {
-        for (let i = 0; i < COUNT; i++) {
-          const p = { lat: 0, lon: 0, pLat: 0, pLon: 0, age: 0 };
-          seed(p);
-          parts.push(p);
-        }
-      }
+      fit();
       readInk();
       if (document.visibilityState === "visible") {
         last = performance.now();
@@ -160,7 +181,7 @@ export default function WindLayer({ lats, lons, u, v }: { lats: number[]; lons: 
     // Trails are drawn in screen space, so wipe them whenever the view moves.
     const moved = () => {
       clear();
-      if (reduced.matches) arrows();
+      if (still()) arrows();
       else
         for (const p of parts) {
           p.pLat = p.lat;
@@ -174,10 +195,12 @@ export default function WindLayer({ lats, lons, u, v }: { lats: number[]; lons: 
     };
     const resized = () => {
       size();
+      if (!still()) fit();
       moved();
     };
 
     size();
+    restart.current = start;
     start();
     map.on("move zoom", moved);
     map.on("moveend", settled);

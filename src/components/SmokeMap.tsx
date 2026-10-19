@@ -1,7 +1,7 @@
 "use client";
 
 import "leaflet/dist/leaflet.css";
-import { Pause, Play } from "lucide-react";
+import { Pause, Play, Wind } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { CircleMarker, ImageOverlay, MapContainer, Polyline, TileLayer, Tooltip, useMapEvents } from "react-leaflet";
 import { LEVEL_COLOR, LEVEL_NAME, LEVEL_TEXT, REGIONS, REGION_POINT, pm25Band, pm25Color, psiLevel, stationLevel } from "@/lib/bands";
@@ -54,6 +54,29 @@ export default function SmokeMap(props: {
   const [frame, setFrame] = useState<number | null>(null); // null until loaded: then "now"
   const [playing, setPlaying] = useState(false);
   const [spot, setSpot] = useState<[number, number] | null>(null);
+  // With reduced motion the wind is drawn as still arrows; the viewer can still ask for the animation.
+  const [reduced, setReduced] = useState(false);
+  const [motion, setMotion] = useState(false);
+  useEffect(() => {
+    const mq = matchMedia("(prefers-reduced-motion: reduce)");
+    const sync = () => setReduced(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    try {
+      setMotion(localStorage.getItem("wind-motion") === "1");
+    } catch {}
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+  const toggleMotion = () => {
+    setMotion((m) => {
+      try {
+        localStorage.setItem("wind-motion", m ? "0" : "1");
+      } catch {}
+      return !m;
+    });
+  };
+  // Wide screens fit the whole fire and smoke area; phones start closer in, on Singapore's side of it.
+  const [wide] = useState(() => matchMedia("(min-width: 1024px)").matches);
   const scale = props.biasFactor ?? 1;
 
   useEffect(() => {
@@ -95,8 +118,8 @@ export default function SmokeMap(props: {
     <div className="lg:contents">
       <div className="relative isolate h-[420px] overflow-hidden lg:col-start-1 lg:row-span-3 lg:h-[max(560px,calc(100vh-15rem))] lg:rounded-3xl">
         <MapContainer
-          center={[1.0, 106]}
-          zoom={5}
+          {...(wide ? { bounds: [[-6.5, 95], [7.5, 120]] as [[number, number], [number, number]] } : { center: [1.0, 106] as [number, number], zoom: 5 })}
+          zoomSnap={0.5}
           minZoom={4}
           maxZoom={9}
           scrollWheelZoom={false}
@@ -110,7 +133,7 @@ export default function SmokeMap(props: {
             maxZoom={19}
           />
           {image && <ImageOverlay url={image.url} bounds={image.bounds} opacity={0.75} />}
-          {wind && <WindLayer {...wind} />}
+          {wind && <WindLayer {...wind} motion={motion} />}
           {day && day.trail.length > 1 && (
             <>
               <Polyline positions={day.trail} pathOptions={{ color: TRAIL, weight: 18, opacity: 0.3, lineCap: "round" }} />
@@ -189,6 +212,16 @@ export default function SmokeMap(props: {
             )}
             {day && <p className="text-muted">{trailCaption(day)}</p>}
           </div>
+        )}
+        {reduced && wind && (
+          <button
+            onClick={toggleMotion}
+            aria-pressed={motion}
+            className="absolute right-3 top-3 z-[500] flex min-h-[36px] items-center gap-1.5 rounded-full bg-surface px-3 text-[13px] font-semibold shadow hover:bg-line"
+          >
+            <Wind size={15} aria-hidden />
+            {motion ? "Still wind" : "Animate wind"}
+          </button>
         )}
         {!grid && (
           <div role="status" className="pointer-events-none absolute inset-x-0 top-3 z-[500] mx-auto w-fit rounded-full bg-surface px-3 py-1 text-[13px] text-muted shadow">

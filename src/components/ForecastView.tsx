@@ -24,7 +24,7 @@ export default function ForecastView(props: {
   const since = sinceWhen(weekPeak);
   return (
     <div className="lg:grid lg:grid-cols-2 lg:gap-x-8">
-      <Section className="lg:col-start-1 lg:row-start-1" title="Next 48 hours" aside="PM2.5 µg/m³, island-wide">
+      <Section className="lg:col-span-2" title="Next 48 hours" aside="PM2.5 µg/m³, island-wide">
         {props.history ? (
           <Chart observed={props.history.island} forecast={props.hourly.slice(0, 48)} />
         ) : (
@@ -40,11 +40,11 @@ export default function ForecastView(props: {
         )}
       </Section>
 
-      <Section className="lg:col-start-2 lg:row-span-2 lg:row-start-1" title="Next 5 days">
+      <Section className="lg:col-start-1" title="Next 5 days">
         <Outlook days={props.days} group={group} />
       </Section>
 
-      <Section className="lg:col-start-1 lg:row-start-2" title="Last 7 days" aside="Peak 24-hr PSI">
+      <Section className="lg:col-start-2 lg:row-start-2" title="Last 7 days" aside="Peak 24-hr PSI">
         <PsiWeek days={props.psiDaily} />
         {since && (
           <p className="mt-2 px-4 text-[13px] text-muted">
