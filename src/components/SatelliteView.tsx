@@ -2,12 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { Pause, Play } from "lucide-react";
-import { fmtTime } from "@/lib/format";
+import { fmtDate, fmtTime, fmtWeekday } from "@/lib/format";
 import { sgDate } from "@/lib/util";
 import { SG_ON_IMAGE, type SatImage } from "@/lib/satellite";
 
-const fmt = (date: string, opts: Intl.DateTimeFormatOptions) =>
-  new Intl.DateTimeFormat("en-SG", { ...opts, timeZone: "Asia/Singapore" }).format(new Date(`${date}T12:00:00+08:00`));
 const STEP_MS = 1200;
 
 /** Satellite views of the region: the last few days in true colour with fires, then the latest Himawari image. */
@@ -38,8 +36,8 @@ export default function SatelliteView({ daily, live }: { daily: SatImage[]; live
   const images = [...frames, live];
   const label =
     pick === LIVE
-      ? `${fmt(sgDate(0, new Date(live.time)), { weekday: "short", day: "numeric", month: "short" })}, ${fmtTime(live.time)}`
-      : `${fmt(frames[pick].time, { weekday: "short", day: "numeric", month: "short" })}, about 1:30pm`;
+      ? `${fmtDate(sgDate(0, new Date(live.time)))}, ${fmtTime(live.time)}`
+      : `${fmtDate(frames[pick].time)}, about 1:30pm`;
 
   return (
     <div className="px-4">
@@ -90,7 +88,7 @@ export default function SatelliteView({ daily, live }: { daily: SatImage[]; live
               aria-pressed={pick === i}
               className={`min-h-[32px] min-w-0 flex-1 rounded-full text-[12px] font-semibold transition-colors ${pick === i ? "bg-fg text-bg" : "text-muted"}`}
             >
-              {i === LIVE ? "Now" : fmt(img.time, { weekday: "short" })}
+              {i === LIVE ? "Now" : fmtWeekday(img.time)}
             </button>
           ))}
         </div>

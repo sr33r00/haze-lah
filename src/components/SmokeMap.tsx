@@ -5,7 +5,7 @@ import { Pause, Play, Wind } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { CircleMarker, ImageOverlay, MapContainer, Polyline, TileLayer, Tooltip, useMapEvents } from "react-leaflet";
 import { LEVEL_COLOR, LEVEL_NAME, LEVEL_TEXT, REGIONS, REGION_POINT, pm25Band, pm25Color, psiLevel, stationLevel } from "@/lib/bands";
-import { fmtDay, fmtHour } from "@/lib/format";
+import { fmtDate, fmtDay, fmtHour } from "@/lib/format";
 import { islandMax } from "@/lib/situation";
 import type { DayPsi, FireSummary, NeaNow, Replay, ReplayDay, Sensor, SmokeGrid, Station } from "@/lib/types";
 import { sgDate } from "@/lib/util";
@@ -21,9 +21,6 @@ function frameLabel(t: string) {
   const offset = [0, 1, 2, 3, 4].find((k) => sgDate(k) === day) ?? 0;
   return `${fmtDay(day, offset)} ${fmtHour(t)}`;
 }
-
-const pastLabel = (date: string) =>
-  new Intl.DateTimeFormat("en-SG", { weekday: "short", day: "numeric", month: "short" }).format(new Date(`${date}T12:00:00+08:00`));
 
 /** One line on where the day's air came from. */
 function trailCaption(d: ReplayDay) {
@@ -242,7 +239,7 @@ export default function SmokeMap(props: {
           </button>
           <div className="flex-1">
             <div className="flex justify-between text-[13px]">
-              <span className="font-bold">{day && f < nowIdx ? pastLabel(day.date) : grid ? frameLabel(grid.times[ahead]) : "Now"}</span>
+              <span className="font-bold">{day && f < nowIdx ? fmtDate(day.date) : grid ? frameLabel(grid.times[ahead]) : "Now"}</span>
               <span className="flex items-center gap-3 text-muted">
                 {ahead < 0 ? `${-ahead} ${ahead === -1 ? "day" : "days"} ago` : ahead > 0 ? `in ${ahead * 3} h` : "now"}
                 {f !== nowIdx && (

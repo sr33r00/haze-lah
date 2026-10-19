@@ -14,12 +14,15 @@ export const fmtTime = (t: string | number) =>
     .replace(" ", "")
     .toLowerCase();
 
-export const fmtDay = (date: string, i: number) =>
-  i === 0
-    ? "Today"
-    : i === 1
-      ? "Tmrw"
-      : new Intl.DateTimeFormat("en-SG", { timeZone: TZ, weekday: "short" }).format(new Date(`${date}T12:00:00+08:00`));
+/** Weekday name of an SGT date (YYYY-MM-DD). */
+export const fmtWeekday = (date: string, weekday: "short" | "long" = "short") =>
+  new Intl.DateTimeFormat("en-SG", { timeZone: TZ, weekday }).format(new Date(`${date}T12:00:00+08:00`));
+
+/** "Sat, 17 Oct" for an SGT date (YYYY-MM-DD). */
+export const fmtDate = (date: string) =>
+  new Intl.DateTimeFormat("en-SG", { timeZone: TZ, weekday: "short", day: "numeric", month: "short" }).format(new Date(`${date}T12:00:00+08:00`));
+
+export const fmtDay = (date: string, i: number) => (i === 0 ? "Today" : i === 1 ? "Tmrw" : fmtWeekday(date));
 
 export function ago(t: string) {
   const m = Math.round((Date.now() - Date.parse(t)) / 60000);

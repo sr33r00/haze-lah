@@ -6,7 +6,8 @@ import { SG } from "@/lib/util";
 
 const GROUPS: Group[] = ["healthy", "sensitive", "chronic"];
 
-function useStored<T extends string>(key: string, allowed: readonly T[], fallback: T) {
+/** A string setting remembered in this browser, limited to `allowed`. */
+export function useStored<T extends string>(key: string, allowed: readonly T[], fallback: T) {
   const [value, setValue] = useState<T>(fallback);
   useEffect(() => {
     try {

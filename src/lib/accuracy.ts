@@ -1,6 +1,8 @@
 // Forecast verification: our corrected forecast vs raw CAMS vs persistence ("same as now"),
 // matched on issue time and lead time against NEA island-mean 1-hr PM2.5.
 
+import { sgHour } from "./util";
+
 export type ArchiveRecord = {
   issued: string; // time of the last NEA observation used
   retrieved: string;
@@ -77,7 +79,6 @@ export function scoreArchive(records: ArchiveRecord[]): Accuracy {
 
 const SGT = 8 * 3600_000;
 const sgDay = (t: number) => new Date(t + SGT).toISOString().slice(0, 10);
-const sgHour = (t: number) => new Date(t + SGT).getUTCHours();
 
 /** Score the forecast issued closest to 11pm SGT each night against the next day's observed peak. */
 export function scoreHazyDays(records: ArchiveRecord[], observed: Map<number, number>): HazyDays {
