@@ -17,7 +17,7 @@ export default function SupportLinks() {
       <FeedbackForm pill={pill} />
       <a className={pill} href={BMC_URL} target="_blank" rel="noreferrer">
         <Coffee size={16} aria-hidden />
-        Buy me a coffee
+        Support Haze Lah
       </a>
     </div>
   );

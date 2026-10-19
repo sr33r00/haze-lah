@@ -7,6 +7,7 @@ import { ALERTS_URL } from "@/lib/links";
 import { fmtTime, fmtWhen } from "@/lib/format";
 import type { TimelineItem } from "@/lib/situation";
 import { sgDate } from "@/lib/util";
+import SupportCard from "./SupportCard";
 
 const ADVISORIES = "https://www.nea.gov.sg/media/news/advisories";
 const FILTERS: { label: string; sources: TimelineItem["source"][] | null }[] = [
@@ -113,6 +114,8 @@ export default function NewsView({ items, streak, psi }: { items: TimelineItem[]
             )}
           </div>
         )}
+
+        <SupportCard className="hidden lg:block" />
 
         <div role="group" aria-label="Filter updates" className="mt-3 flex gap-1.5 px-4 lg:mt-0 lg:px-0">
           {FILTERS.map((f, i) => (
