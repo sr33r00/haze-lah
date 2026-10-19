@@ -5,7 +5,7 @@ import { GROUP_LABEL, LEVEL_COLOR, LEVEL_NAME, STEP_TEXT, TONE_COLOR, adviceStep
 import { fmtHour } from "@/lib/format";
 import type { ForecastPoint } from "@/lib/types";
 import { cap } from "./ui";
-import { useCountUp } from "./useCountUp";
+import Counter from "./bits/Counter";
 
 const GROUPS: Group[] = ["healthy", "sensitive", "chronic"];
 const GROUP_SHORT: Record<Group, string> = { healthy: "Healthy adult", sensitive: "Child, elderly, pregnant", chronic: "Heart or lung condition" };
@@ -30,8 +30,6 @@ export default function Hero(props: {
   const [open, setOpen] = useState<keyof typeof EXPLAIN | null>(null);
   const step = adviceStep(pm25, psi, group);
   const v = step != null ? verdictFor(step) : null;
-  const pm = useCountUp(pm25 != null ? Math.round(pm25) : null);
-  const psiShown = useCountUp(psi);
   // Solid verdict colour with a subtle same-hue shade; neutral when there is no reading.
   const tone = v ? TONE_COLOR[v.tone] : null;
   const ink = tone ? tone.fg : "var(--fg)";
@@ -85,8 +83,7 @@ export default function Hero(props: {
             </button>
           </dt>
           <dd className="tabular text-[52px] font-light leading-none tracking-tight">
-            <span aria-hidden>{pm25 != null ? pm : "–"}</span>
-            {pm25 != null && <span className="sr-only">{Math.round(pm25)}</span>}
+            {pm25 != null ? <Reading value={Math.round(pm25)} /> : "–"}
           </dd>
           <dd className="mt-1 flex items-center gap-1.5 text-[15px] font-semibold">
             {pm25 != null && <Dot color={pm25Color(pm25)} />}
@@ -110,8 +107,7 @@ export default function Hero(props: {
             </button>
           </dt>
           <dd className="tabular text-[52px] font-light leading-none tracking-tight">
-            <span aria-hidden>{psi != null ? psiShown : "–"}</span>
-            {psi != null && <span className="sr-only">{psi}</span>}
+            {psi != null ? <Reading value={psi} /> : "–"}
           </dd>
           <dd className="mt-1 flex items-center gap-1.5 text-[15px] font-semibold">
             {psi != null && <Dot color={LEVEL_COLOR[psiLevel(psi)]} />}
@@ -157,4 +153,9 @@ export default function Hero(props: {
 function Dot({ color }: { color: string }) {
   // White gap and a ring in the text colour, so the level colour shows on every verdict background.
   return <span aria-hidden className="inline-block h-3 w-3 rounded-full" style={{ background: color, boxShadow: "0 0 0 2px #fff, 0 0 0 3.5px currentColor" }} />;
+}
+
+/** A reading whose digits roll to the new value when the region or reading changes, so the change is visible. */
+function Reading({ value }: { value: number }) {
+  return <Counter value={value} fontSize="inherit" intro={false} duration={0.6} />;
 }
