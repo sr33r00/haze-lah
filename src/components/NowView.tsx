@@ -14,6 +14,7 @@ import Hero from "./Hero";
 import LiveViews from "./LiveViews";
 import PlanDay from "./PlanDay";
 import RegionChips from "./RegionChips";
+import SupportCard from "./SupportCard";
 import { Section, cap } from "./ui";
 import { usePrefs } from "./usePrefs";
 
@@ -76,6 +77,8 @@ export default function NowView({ history, nea, hourly, sensors, stations, camer
             <AirDetail nea={nea} region={region} />
           </Section>
         )}
+
+        <SupportCard className="mt-10" />
       </div>
     </div>
   );

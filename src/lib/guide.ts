@@ -10,6 +10,7 @@ const NEA_HAZE: Source = ["NEA: managing haze", "https://www.nea.gov.sg/our-serv
 const NEA_QA: Source = ["NEA air pollution FAQ", NEA_FAQ[1]];
 const MOH_HAZE: Source = ["MOH haze advice", MOH[1]];
 const MOE_HAZE: Source = ["MOE haze measures", MOE[1]];
+const HAZE_MASK: Source = ["HazeMaskGoWhere", "https://go.gov.sg/hazemask"];
 const TASK_FORCE: Source = ["Haze Task Force release", ECDA[1]];
 const PRESCHOOLS: Source = ["ECDA, in the Haze Task Force release", ECDA[1]];
 const MOM: Source = ["MOM employer guidelines", "https://www.mom.gov.sg/haze/guidelines-on-protecting-employees-from-haze"];
@@ -90,12 +91,9 @@ export const GUIDE: GuideSection[] = [
       {
         id: "free-masks",
         q: "Where can I get free N95 masks?",
-        a: "When the PSI enters Very unhealthy (above 200), People's Association grassroots organisations give N95 masks to eligible Singaporeans.",
-        points: [
-          "There are also mask vending machines at selected transport hubs, Social Service Offices and PA venues.",
-          "Collect with the eligible person's NRIC, and check gov.sg for current details.",
-        ],
-        sources: [TASK_FORCE, ["gov.sg", "https://www.gov.sg"]],
+        a: "During bad haze the Government gives free N95 masks to eligible Singaporeans at Community Clubs and mask vending machines. HazeMaskGoWhere shows who is eligible, where to collect and which places have stock.",
+        points: ["Bring the eligible person's NRIC."],
+        sources: [HAZE_MASK, TASK_FORCE],
       },
     ],
   },
