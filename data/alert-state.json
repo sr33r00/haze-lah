@@ -1,8 +1,20 @@
 {
   "psiLevel": 2,
   "pm25Band": 1,
-  "neaUrl": "https://www.nea.gov.sg/media/news/advisories/index/haze-situation-update-18-october-2026",
+  "neaUrl": "https://www.nea.gov.sg/media/news/advisories/index/haze-situation-update-19-october-2026",
   "newsUrls": [
+    "https://www.straitstimes.com/singapore/firefly-plans-oct-22-resumption-of-all-subang-seletar-flights-after-haze-cancellations",
+    "https://www.channelnewsasia.com/singapore/haze-asia-pulp-paper-environment-council-6471366",
+    "https://www.channelnewsasia.com/singapore/haze-alfresco-outdoor-dining-busking-drop-6471381",
+    "https://www.channelnewsasia.com/singapore/haze-indonesia-official-oxygen-comments-disappointing-shanmugam-6471166",
+    "https://www.channelnewsasia.com/singapore/singapore-haze-firms-companies-laws-shanmugam-6470856",
+    "https://www.straitstimes.com/singapore/singapore-appreciates-efforts-by-prabowo-and-administration-to-solve-haze-issue-shanmugam",
+    "https://www.straitstimes.com/singapore/spore-to-use-every-legal-and-regulatory-lever-against-companies-linked-to-haze-shanmugam",
+    "https://www.straitstimes.com/singapore/nea-issues-notices-to-three-more-companies-in-indonesia-over-haze-role",
+    "https://www.straitstimes.com/singapore/environment/asia-pulp-paper-tied-to-haze-linked-suppliers-given-temporary-restrictions-by-spore-environment",
+    "https://www.channelnewsasia.com/singapore/nea-haze-notices-indonesia-companies-transboundary-haze-pollution-act-6471111",
+    "https://www.channelnewsasia.com/singapore/singapore-haze-psi-oct-19-6469736",
+    "https://www.straitstimes.com/singapore/haze-in-singapore-air-quality-improves-but-most-regions-remain-in-unhealthy-band",
     "https://www.straitstimes.com/singapore/malaysias-firefly-cancels-seletar-subang-flights-for-10th-day-due-to-haze",
     "https://www.straitstimes.com/singapore/psi-forecast-to-be-between-100-and-190-on-oct-19-says-nea",
     "https://www.channelnewsasia.com/singapore/haze-western-region-daily-routines-psi-businesses-6469406",
@@ -20,21 +32,9 @@
     "https://www.straitstimes.com/singapore/are-two-n95-masks-enough-for-me-this-haze-season",
     "https://www.straitstimes.com/singapore/environment/se-asia-experiencing-one-of-the-worst-haze-episodes-due-to-fires-in-indonesia-wmo-director",
     "https://www.channelnewsasia.com/commentary/haze-outdoor-worker-platform-mask-snap-insight-6466426",
-    "https://www.straitstimes.com/singapore/haze-in-singapore-psi-back-to-unhealthy-range-pm2-5-remains-elevated-in-all-regions",
-    "https://www.channelnewsasia.com/singapore/haze-indonesia-diplomatic-implications-legal-action-lawyers-6465511",
-    "https://www.channelnewsasia.com/singapore/great-eastern-womens-run-cancelled-haze-air-quality-6466311",
-    "https://www.channelnewsasia.com/singapore/haze-key-takeaways-psi-air-quality-6465711",
-    "https://www.straitstimes.com/singapore/environment/employers-need-to-plan-how-to-protect-workers-if-haze-situation-worsens-mom",
-    "https://www.straitstimes.com/singapore/psi-could-go-over-300-before-haze-improves-once-inter-monsoon-period-starts-grace-fu",
-    "https://www.straitstimes.com/singapore/schools-to-stay-open-despite-haze-o-level-a-level-exams-to-proceed-next-week-desmond-lee",
-    "https://www.straitstimes.com/singapore/nea-to-send-legal-notices-to-7-companies-under-haze-law-will-take-further-action-where-warranted",
-    "https://www.channelnewsasia.com/singapore/haze-indonesia-companies-fire-grace-fu-6465556",
-    "https://www.channelnewsasia.com/singapore/haze-singapore-platform-workers-wfh-6465216",
-    "https://www.channelnewsasia.com/singapore/haze-o-level-exam-schools-close-preschools-open-6465126",
-    "https://www.channelnewsasia.com/singapore/haze-hazardous-air-quality-masks-grace-fu-6465121",
-    "https://www.straitstimes.com/singapore/purple-parade-postponed-to-first-half-of-2027-amid-haze-concerns"
+    "https://www.straitstimes.com/singapore/haze-in-singapore-psi-back-to-unhealthy-range-pm2-5-remains-elevated-in-all-regions"
   ],
   "briefDate": "2026-10-19",
-  "outlookDate": "2026-10-18",
-  "hourTime": "2026-10-18T23:00:00+08:00"
+  "outlookDate": "2026-10-19",
+  "hourTime": "2026-10-19T23:00:00+08:00"
 }
