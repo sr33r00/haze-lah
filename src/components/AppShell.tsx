@@ -21,7 +21,7 @@ export default function AppShell({ data, title, children }: { data: HazeData; ti
       >
         Skip to content
       </a>
-      <header className="sticky top-0 z-[1000] mx-auto max-w-lg lg:max-w-6xl 2xl:max-w-7xl border-b border-line bg-bg/90 pt-[env(safe-area-inset-top)] backdrop-blur">
+      <header className="sticky top-0 z-[1000] mx-auto max-w-lg lg:max-w-6xl 2xl:max-w-[1400px] min-[1920px]:max-w-[1600px] border-b border-line bg-bg/90 pt-[env(safe-area-inset-top)] backdrop-blur">
         <div className="flex h-14 items-center justify-between gap-3 px-4">
           <Link href="/" aria-label="Haze Lah home" className="flex min-w-0 items-center gap-2.5">
             <Logo size={32} />
@@ -58,7 +58,7 @@ export default function AppShell({ data, title, children }: { data: HazeData; ti
           </div>
         </div>
       </header>
-      <main id="main" className="mx-auto max-w-lg lg:max-w-6xl 2xl:max-w-7xl [&>h1+section]:mt-4">
+      <main id="main" className="mx-auto max-w-lg lg:max-w-6xl 2xl:max-w-[1400px] min-[1920px]:max-w-[1600px] [&>h1+section]:mt-4">
         {data.mock && <p className="mx-4 mb-3 rounded-xl bg-[var(--lv2)]/15 px-3 py-2 text-[13px]">Demo data. These are not real readings.</p>}
         {title && <h1 className="px-4 pt-1 text-[28px] lg:pt-4 text-balance font-extrabold leading-tight tracking-tight">{title}</h1>}
         {children}

@@ -22,7 +22,7 @@ export default function GuideView() {
       <p className="text-[15px] text-muted">Short answers from NEA, MOH, MOE and MOM. Tap a question to open it.</p>
       <div className="mt-4 space-y-8 lg:grid lg:grid-cols-[13rem_minmax(0,1fr)] lg:gap-x-10 lg:space-y-0">
         <SectionNav label="Guide sections" sections={sections} />
-        <div className="max-w-2xl space-y-8">
+        <div className="max-w-2xl space-y-8 xl:max-w-none xl:columns-2 xl:gap-8 xl:space-y-0 xl:[&>*]:mb-8 xl:[&>*]:break-inside-avoid">
           {GUIDE.map((s) => {
             const Icon = ICONS[s.id];
             return (

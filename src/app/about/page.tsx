@@ -132,11 +132,12 @@ export default async function About() {
 
         <div className="mt-6 space-y-8 lg:grid lg:grid-cols-[13rem_minmax(0,1fr)] lg:gap-x-10 lg:space-y-0">
           <SectionNav label="About sections" sections={SECTIONS} />
-          <div className="max-w-2xl space-y-8">
+          <div className="max-w-2xl space-y-8 xl:max-w-none xl:[&>section:not(#sources)]:max-w-3xl">
             <section id="sources" className="scroll-mt-20 space-y-4">
               <h2 className={H2}>Data sources</h2>
-              {SOURCE_GROUPS.map(({ title, icon: Icon, items }) => (
-                <div key={title}>
+              <div className="space-y-4 xl:grid xl:grid-cols-2 xl:gap-x-6 xl:gap-y-4 xl:space-y-0">
+                {SOURCE_GROUPS.map(({ title, icon: Icon, items }) => (
+                  <div key={title}>
                   <h3 className={`mb-2 flex items-center gap-2 ${H3}`}>
                     <Icon size={16} aria-hidden className="text-muted" />
                     {title}
@@ -151,8 +152,9 @@ export default async function About() {
                       </li>
                     ))}
                   </ul>
-                </div>
-              ))}
+                  </div>
+                ))}
+              </div>
               <p className="text-[13px] text-muted">
                 Contains information from NEA and LTA made available under the{" "}
                 <a href={OPEN_DATA_LICENCE} target="_blank" rel="noreferrer" className="underline">

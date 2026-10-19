@@ -52,7 +52,7 @@ function Item({ n, i }: { n: TimelineItem; i: number }) {
       <span className="tabular w-14 shrink-0 pt-0.5 text-[13px] text-muted">{n.hasHour ? fmtTime(n.time) : ""}</span>
       <div className="min-w-0 flex-1">
         <span className={`rounded-full px-2 py-0.5 text-[12px] font-semibold ${official ? "bg-accent text-bg" : "bg-line"}`}>{SOURCE_NAME[n.source]}</span>
-        <p className="mt-1.5 text-[16px] font-bold leading-snug">
+        <p className="mt-1.5 max-w-[70ch] text-[16px] font-bold leading-snug">
           {n.url ? (
             // The link covers the whole row, so the headline is the only link a screen reader hears.
             <a href={n.url} target="_blank" rel="noreferrer" className="after:absolute after:inset-0">
@@ -64,7 +64,7 @@ function Item({ n, i }: { n: TimelineItem; i: number }) {
             n.title
           )}
         </p>
-        {n.summary && <p className="mt-1 line-clamp-3 text-[14px] leading-snug text-muted">{n.summary}</p>}
+        {n.summary && <p className="mt-1 line-clamp-3 max-w-[75ch] text-[14px] leading-snug text-muted">{n.summary}</p>}
       </div>
     </li>
   );
@@ -86,7 +86,7 @@ export default function NewsView({ items, streak, psi }: { items: TimelineItem[]
 
   const lv = psi ? psiLevel(psi.max) : null;
   return (
-    <div className="mt-3 lg:grid lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start lg:gap-x-8 lg:px-4">
+    <div className="mt-3 lg:grid lg:grid-cols-[minmax(0,1fr)_22rem] 2xl:grid-cols-[minmax(0,1fr)_26rem] lg:items-start lg:gap-x-8 lg:px-4">
       <div className="lg:sticky lg:top-[calc(4.5rem+env(safe-area-inset-top))] lg:col-start-2 lg:row-start-1 lg:space-y-4 lg:[&>*]:mx-0 lg:[&>*]:mt-0">
         {(streak > 0 || psi || ALERTS_URL) && (
           <div className="mx-4 flex items-center gap-3 rounded-3xl bg-surface p-4">
