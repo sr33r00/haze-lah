@@ -1,6 +1,6 @@
 import type { NextConfig } from "next";
 
-// Everything is served from this origin except OpenStreetMap map tiles, NASA satellite images and Windy webcam images.
+// Everything is served from this origin except OpenStreetMap map tiles, OpenFreeMap vector tiles, NASA satellite images and Windy webcam images.
 const csp = [
   "default-src 'self'",
   // Next.js inline bootstrap scripts; the page renders no user input. Dev mode also needs eval.
@@ -8,7 +8,8 @@ const csp = [
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https://tile.openstreetmap.org https://gibs.earthdata.nasa.gov https://imgproxy.windy.com",
   "font-src 'self'",
-  "connect-src 'self'",
+  // OpenFreeMap serves the globe's map to MapLibre as data, not images: the style, the tile list, the vector tiles and the font glyphs. MapLibre's worker is a file of this origin.
+  "connect-src 'self' https://tiles.openfreemap.org",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",

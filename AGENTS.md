@@ -1,6 +1,6 @@
 # Haze Lah: notes for coding agents
 
-A mobile-first Singapore haze tracker (Next.js 15 App Router, TypeScript, Tailwind 4, react-leaflet, recharts, lucide-react). See the README for what it shows, its data sources and how the forecast works.
+A mobile-first Singapore haze tracker (Next.js 15 App Router, TypeScript, Tailwind 4, react-leaflet, MapLibre GL, recharts, lucide-react). See the README for what it shows, its data sources and how the forecast works.
 
 ## How work is split
 
@@ -68,5 +68,5 @@ Then look at the result in a browser at phone width (390 px) and desktop width, 
 - `src/lib/forecast.ts`: CAMS calibrated to NEA. `src/lib/accuracy.ts` plus `scripts/` and `.github/workflows/archive.yml` save and score forecasts.
 - `src/lib/bands.ts` and `src/lib/advice.ts`: NEA bands, sub-indices and advice.
 - `src/lib/wind.ts` and `src/lib/replay.ts`: the 72-hour back-trajectory of the air ("where it came from"), fires near it and the province.
-- `src/lib/satellite.ts`: NASA GIBS image URLs and the projection onto the 1000×520 image of `SAT_BOX`. `src/lib/globe.ts` and `src/lib/sources/gibsTexture.ts` (route `/api/globe/[layer]`): the globe layers and the server-built carbon monoxide and smoke textures.
-- `next.config.ts`: CSP. Add any new image or connect host there.
+- `src/lib/satellite.ts`: NASA GIBS image URLs and the projection onto the 1000×520 image of `SAT_BOX`. `src/lib/globe.ts`, `src/lib/sources/gibsTexture.ts` and `src/app/api/globe/` (`/api/globe/[layer]` and `/api/globe/[layer]/series`): the layers, the server-built carbon monoxide and smoke pictures (Web Mercator WebP) and each day's reading over Singapore. `src/components/SpaceView.tsx` is the card; `GlobeMap.tsx` (MapLibre, loaded lazily) and `src/lib/basemap.ts` (OpenFreeMap style, trimmed) are the map.
+- `next.config.ts`: CSP. Add any new image or connect host there (OpenFreeMap is a `connect-src`).

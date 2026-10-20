@@ -14,7 +14,7 @@ const SmokeMap = dynamic(() => import("./SmokeMap"), {
   loading: () => <div className="h-[420px] animate-pulse bg-line lg:col-start-1 lg:row-span-3 lg:h-[max(560px,calc(100vh-15rem))]" />,
 });
 
-/** The Map tab: smoke forecast, wind, fires, a 3D globe of NASA pollution data and neighbouring readings. */
+/** The Map tab: smoke forecast, wind, fires, a zoomable map of NASA pollution data and neighbouring readings. */
 export default function MapView(props: {
   fires: FireSummary;
   stations: Station[];
