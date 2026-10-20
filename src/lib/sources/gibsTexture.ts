@@ -5,7 +5,7 @@ import { getText } from "../util";
 
 // Equirectangular pollution textures for the globe, built from NASA GIBS satellite passes. GIBS only serves each
 // pass as a coloured picture, so the colours are turned back into values, the passes averaged and smoothed, and
-// the result coloured again with our own ramp. The route that serves it is cached by the CDN for 6 hours.
+// the result coloured again with our own ramp. The route that serves it caches each frame on the CDN.
 
 type Source = {
   layers: string[]; // one picture per layer and day
@@ -30,10 +30,8 @@ const SOURCES: Record<GlobeLayer, Source> = {
   },
 };
 
-const W = 1440; // working size; the result is scaled up to the texture size
+const W = 1440; // the size of every picture and of the texture: about 90 KB as a JPEG, sharp enough at the zoom the globe allows
 const H = 720;
-const OUT_W = 2048;
-const OUT_H = 1024;
 const SIGMA = 5; // pixels of smoothing, about 1.25 degrees
 const COARSE = 8; // gaps wider than that are filled on a picture this many times smaller
 
@@ -50,18 +48,20 @@ async function valueLookup(colormap: string) {
   return lookup;
 }
 
-/** A GIBS picture as raw RGBA pixels, or null when this pass is missing. Not in Next's fetch cache (2 MB limit). */
+/** A GIBS picture as raw RGBA pixels, or null when it could not be fetched (tried twice). Not in Next's fetch cache (2 MB limit). */
 async function fetchPng(url: string, w: number, h: number): Promise<Buffer | null> {
-  try {
-    const res = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(20_000) });
-    if (!res.ok) throw new Error(`GIBS ${res.status}`);
-    const { data, info } = await sharp(Buffer.from(await res.arrayBuffer())).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
-    if (info.width !== w || info.height !== h) throw new Error("GIBS: unexpected size");
-    return data;
-  } catch (e) {
-    console.error("[haze] gibs pass:", url, e);
-    return null;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const res = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(20_000) });
+      if (!res.ok) throw new Error(`GIBS ${res.status}`);
+      const { data, info } = await sharp(Buffer.from(await res.arrayBuffer())).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+      if (info.width !== w || info.height !== h) throw new Error("GIBS: unexpected size");
+      return data;
+    } catch (e) {
+      console.error("[haze] gibs pass:", url, e);
+    }
   }
+  return null;
 }
 
 /** Gaussian blur of two `w` by `h` images at once: wraps around east-west, stops at the poles. */
@@ -124,17 +124,18 @@ function smoothFilled(values: Float32Array, have: Float32Array, fill: boolean) {
   });
 }
 
-/** The globe texture of `layer` as a JPEG. Throws when no satellite pass could be fetched. */
-export async function fetchGlobeTexture(layer: GlobeLayer, now = Date.now()): Promise<Buffer> {
+/** The globe texture of `layer` for the frame of `date` (YYYY-MM-DD, SGT) as a JPEG, and whether every picture it needs arrived. Throws when no satellite pass could be fetched. */
+export async function fetchGlobeTexture(layer: GlobeLayer, date: string): Promise<{ jpeg: Buffer; complete: boolean }> {
   const src = SOURCES[layer];
   const ramp = GLOBE_LAYERS[layer].ramp;
-  const urls = globeDays(layer, now).flatMap((time) => src.layers.map((l) => gibsMap(l, W, H, { format: "png", time })));
+  const urls = globeDays(layer, date).flatMap((time) => src.layers.map((l) => gibsMap(l, W, H, { format: "png", time })));
   const [lookup, coast, ...passes] = await Promise.all([
     valueLookup(src.colormap),
-    fetchPng(gibsMap(COAST, OUT_W, OUT_H, { format: "png" }), OUT_W, OUT_H),
+    fetchPng(gibsMap(COAST, W, H, { format: "png" }), W, H),
     ...urls.map((u) => fetchPng(u, W, H)),
   ]);
   const got = passes.filter((p) => p !== null);
+  const complete = !!coast && got.length === passes.length;
   if (!got.length) throw new Error("GIBS: no passes");
 
   // Average every valid value per pixel.
@@ -162,21 +163,21 @@ export async function fetchGlobeTexture(layer: GlobeLayer, now = Date.now()): Pr
     rgb.set(colours[Math.round(t * 255)], i * 3);
   }
 
-  // Coastlines in one flat colour, over the scaled-up picture. GIBS also draws a line along the bottom edge of Antarctica; drop it.
+  // Coastlines in one flat colour, over the picture. GIBS also draws a line along the bottom edge of Antarctica; drop it.
   if (coast) {
-    for (let y = 0; y < OUT_H; y++) {
-      const row = y * OUT_W * 4;
+    for (let y = 0; y < H; y++) {
+      const row = y * W * 4;
       let ink = 0;
-      for (let x = 0; x < OUT_W; x++) if (coast[row + x * 4 + 3]) ink++;
-      for (let x = 0; x < OUT_W; x++) {
-        if (ink === OUT_W) coast[row + x * 4 + 3] = 0;
+      for (let x = 0; x < W; x++) if (coast[row + x * 4 + 3]) ink++;
+      for (let x = 0; x < W; x++) {
+        if (ink === W) coast[row + x * 4 + 3] = 0;
         else coast.set(src.coast, row + x * 4);
       }
     }
   }
-  return sharp(rgb, { raw: { width: W, height: H, channels: 3 } })
-    .resize(OUT_W, OUT_H, { kernel: "cubic" })
-    .composite(coast ? [{ input: coast, raw: { width: OUT_W, height: OUT_H, channels: 4 } }] : [])
-    .jpeg({ quality: 82 })
+  const jpeg = await sharp(rgb, { raw: { width: W, height: H, channels: 3 } })
+    .composite(coast ? [{ input: coast, raw: { width: W, height: H, channels: 4 } }] : [])
+    .jpeg({ quality: 82, mozjpeg: true })
     .toBuffer();
+  return { jpeg, complete };
 }

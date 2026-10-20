@@ -3,20 +3,25 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import type { GlobeMethods } from "react-globe.gl";
 import type { MeshBasicMaterial, Texture, WebGLRenderer } from "three";
-import { fmtRange } from "@/lib/format";
-import { GLOBE_CREDIT, GLOBE_LAYERS, REGION, globeDays, globeTexture, rampCss, type GlobeLayer } from "@/lib/globe";
+import { fmtDate, fmtRange } from "@/lib/format";
+import { FRAMES, GLOBE_CREDIT, GLOBE_LAYERS, REGION, globeDates, globeDays, globeTexture, rampCss, type GlobeLayer } from "@/lib/globe";
 import { FIRE_COLOR, TRAIL_COLOR, fetchReplay } from "@/lib/replay";
 import { WORLD_BOX, onImage } from "@/lib/satellite";
 import type { Fire } from "@/lib/types";
 import { SG } from "@/lib/util";
+import PlayButton from "./PlayButton";
 import SgPin from "./SgPin";
 
 const CHIP = "min-h-[32px] min-w-0 flex-auto rounded-full px-3 text-[12px] font-semibold transition-colors";
 const IDLE_MS = 1500; // the globe stops drawing this long after the last touch
 const INTRO_MS = 1200; // the camera settles from far away
+const STEP_MS = 800; // time on each day while playing
+const HOLD_MS = 1500; // time on the newest day before it loops
+const LAST = FRAMES - 1;
 const LAYERS = Object.keys(GLOBE_LAYERS) as GlobeLayer[];
 const AT_SG = onImage(SG.lat, SG.lon, WORLD_BOX);
 type Trail = [number, number][];
+const NONE: never[] = []; // one empty list, so showing no fires or path is not a change each step
 const FADE = "transition-opacity duration-700 motion-reduce:transition-none";
 const R = "max(100cqw, 150cqh)"; // width of the region (REGION is 3:2) when it just covers the stage
 const CENTRE = { lat: (REGION[0] + REGION[2]) / 2, lon: (REGION[1] + REGION[3]) / 2 };
@@ -46,27 +51,36 @@ function canRunGlobe() {
   }
 }
 
-/** Singapore's ring and label as a DOM element on the globe. The label sits above, clear of the air's path. */
+/** Singapore's pulsing ring and label as a DOM element on the globe. The label sits above, clear of the air's path. */
 function marker() {
   const el = document.createElement("div");
   el.className = "pointer-events-none relative";
-  el.innerHTML =
-    '<span class="absolute size-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow-[0_0_0_1px_rgb(0_0_0/0.5)]"></span>' +
-    '<span class="absolute bottom-3 left-0 -translate-x-1/2 rounded bg-black/70 px-1.5 text-[11px] font-semibold text-white">Singapore</span>';
+  el.innerHTML = '<span class="sg-ring"></span><span class="sg-label bottom-3 left-0 -translate-x-1/2">Singapore</span>';
   return el;
 }
 
-type Kit = { Globe: typeof import("react-globe.gl").default; maps: Record<GlobeLayer, Texture>; material: MeshBasicMaterial };
+type Kit = { Globe: typeof import("react-globe.gl").default; frame: (url: string) => Promise<Texture>; frames: Map<string, Promise<Texture>>; material: MeshBasicMaterial };
 
-/** The globe code and both layer textures, fetched together so that switching layers later is only a swap. */
+/** The globe code and the newest texture of every layer, fetched together so that switching layers later is only a swap. Other days load on demand through `frame`. */
 async function loadKit(): Promise<Kit> {
   const [{ default: Globe }, THREE] = await Promise.all([import("react-globe.gl"), import("three")]);
   const loader = new THREE.TextureLoader().setCrossOrigin("anonymous"); // the same kind of request as the poster's, so it is served from cache
-  const loaded = await Promise.all(LAYERS.map((key) => loader.loadAsync(globeTexture(key))));
-  const maps = Object.fromEntries(LAYERS.map((key, i) => [key, loaded[i]])) as Record<GlobeLayer, Texture>;
-  loaded.forEach((t) => (t.colorSpace = THREE.SRGBColorSpace));
+  const frames = new Map<string, Promise<Texture>>();
+  const frame = (url: string) => {
+    let texture = frames.get(url);
+    if (!texture) {
+      texture = loader.loadAsync(url).then((t) => {
+        t.colorSpace = THREE.SRGBColorSpace;
+        return t;
+      });
+      texture.catch(() => frames.delete(url)); // so that asking again tries again
+      frames.set(url, texture);
+    }
+    return texture;
+  };
+  const newest = await Promise.all(LAYERS.map((key) => frame(globeTexture(key))));
   // Ignores lights, so the data colours are shown as they are, with no highlight.
-  return { Globe, maps, material: new THREE.MeshBasicMaterial({ map: maps[LAYERS[0]] }) };
+  return { Globe, frame, frames, material: new THREE.MeshBasicMaterial({ map: newest[0] }) };
 }
 
 const fireLat = (f: object) => (f as Fire).lat;
@@ -80,10 +94,15 @@ const trailColor = () => TRAIL_COLOR;
 /**
  * NASA satellite pollution data on a 3D globe. A flat poster of Southeast Asia is the whole experience until the
  * stage is on screen, the browser is idle and the device can run WebGL; then the globe loads and fades in over it.
- * `now` comes from the server so both renders build the same URLs; `fires` are the strongest recent detections.
+ * Play steps through the last week, one picture per day, fetched only once asked for. `now` comes from the server
+ * so both renders build the same URLs; `fires` are the strongest recent detections.
  */
 export default function SpaceView({ now, fires }: { now: number; fires: Fire[] }) {
   const [layer, setLayer] = useState<GlobeLayer>(LAYERS[0]);
+  const [day, setDay] = useState(LAST); // the day chosen: an index into `frames`
+  const [shown, setShown] = useState(LAST); // the day on view: the one chosen, once its picture has arrived
+  const [playing, setPlaying] = useState(false);
+  const [loaded, setLoaded] = useState<Record<string, boolean>>({}); // every frame asked for: did it arrive?
   const [kit, setKit] = useState<Kit>();
   const [trail, setTrail] = useState<Trail>(); // today's air path, if it could be fetched
   const [capable, setCapable] = useState(false);
@@ -94,19 +113,35 @@ export default function SpaceView({ now, fires }: { now: number; fires: Fire[] }
   const globe = useRef<GlobeMethods>(undefined);
   const renderer = useRef<WebGLRenderer>(undefined);
   const idle = useRef<number>(undefined);
+  const running = useRef(false); // the globe is drawing continuously
 
   const { label, ramp, note } = GLOBE_LAYERS[layer];
-  const ranges = useMemo(
+  const dates = useMemo(() => globeDates(now), [now]);
+  const frames = useMemo(
     () =>
       Object.fromEntries(
-        LAYERS.map((key) => {
-          const days = globeDays(key, now);
-          return [key, fmtRange(days[0], days.at(-1)!)];
-        }),
-      ) as Record<GlobeLayer, string>,
-    [now],
+        LAYERS.map((key) => [
+          key,
+          dates.map((date, i) => {
+            const days = globeDays(key, date);
+            return { url: globeTexture(key, i === LAST ? undefined : date), range: fmtRange(days[0], days.at(-1)!) }; // the newest frame is the default texture
+          }),
+        ]),
+      ) as Record<GlobeLayer, { url: string; range: string }[]>,
+    [dates],
   );
-  const paths = useMemo(() => (trail ? [trail] : []), [trail]);
+  const paths = useMemo(() => (trail ? [trail] : NONE), [trail]);
+
+  // Nothing beyond the newest day is fetched until the viewer plays or picks another day.
+  const wanted = playing || day !== LAST;
+  const mine = frames[layer];
+  const status = (i: number) => i === LAST || loaded[mine[i].url]; // true: here, false: failed, undefined: still coming
+  const chosen = status(day);
+  if (chosen !== undefined && shown !== (chosen ? day : LAST)) setShown(chosen ? day : LAST); // until the chosen day's picture is here, the one on view stays
+  const view = status(shown) ? shown : LAST; // a layer switch starts with the newest, until the shown day's picture of that layer is here
+  const next = Array.from({ length: FRAMES }, (_, k) => (day + k + 1) % FRAMES).find((i) => status(i) !== false) ?? day;
+  const stalled = chosen === undefined || status(next) === undefined; // playing waits here rather than skip ahead
+  const mark = useCallback((url: string, ok: boolean) => setLoaded((l) => (l[url] === ok ? l : { ...l, [url]: ok })), []);
 
   useEffect(() => {
     setCapable(canRunGlobe());
@@ -128,7 +163,7 @@ export default function SpaceView({ now, fires }: { now: number; fires: Fire[] }
     const load = () => {
       loadKit()
         .then((k) => live && setKit(k))
-        .catch(() => {}); // the poster stays
+        .catch(() => live && setCapable(false)); // the poster stays, and does the playing
       fetchReplay()
         .then((r) => live && setTrail(r.days.at(-1)?.trail))
         .catch(() => {});
@@ -140,26 +175,74 @@ export default function SpaceView({ now, fires }: { now: number; fires: Fire[] }
       else clearTimeout(handle);
     };
   }, [capable, inView, kit]);
-  useEffect(() => () => Object.values(kit?.maps ?? {}).forEach((t) => t.dispose()), [kit]);
+  useEffect(() => () => kit?.frames.forEach((t) => t.then((x) => x.dispose(), () => {})), [kit]);
+
+  // With the globe, the days are textures, requested oldest first and put on the GPU as they arrive so that no step hitches. Otherwise the poster's pictures load them.
+  useEffect(() => {
+    if (!kit || !wanted) return;
+    mine.forEach(({ url }) =>
+      kit.frame(url).then(
+        (t) => {
+          renderer.current?.initTexture(t);
+          mark(url, true);
+        },
+        () => mark(url, false),
+      ),
+    );
+  }, [kit, wanted, mine, mark]);
+
+  // Play: one day after another, a longer look at the newest, then round again. Each step waits for the next day's picture; one that failed to load is skipped.
+  useEffect(() => {
+    if (!playing || stalled || !inView) return;
+    const id = setTimeout(() => setDay(next), day === LAST ? HOLD_MS : STEP_MS);
+    return () => clearTimeout(id);
+  }, [playing, stalled, inView, day, next]);
+  const toggle = () => {
+    if (!playing && day === LAST) setDay(0); // from last week
+    setPlaying(!playing);
+  };
 
   // Draw while something is happening; stop after a quiet moment or when off screen.
   const wake = useCallback(() => {
     globe.current?.resumeAnimation();
+    running.current = true;
     clearTimeout(idle.current);
-    idle.current = window.setTimeout(() => globe.current?.pauseAnimation(), IDLE_MS);
+    idle.current = window.setTimeout(() => {
+      running.current = false;
+      globe.current?.pauseAnimation();
+    }, IDLE_MS);
+  }, []);
+  // One frame for a change of picture, unless the globe is drawing anyway.
+  const drawOnce = useCallback(() => {
+    if (running.current) return;
+    globe.current?.resumeAnimation(); // draws at once...
+    globe.current?.pauseAnimation(); // ...and schedules nothing more
   }, []);
   useEffect(() => {
     if (!ready) return;
     if (inView) wake();
     else {
       clearTimeout(idle.current);
+      running.current = false;
       globe.current?.pauseAnimation();
     }
   }, [ready, inView, size, layer, wake]);
-  // Switching layers is only a swap of the picture on the globe.
+  // Switching layers or days is only a swap of the picture on the globe.
   useEffect(() => {
-    if (ready) kit!.material.map = kit!.maps[layer];
-  }, [ready, kit, layer]);
+    if (!ready) return;
+    let live = true;
+    kit!
+      .frame(mine[view].url)
+      .then((t) => {
+        if (!live) return;
+        kit!.material.map = t;
+        drawOnce();
+      })
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, [ready, kit, mine, view, drawOnce]);
   useEffect(
     () => () => {
       clearTimeout(idle.current);
@@ -172,17 +255,18 @@ export default function SpaceView({ now, fires }: { now: number; fires: Fire[] }
     const g = globe.current!;
     renderer.current = g.renderer();
     renderer.current.setPixelRatio(Math.min(devicePixelRatio, 1.5));
-    Object.values(kit!.maps).forEach((t) => renderer.current!.initTexture(t)); // on the GPU already, so the first switch has no hitch
+    LAYERS.forEach((key) => kit!.frame(globeTexture(key)).then((t) => renderer.current?.initTexture(t))); // on the GPU already, so the first switch has no hitch
     const controls = g.controls();
     controls.minDistance = 100 * 1.6; // globe radius is 100; stay between altitude 0.6 and 3
     controls.maxDistance = 100 * 4;
     controls.domElement!.style.touchAction = "pan-y"; // sideways drags spin the globe; up and down still scrolls the page
-    const rest = { lat: 2, lng: 108, altitude: size.w < 500 ? 2.2 : 1.7 };
+    const rest = { lat: SG.lat, lng: SG.lon, altitude: size.w < 500 ? 1.3 : 1.25 };
     g.pointOfView({ ...rest, altitude: 3.2 });
     g.pointOfView(rest, INTRO_MS);
     setReady(true);
   };
 
+  const today = view === LAST; // fires and the air's path are today's
   return (
     <div className="px-4">
       <div role="group" aria-label="Choose layer" className="mb-2 flex gap-1 rounded-full bg-surface p-1">
@@ -201,19 +285,27 @@ export default function SpaceView({ now, fires }: { now: number; fires: Fire[] }
       >
         <div aria-hidden={ready} className={`absolute inset-0 ${FADE} ${ready ? "opacity-0" : ""}`}>
           <div className="absolute" style={POSTER}>
-            {/* Both stay mounted, so switching layers swaps them with no wait. */}
-            {LAYERS.map((key) => (
-              // eslint-disable-next-line @next/next/no-img-element -- the server builds sized images; no optimisation needed
-              <img
-                key={key}
-                src={globeTexture(key)}
-                alt={key === layer ? `${label}, satellite view of Southeast Asia, ${ranges[key]}` : ""}
-                aria-hidden={key !== layer}
-                loading="lazy"
-                decoding="async"
-                className={`absolute size-full max-w-none ${key === layer ? "" : "opacity-0"}`}
-              />
-            ))}
+            {/* The newest picture of each layer always stays mounted, so switching layers swaps them with no wait; the other days are here only when the poster plays (no globe). */}
+            {LAYERS.flatMap((key) =>
+              frames[key].map(({ url, range }, i) => {
+                const on = key === layer && i === view;
+                if (i !== LAST && !(key === layer && wanted && !capable)) return null;
+                return (
+                  // eslint-disable-next-line @next/next/no-img-element -- the server builds sized images; no optimisation needed
+                  <img
+                    key={url}
+                    src={url}
+                    alt={on ? `${label}, satellite view of Southeast Asia, ${range}` : ""}
+                    aria-hidden={!on}
+                    loading={i === LAST ? "lazy" : "eager"}
+                    decoding="async"
+                    onLoad={() => mark(url, true)}
+                    onError={() => mark(url, false)}
+                    className={`absolute size-full max-w-none ${on ? "" : "opacity-0"}`}
+                  />
+                );
+              }),
+            )}
             <SgPin at={AT_SG} />
           </div>
         </div>
@@ -234,7 +326,7 @@ export default function SpaceView({ now, fires }: { now: number; fires: Fire[] }
               htmlLat="lat"
               htmlLng="lon"
               htmlElement={marker}
-              pointsData={fires}
+              pointsData={today ? fires : NONE}
               pointLat={fireLat}
               pointLng={fireLng}
               pointColor={fireColor}
@@ -243,7 +335,7 @@ export default function SpaceView({ now, fires }: { now: number; fires: Fire[] }
               pointResolution={5}
               pointsMerge
               pointsTransitionDuration={0}
-              pathsData={paths}
+              pathsData={today ? paths : NONE}
               pathPoints={trailPoints}
               pathPointLat={trailLat}
               pathPointLng={trailLng}
@@ -256,9 +348,30 @@ export default function SpaceView({ now, fires }: { now: number; fires: Fire[] }
           </div>
         )}
 
-        <span className="tabular absolute left-3 top-3 rounded-full bg-black/70 px-2.5 py-1 text-[12px] font-semibold text-white" aria-live="polite">
-          {ranges[layer]}
+        <span
+          className={`tabular absolute left-3 top-3 rounded-full bg-black/70 px-2.5 py-1 text-[12px] font-semibold text-white ${chosen === undefined ? "motion-safe:animate-pulse" : ""}`} // pulses while the chosen day loads
+          aria-live={playing ? "off" : "polite"} // a step every second is too much to read out
+          aria-busy={chosen === undefined}
+        >
+          {mine[view].range}
         </span>
+      </div>
+
+      <div className="mt-2 flex items-center gap-3">
+        <PlayButton playing={playing} loading={playing && stalled} onClick={toggle} what="the last week" />
+        <input
+          type="range"
+          className="slider w-full"
+          min={0}
+          max={LAST}
+          value={day}
+          onChange={(e) => {
+            setPlaying(false);
+            setDay(Number(e.target.value));
+          }}
+          aria-label="Day"
+          aria-valuetext={fmtDate(dates[day])}
+        />
       </div>
 
       <div className="mt-3 text-[13px] text-muted">
