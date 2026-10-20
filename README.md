@@ -14,7 +14,7 @@ The site is independent and is not an official NEA service. For official advisor
 - **Next 48 hours:** measured PM2.5, the forecast with its likely range, and the uncorrected model for comparison.
 - **Next 5 days:** morning, afternoon and evening outlook, the likely peak, the chance PM2.5 rises above 55 µg/m³, and the expected 24-hour PSI.
 - **Smoke map:** the regional smoke forecast for the next 72 hours with fires and monitoring stations.
-- **From space and haze origin:** a 3D globe of NASA satellite data on the map: carbon monoxide about 5.5 km up (AIRS, 3-day average), smoke (OMPS aerosol index, 2 days) and the latest true-colour photo (VIIRS), with a flat poster of Southeast Asia for slow or low-power devices, and a card tracing where today's air came from, past which fires.
+- **From space and haze origin:** a 3D globe of NASA satellite data on the map: carbon monoxide about 5.5 km up (AIRS, 3-day average), smoke (OMPS aerosol index, 2 days) with the strongest recent fires and today's air path drawn on it, a flat poster of Southeast Asia for slow or low-power devices, and a card tracing where today's air came from, past which fires.
 - **Last 7 days:** each day's peak 24-hour PSI, compared with NEA records since 2014.
 - **Wind and fires:** a wind dial showing whether air comes from the fire areas, and daily hotspot counts.
 - **News:** NEA haze updates, the official weather outlook and changes in the live readings, with times.
@@ -30,7 +30,7 @@ The site is independent and is not an official NEA service. For official advisor
 | [NEA via data.gov.sg](https://data.gov.sg) | Live PM2.5, PSI and pollutant sub-indices | Singapore Open Data Licence |
 | [Malaysia DOE APIMS](https://eqms.doe.gov.my/APIMS/main) | Malaysian Air Pollutant Index | Public data, attributed |
 | [NASA FIRMS](https://firms.modaps.eosdis.nasa.gov) | Satellite fire detections (VIIRS) | NASA open data |
-| [NASA GIBS](https://gibs.earthdata.nasa.gov) | Satellite views: true colour (VIIRS), smoke (OMPS aerosol index) and carbon monoxide (AIRS) | NASA open data |
+| [NASA GIBS](https://gibs.earthdata.nasa.gov) | Satellite views: smoke (OMPS aerosol index) and carbon monoxide (AIRS) | NASA open data |
 | [Copernicus CAMS via Open-Meteo](https://open-meteo.com/en/docs/air-quality-api) | PM2.5 forecast and regional smoke map | CC BY 4.0, contains modified Copernicus information |
 | [ECMWF via Open-Meteo](https://open-meteo.com) | Wind at 850 hPa and rain | CC BY 4.0 |
 

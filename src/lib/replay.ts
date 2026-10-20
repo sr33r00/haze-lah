@@ -33,6 +33,9 @@ const AREAS: [string, number, number][] = [
 export const FIRE_COLOR = "#c2410c";
 export const TRAIL_COLOR = "#a855f7";
 
+/** The replay from /api/replay (cached by the CDN), in the browser. Rejects when it is unavailable. */
+export const fetchReplay = (): Promise<Replay> => fetch("/api/replay").then((r) => (r.ok ? r.json() : Promise.reject()));
+
 const COMPASS = ["north", "north-east", "east", "south-east", "south", "south-west", "west", "north-west"];
 
 /** Equirectangular distance in km; fine at these scales near the equator. */

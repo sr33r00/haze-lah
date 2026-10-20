@@ -1,14 +1,13 @@
-import { COAST, WORLD_BOX, gibsMap } from "./satellite";
 import { sgDate, sgHour } from "./util";
 
 // The 3D globe of NASA pollution data: carbon monoxide and smoke textures drawn by /api/globe/[layer] from
-// NASA GIBS, and the true-colour photo loaded straight from NASA. Pure config, shared by the server and the browser.
+// NASA GIBS. Pure config, shared by the server and the browser.
 
-export type GlobeLayer = "co" | "smoke" | "true";
+export type GlobeLayer = "co" | "smoke";
 type Rgb = [number, number, number];
 
-/** Colour stops from t = 0 (`range[0]`) to t = 1 (`range[1]`), and what the colours mean. */
-type Ramp = { unit: string; range: [number, number]; stops: [t: number, rgb: Rgb][] };
+/** Colour stops from t = 0 (`range[0]`) to t = 1 (`range[1]`), what the colours mean and the words for each end. */
+type Ramp = { unit: string; range: [number, number]; ends: [string, string]; stops: [t: number, rgb: Rgb][] };
 
 /** The area the flat poster shows, behind the globe: [south, west, north, east]. */
 export const REGION = [-15, 80, 25, 140] as const;
@@ -17,11 +16,11 @@ export const GLOBE_LAYERS = {
   co: {
     label: "Carbon monoxide",
     days: 3,
-    lag: 0,
     note: "Carbon monoxide about 5.5 km up, averaged over 3 days. It comes from burning: red is heavy.",
     ramp: {
       unit: "CO, ppbv",
       range: [50, 300],
+      ends: ["Clean", "Heavy"],
       stops: [
         [0, [40, 20, 110]],
         [0.15, [30, 90, 200]],
@@ -37,11 +36,11 @@ export const GLOBE_LAYERS = {
   smoke: {
     label: "Smoke",
     days: 2,
-    lag: 0,
     note: "Smoke and dust seen from space, last 2 days. Red is thick smoke.",
     ramp: {
       unit: "Aerosol index",
       range: [1, 5],
+      ends: ["Clear", "Thick smoke"],
       // Below the first bend it is the dark of the stage, so only smoke glows.
       stops: [
         [0, [13, 22, 38]],
@@ -54,38 +53,22 @@ export const GLOBE_LAYERS = {
       ],
     } satisfies Ramp,
   },
-  true: {
-    label: "True colour",
-    days: 1,
-    lag: 1, // a photo is only of the whole Earth once the day's orbits are done
-    note: "Latest daily photo. Smoke is the grey-brown veil.",
-    ramp: null,
-  },
-} satisfies Record<GlobeLayer, { label: string; days: number; lag: number; note: string; ramp: Ramp | null }>;
+} satisfies Record<GlobeLayer, { label: string; days: number; note: string; ramp: Ramp }>;
 
-export const GLOBE_CREDIT = "NASA GIBS: AIRS, OMPS and VIIRS";
-
-const TRUE_COLOUR = `VIIRS_NOAA20_CorrectedReflectance_TrueColor,${COAST}`;
+export const GLOBE_CREDIT = "NASA GIBS: AIRS and OMPS";
 
 /**
  * The days a layer averages, oldest first. The satellites pass over around 1:30pm and NASA publishes about three
  * hours later, so today's pass is used from 5pm SGT.
  */
 export function globeDays(layer: GlobeLayer, now: number): string[] {
-  const { days, lag } = GLOBE_LAYERS[layer];
-  const newest = (sgHour(now) >= 17 ? 0 : -1) - lag;
+  const { days } = GLOBE_LAYERS[layer];
+  const newest = sgHour(now) >= 17 ? 0 : -1;
   return Array.from({ length: days }, (_, k) => sgDate(newest - days + 1 + k, new Date(now)));
 }
 
-/** The equirectangular picture wrapped round the globe. */
-export const globeTexture = (layer: GlobeLayer, now: number) =>
-  layer === "true" ? gibsMap(TRUE_COLOUR, 2048, 1024, { time: globeDays(layer, now)[0] }) : `/api/globe/${layer}`;
-
-/** The picture shown while the globe is not loaded, with the area it covers. True colour gets its own sharper crop. */
-export const globePoster = (layer: GlobeLayer, now: number) =>
-  layer === "true"
-    ? { url: gibsMap(TRUE_COLOUR, 900, 600, { box: REGION, time: globeDays(layer, now)[0] }), box: REGION }
-    : { url: globeTexture(layer, now), box: WORLD_BOX };
+/** The equirectangular picture wrapped round the globe, and shown flat as the poster until the globe loads. */
+export const globeTexture = (layer: GlobeLayer) => `/api/globe/${layer}`;
 
 /** The colour of `t` (0 to 1) along a ramp. */
 export function rampRgb({ stops }: Ramp, t: number): Rgb {

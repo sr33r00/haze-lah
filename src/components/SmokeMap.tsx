@@ -6,7 +6,7 @@ import { useEffect, useMemo, useState } from "react";
 import { CircleMarker, ImageOverlay, MapContainer, Polyline, TileLayer, Tooltip, useMapEvents } from "react-leaflet";
 import { LEVEL_COLOR, LEVEL_NAME, LEVEL_TEXT, REGIONS, REGION_POINT, pm25Band, pm25Color, psiLevel, stationLevel } from "@/lib/bands";
 import { fmtDate, fmtDay, fmtHour } from "@/lib/format";
-import { FIRE_COLOR, TRAIL_COLOR, trailCaption } from "@/lib/replay";
+import { FIRE_COLOR, TRAIL_COLOR, fetchReplay, trailCaption } from "@/lib/replay";
 import { islandMax } from "@/lib/situation";
 import type { DayPsi, FireSummary, NeaNow, Replay, Sensor, SmokeGrid, Station } from "@/lib/types";
 import { sgDate } from "@/lib/util";
@@ -72,7 +72,7 @@ export default function SmokeMap(props: {
     get("/api/smoke")
       .then(setGrid)
       .catch(() => setFailed(true));
-    get("/api/replay")
+    fetchReplay()
       .then(setReplay)
       .catch(() => {});
   }, []);
