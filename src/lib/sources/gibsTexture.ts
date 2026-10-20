@@ -1,16 +1,16 @@
 import sharp from "sharp";
-import { GLOBE_LAYERS, globeDays, rampRgb, type GlobeLayer } from "../globe";
-import { COAST, gibsMap } from "../satellite";
-import { getText } from "../util";
+import { GLOBE_LAYERS, READ_BOX, globeDays, isClear, rampRgb, rampT, type GlobeLayer } from "../globe";
+import { gibsMap } from "../satellite";
+import { SG, getText } from "../util";
 
-// Equirectangular pollution textures for the globe, built from NASA GIBS satellite passes. GIBS only serves each
-// pass as a coloured picture, so the colours are turned back into values, the passes averaged and smoothed, and
-// the result coloured again with our own ramp. The route that serves it caches each frame on the CDN.
+// Pollution pictures for the map, built from NASA GIBS satellite passes. GIBS only serves each pass as a coloured
+// picture, so the colours are turned back into values, the passes averaged and smoothed, and the result coloured
+// again with our own ramp. Also each day's mean over Singapore, from tiny pictures of just that box. The routes that
+// serve them cache each answer on the CDN.
 
 type Source = {
   layers: string[]; // one picture per layer and day
   colormap: string;
-  coast: [number, number, number]; // colour of the coastlines drawn on top
   fill: boolean; // paint wide gaps between passes with the values around them; otherwise gaps read as "none"
 };
 
@@ -19,19 +19,19 @@ const SOURCES: Record<GlobeLayer, Source> = {
   co: {
     layers: ["AIRS_L2_Carbon_Monoxide_500hPa_Volume_Mixing_Ratio_Day", "AIRS_L2_Carbon_Monoxide_500hPa_Volume_Mixing_Ratio_Night"],
     colormap: "AIRS_Carbon_Monoxide_Volume_Mixing_Ratio",
-    coast: [15, 15, 15],
     fill: true,
   },
   smoke: {
     layers: ["OMPS_NOAA20_NadirMapper_AerosolIndex_380", "OMPS_NOAA21_NadirMapper_AerosolIndex_380"],
     colormap: "OMPS_Aerosol_Index",
-    coast: [150, 165, 190],
     fill: false,
   },
 };
 
-const W = 1440; // the size of every picture and of the texture: about 90 KB as a JPEG, sharp enough at the zoom the globe allows
+const W = 1440; // the size of every pass: 0.25 degrees a pixel, about the sharpness of the instruments
 const H = 720;
+const SIZE = 2048; // the finished picture is this many pixels square, in Web Mercator: smooth and about 100 KB as WebP when zoomed to a city
+const TINY = 16; // the passes of the box over Singapore are this many pixels square
 const SIGMA = 5; // pixels of smoothing, about 1.25 degrees
 const COARSE = 8; // gaps wider than that are filled on a picture this many times smaller
 
@@ -124,25 +124,12 @@ function smoothFilled(values: Float32Array, have: Float32Array, fill: boolean) {
   });
 }
 
-/** The globe texture of `layer` for the frame of `date` (YYYY-MM-DD, SGT) as a JPEG, and whether every picture it needs arrived. Throws when no satellite pass could be fetched. */
-export async function fetchGlobeTexture(layer: GlobeLayer, date: string): Promise<{ jpeg: Buffer; complete: boolean }> {
-  const src = SOURCES[layer];
-  const ramp = GLOBE_LAYERS[layer].ramp;
-  const urls = globeDays(layer, date).flatMap((time) => src.layers.map((l) => gibsMap(l, W, H, { format: "png", time })));
-  const [lookup, coast, ...passes] = await Promise.all([
-    valueLookup(src.colormap),
-    fetchPng(gibsMap(COAST, W, H, { format: "png" }), W, H),
-    ...urls.map((u) => fetchPng(u, W, H)),
-  ]);
-  const got = passes.filter((p) => p !== null);
-  const complete = !!coast && got.length === passes.length;
-  if (!got.length) throw new Error("GIBS: no passes");
-
-  // Average every valid value per pixel.
-  const sum = new Float32Array(W * H);
-  const count = new Float32Array(W * H);
-  for (const px of got) {
-    for (let i = 0; i < W * H; i++) {
+/** The mean of every valid value per pixel over `passes` (raw RGBA pictures of `n` pixels), and which pixels had any. */
+function meanValues(passes: Buffer[], lookup: Map<number, number>, n: number) {
+  const sum = new Float32Array(n);
+  const count = new Float32Array(n);
+  for (const px of passes) {
+    for (let i = 0; i < n; i++) {
       if (px[i * 4 + 3] === 0) continue;
       const v = lookup.get((px[i * 4] << 16) | (px[i * 4 + 1] << 8) | px[i * 4 + 2]);
       if (v === undefined) continue;
@@ -150,34 +137,86 @@ export async function fetchGlobeTexture(layer: GlobeLayer, date: string): Promis
       count[i]++;
     }
   }
-  const have = count.map((c) => (c ? 1 : 0));
-  for (let i = 0; i < W * H; i++) if (count[i]) sum[i] /= count[i];
+  for (let i = 0; i < n; i++) if (count[i]) sum[i] /= count[i];
+  return { mean: sum, have: count.map((c) => (c ? 1 : 0)) };
+}
 
-  // Smooth, filling gaps from what is around them.
-  const value = smoothFilled(sum, have, src.fill);
-  const [lo, hi] = ramp.range;
-  const colours = Array.from({ length: 256 }, (_, i) => rampRgb(ramp, i / 255));
-  const rgb = Buffer.alloc(W * H * 3);
-  for (let i = 0; i < W * H; i++) {
-    const t = Number.isNaN(value[i]) ? 0 : Math.min(1, Math.max(0, (value[i] - lo) / (hi - lo)));
-    rgb.set(colours[Math.round(t * 255)], i * 3);
-  }
-
-  // Coastlines in one flat colour, over the picture. GIBS also draws a line along the bottom edge of Antarctica; drop it.
-  if (coast) {
-    for (let y = 0; y < H; y++) {
-      const row = y * W * 4;
-      let ink = 0;
-      for (let x = 0; x < W; x++) if (coast[row + x * 4 + 3]) ink++;
-      for (let x = 0; x < W; x++) {
-        if (ink === W) coast[row + x * 4 + 3] = 0;
-        else coast.set(src.coast, row + x * 4);
+/** `value` (W by H, from 90 N down to 90 S) resampled onto the Web Mercator square of SIZE, MapLibre's placing of an image: NaN where there is nothing. */
+function toMercator(value: Float32Array) {
+  const out = new Float32Array(SIZE * SIZE);
+  const col = Array.from({ length: SIZE }, (_, x) => {
+    const f = ((x + 0.5) / SIZE) * W - 0.5;
+    const x0 = Math.floor(f);
+    return { a: (x0 + W) % W, b: (x0 + 1 + W) % W, t: f - x0 };
+  });
+  for (let y = 0; y < SIZE; y++) {
+    const lat = (Math.atan(Math.sinh(Math.PI * (1 - (2 * (y + 0.5)) / SIZE))) * 180) / Math.PI;
+    const f = ((90 - lat) / 180) * H - 0.5;
+    const y0 = Math.floor(f);
+    const ty = f - y0;
+    const rows = [Math.min(H - 1, Math.max(0, y0)) * W, Math.min(H - 1, Math.max(0, y0 + 1)) * W];
+    for (let x = 0; x < SIZE; x++) {
+      const { a, b, t } = col[x];
+      let sum = 0;
+      let weight = 0;
+      for (const [v, w] of [[value[rows[0] + a], (1 - ty) * (1 - t)], [value[rows[0] + b], (1 - ty) * t], [value[rows[1] + a], ty * (1 - t)], [value[rows[1] + b], ty * t]]) {
+        if (Number.isNaN(v)) continue;
+        sum += v * w;
+        weight += w;
       }
+      out[y * SIZE + x] = weight > 0 ? sum / weight : NaN;
     }
   }
-  const jpeg = await sharp(rgb, { raw: { width: W, height: H, channels: 3 } })
-    .composite(coast ? [{ input: coast, raw: { width: W, height: H, channels: 4 } }] : [])
-    .jpeg({ quality: 82, mozjpeg: true })
+  return out;
+}
+
+/** The picture of `layer` for the frame of `date` (YYYY-MM-DD, SGT) as a WebP in Web Mercator, transparent where there is nothing to show, and whether every pass it needs arrived. Throws when no satellite pass could be fetched. */
+export async function fetchGlobePicture(layer: GlobeLayer, date: string): Promise<{ webp: Buffer; complete: boolean }> {
+  const src = SOURCES[layer];
+  const { ramp } = GLOBE_LAYERS[layer];
+  const urls = globeDays(layer, date).flatMap((time) => src.layers.map((l) => gibsMap(l, W, H, { format: "png", time })));
+  const [lookup, ...passes] = await Promise.all([valueLookup(src.colormap), ...urls.map((u) => fetchPng(u, W, H))]);
+  const got = passes.filter((p) => p !== null);
+  if (!got.length) throw new Error("GIBS: no passes");
+
+  // Average the passes, smooth, filling gaps from what is around them, then lay the result on the Mercator square.
+  const { mean, have } = meanValues(got, lookup, W * H);
+  const value = toMercator(smoothFilled(mean, have, src.fill));
+
+  const colours = Array.from({ length: 256 }, (_, i) => rampRgb(ramp, i / 255));
+  const rgba = Buffer.alloc(SIZE * SIZE * 4);
+  for (let i = 0; i < SIZE * SIZE; i++) {
+    const t = Number.isNaN(value[i]) ? 0 : rampT(ramp, value[i]);
+    rgba.set(colours[Math.round(t * 255)], i * 4);
+    rgba[i * 4 + 3] = Number.isNaN(value[i]) ? 0 : ramp.soft ? Math.round(255 * Math.min(1, t / ramp.soft)) : 255;
+  }
+  const webp = await sharp(rgba, { raw: { width: SIZE, height: SIZE, channels: 4 } })
+    .webp({ quality: 80, alphaQuality: 90, smartSubsample: true })
     .toBuffer();
-  return { jpeg, complete };
+  return { webp, complete: got.length === passes.length };
+}
+
+/**
+ * The mean reading over the box around Singapore on each of `dates`, by date (null where no pass covered it), and whether
+ * every pass arrived. The same averaging as the picture, on pictures of just the box; readings under the layer's floor count as none.
+ */
+export async function fetchGlobeSeries(layer: GlobeLayer, dates: string[]): Promise<{ values: Record<string, number | null>; complete: boolean }> {
+  const src = SOURCES[layer];
+  const { digits } = GLOBE_LAYERS[layer].read;
+  const days = [...new Set(dates.flatMap((d) => globeDays(layer, d)))];
+  const box = [SG.lat - READ_BOX, SG.lon - READ_BOX, SG.lat + READ_BOX, SG.lon + READ_BOX] as const;
+  const [lookup, ...fetched] = await Promise.all([
+    valueLookup(src.colormap),
+    ...days.map((time) => Promise.all(src.layers.map((l) => fetchPng(gibsMap(l, TINY, TINY, { box, format: "png", time }), TINY, TINY)))),
+  ]);
+  const passes = new Map(days.map((d, i) => [d, fetched[i]]));
+  const values = Object.fromEntries(
+    dates.map((date) => {
+      const { mean, have } = meanValues(globeDays(layer, date).flatMap((d) => passes.get(d)!).filter((p) => p !== null), lookup, TINY * TINY);
+      const n = have.reduce((s, h) => s + h, 0);
+      const avg = mean.reduce((s, v, i) => s + (have[i] ? (isClear(layer, v) ? 0 : v) : 0), 0) / n;
+      return [date, n ? Math.round(avg * 10 ** digits) / 10 ** digits : null];
+    }),
+  );
+  return { values, complete: fetched.every((day) => day.every((p) => p !== null)) };
 }

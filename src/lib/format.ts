@@ -22,6 +22,9 @@ export const fmtWeekday = (date: string, weekday: "short" | "long" = "short") =>
 export const fmtDate = (date: string) =>
   new Intl.DateTimeFormat("en-SG", { timeZone: TZ, weekday: "short", day: "numeric", month: "short" }).format(new Date(`${date}T12:00:00+08:00`));
 
+/** "Sat 17 Oct" for an SGT date (YYYY-MM-DD): `fmtDate` without the comma. */
+export const fmtDateShort = (date: string) => fmtDate(date).replace(",", "");
+
 /** "18–20 Oct" for a run of SGT dates (YYYY-MM-DD), or "20 Oct" for one. */
 export function fmtRange(from: string, to: string) {
   const f = new Intl.DateTimeFormat("en-SG", { timeZone: TZ, day: "numeric", month: "short" });

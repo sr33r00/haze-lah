@@ -6,11 +6,8 @@ const WMS = "https://gibs.earthdata.nasa.gov/wms/epsg4326/best/wms.cgi";
 /** Sumatra to Borneo, matching the smoke map: [south, west, north, east]. */
 export const SAT_BOX = [-6, 95, 7, 120] as const;
 /** The whole Earth in the same order. */
-export const WORLD_BOX = [-90, -180, 90, 180] as const;
+const WORLD_BOX = [-90, -180, 90, 180] as const;
 type Box = readonly [south: number, west: number, north: number, east: number];
-
-/** Coastline overlay, also fetched on its own and drawn over the globe textures. */
-export const COAST = "Coastlines_15m";
 
 /** A WMS GetMap URL for `layers` over `box` (the whole Earth by default), at `w` by `h` pixels. */
 export function gibsMap(layers: string, w: number, h: number, opts: { box?: Box; format?: "jpeg" | "png"; time?: string } = {}) {
