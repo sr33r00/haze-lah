@@ -44,7 +44,7 @@ export default function MapView(props: {
       </Section>
 
       <Section id="space" title="From space" aside="NASA satellites">
-        <SpaceView now={props.now} />
+        <SpaceView now={props.now} fires={props.fires.points} />
       </Section>
 
       <Section title="Neighbours">

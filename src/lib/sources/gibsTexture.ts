@@ -1,5 +1,5 @@
 import sharp from "sharp";
-import { GLOBE_LAYERS, globeDays, rampRgb } from "../globe";
+import { GLOBE_LAYERS, globeDays, rampRgb, type GlobeLayer } from "../globe";
 import { COAST, gibsMap } from "../satellite";
 import { getText } from "../util";
 
@@ -15,7 +15,7 @@ type Source = {
 };
 
 const COLORMAPS = "https://gibs.earthdata.nasa.gov/colormaps/v1.3";
-const SOURCES: Record<"co" | "smoke", Source> = {
+const SOURCES: Record<GlobeLayer, Source> = {
   co: {
     layers: ["AIRS_L2_Carbon_Monoxide_500hPa_Volume_Mixing_Ratio_Day", "AIRS_L2_Carbon_Monoxide_500hPa_Volume_Mixing_Ratio_Night"],
     colormap: "AIRS_Carbon_Monoxide_Volume_Mixing_Ratio",
@@ -125,7 +125,7 @@ function smoothFilled(values: Float32Array, have: Float32Array, fill: boolean) {
 }
 
 /** The globe texture of `layer` as a JPEG. Throws when no satellite pass could be fetched. */
-export async function fetchGlobeTexture(layer: "co" | "smoke", now = Date.now()): Promise<Buffer> {
+export async function fetchGlobeTexture(layer: GlobeLayer, now = Date.now()): Promise<Buffer> {
   const src = SOURCES[layer];
   const ramp = GLOBE_LAYERS[layer].ramp;
   const urls = globeDays(layer, now).flatMap((time) => src.layers.map((l) => gibsMap(l, W, H, { format: "png", time })));

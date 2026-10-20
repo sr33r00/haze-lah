@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { FIRE_COLOR, TRAIL_COLOR, trailCaption } from "@/lib/replay";
+import { FIRE_COLOR, TRAIL_COLOR, fetchReplay, trailCaption } from "@/lib/replay";
 import { baseImage, onImage } from "@/lib/satellite";
-import type { Replay, ReplayDay } from "@/lib/types";
+import type { ReplayDay } from "@/lib/types";
 import SgPin from "./SgPin";
 import { Section } from "./ui";
 
@@ -21,9 +21,8 @@ export default function HazeOrigin({ className }: { className?: string }) {
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
-    fetch("/api/replay")
-      .then((r) => (r.ok ? r.json() : Promise.reject()))
-      .then((r: Replay) => (r.days.length ? setDay(r.days.at(-1)!) : setFailed(true)))
+    fetchReplay()
+      .then((r) => (r.days.length ? setDay(r.days.at(-1)!) : setFailed(true)))
       .catch(() => setFailed(true));
   }, []);
 
