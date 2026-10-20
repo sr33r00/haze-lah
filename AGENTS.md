@@ -68,5 +68,5 @@ Then look at the result in a browser at phone width (390 px) and desktop width, 
 - `src/lib/forecast.ts`: CAMS calibrated to NEA. `src/lib/accuracy.ts` plus `scripts/` and `.github/workflows/archive.yml` save and score forecasts.
 - `src/lib/bands.ts` and `src/lib/advice.ts`: NEA bands, sub-indices and advice.
 - `src/lib/wind.ts` and `src/lib/replay.ts`: the 72-hour back-trajectory of the air ("where it came from"), fires near it and the province.
-- `src/lib/satellite.ts`: NASA GIBS images (true colour, OMPS aerosol index, AIRS carbon monoxide at 500 hPa, Himawari live), plus the projection onto the 1000×520 image of `SAT_BOX`.
+- `src/lib/satellite.ts`: NASA GIBS image URLs and the projection onto the 1000×520 image of `SAT_BOX`. `src/lib/globe.ts` and `src/lib/sources/gibsTexture.ts` (route `/api/globe/[layer]`): the globe layers and the server-built carbon monoxide and smoke textures.
 - `next.config.ts`: CSP. Add any new image or connect host there.
