@@ -31,8 +31,8 @@ Canonical site: ${SITE_URL}
 ## Pages
 - [Now](${SITE_URL}/): the verdict for your region and group, current PSI and PM2.5, practical tips
 - [Forecast](${SITE_URL}/forecast): next 48 hours of PM2.5 and a 5-day PSI outlook, with measured accuracy
-- [Map](${SITE_URL}/map): smoke forecast, satellite-detected fires, air-quality stations and wind
-- [Photos](${SITE_URL}/photos): daily NASA satellite images of the smoke, the latest Himawari image and live LTA camera photos
+- [Map](${SITE_URL}/map): smoke forecast, satellite-detected fires, daily NASA satellite views (true colour, smoke, carbon monoxide), air-quality stations and wind
+- [Photos](${SITE_URL}/photos): live LTA camera photos and webcams
 - [News](${SITE_URL}/news): NEA haze updates, CNA and Straits Times haze headlines, and a timeline of changes
 - [Guide](${SITE_URL}/guide): short answers on masks, exercise, air purifiers, schools, work and health, each with NEA, MOH, MOE or MOM sources
 - [About](${SITE_URL}/about): where the data comes from, how the advice and forecast work, and measured accuracy
@@ -50,7 +50,7 @@ Canonical site: ${SITE_URL}
 - [NASA FIRMS](https://firms.modaps.eosdis.nasa.gov): satellite fire detections
 - [Copernicus CAMS via Open-Meteo](https://open-meteo.com/en/docs/air-quality-api): PM2.5 forecast
 - [OpenAQ](https://openaq.org): community air sensors
-- [NASA GIBS](https://gibs.earthdata.nasa.gov): satellite images (VIIRS NOAA-20, Himawari-9)
+- [NASA GIBS](https://gibs.earthdata.nasa.gov): satellite images (VIIRS NOAA-20, Himawari-9, OMPS aerosol index, AIRS carbon monoxide)
 - LTA traffic images: live camera photos
 
 ${now.join("\n")}
