@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { FIRE_COLOR, TRAIL_COLOR, fetchReplay, trailCaption } from "@/lib/replay";
-import { baseImage, onImage } from "@/lib/satellite";
+import { RELIEF, onImage } from "@/lib/satellite";
 import type { ReplayDay } from "@/lib/types";
 import SgPin from "./SgPin";
 import { Section } from "./ui";
@@ -37,7 +37,7 @@ export default function HazeOrigin({ className }: { className?: string }) {
           {day && (
             <>
               {/* eslint-disable-next-line @next/next/no-img-element -- NASA serves a sized image; no optimisation needed */}
-              <img src={baseImage()} alt="Relief map of Sumatra, Singapore and Borneo" width={W} height={H} className="absolute inset-0 h-full w-full" />
+              <img src={RELIEF} alt="Relief map of Sumatra, Singapore and Borneo" width={W} height={H} className="absolute inset-0 h-full w-full" />
               <svg viewBox={`0 0 ${W} ${H}`} className="absolute inset-0 h-full w-full" aria-hidden>
                 {day.fires.map((p, i) => {
                   const [x, y] = at(p);

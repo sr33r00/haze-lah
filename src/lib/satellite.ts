@@ -9,8 +9,6 @@ export const SAT_BOX = [-6, 95, 7, 120] as const;
 export const WORLD_BOX = [-90, -180, 90, 180] as const;
 type Box = readonly [south: number, west: number, north: number, east: number];
 
-// Relief under coastlines; where a data layer has no pass, the relief shows through.
-const BASE = "BlueMarble_ShadedRelief_Bathymetry";
 /** Coastline overlay, also fetched on its own and drawn over the globe textures. */
 export const COAST = "Coastlines_15m";
 
@@ -42,5 +40,8 @@ export const onImage = (lat: number, lon: number, box: Box = SAT_BOX) => ({
 /** Where Singapore sits on the images of `SAT_BOX`. */
 export const SG_ON_IMAGE = onImage(SG.lat, SG.lon);
 
-/** Relief map of the region with coastlines, the same every day. */
-export const baseImage = () => gibsMap(`${BASE},${COAST}`, 1000, 520, { box: SAT_BOX });
+/**
+ * Relief map of `SAT_BOX` with coastlines, 1000×520. It never changes, so it ships with the site instead of costing a
+ * 2 s NASA request per visit; made with gibsMap("BlueMarble_ShadedRelief_Bathymetry,Coastlines_15m", 1000, 520, { box: SAT_BOX }).
+ */
+export const RELIEF = "/relief.jpg";

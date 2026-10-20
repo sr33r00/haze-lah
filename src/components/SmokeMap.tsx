@@ -1,7 +1,7 @@
 "use client";
 
 import "leaflet/dist/leaflet.css";
-import { Pause, Play, Wind } from "lucide-react";
+import { Wind } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { CircleMarker, ImageOverlay, MapContainer, Polyline, TileLayer, Tooltip, useMapEvents } from "react-leaflet";
 import { LEVEL_COLOR, LEVEL_NAME, LEVEL_TEXT, REGIONS, REGION_POINT, pm25Band, pm25Color, psiLevel, stationLevel } from "@/lib/bands";
@@ -9,10 +9,17 @@ import { fmtDate, fmtDay, fmtHour } from "@/lib/format";
 import { FIRE_COLOR, TRAIL_COLOR, fetchReplay, trailCaption } from "@/lib/replay";
 import { islandMax } from "@/lib/situation";
 import type { DayPsi, FireSummary, NeaNow, Replay, Sensor, SmokeGrid, Station } from "@/lib/types";
-import { sgDate } from "@/lib/util";
+import { SG, sgDate } from "@/lib/util";
 import { sample } from "@/lib/wind";
 import InfoNote from "./InfoNote";
+import PlayButton from "./PlayButton";
 import WindLayer from "./WindLayer";
+
+/** Centred on Singapore, wide enough for Sumatra's and Borneo's fires on a phone as well as a monitor. */
+const START: [[number, number], [number, number]] = [
+  [SG.lat - 6.5, SG.lon - 11],
+  [SG.lat + 6.5, SG.lon + 11],
+];
 
 function frameLabel(t: string) {
   const day = sgDate(0, new Date(t));
@@ -63,8 +70,6 @@ export default function SmokeMap(props: {
       return !m;
     });
   };
-  // Wide screens fit the whole fire and smoke area; phones start closer in, on Singapore's side of it.
-  const [wide] = useState(() => matchMedia("(min-width: 1024px)").matches);
   const scale = props.biasFactor ?? 1;
 
   useEffect(() => {
@@ -106,7 +111,7 @@ export default function SmokeMap(props: {
     <div className="lg:contents">
       <div className="relative isolate h-[420px] overflow-hidden lg:col-start-1 lg:row-span-3 lg:h-[max(560px,calc(100vh-15rem))] lg:rounded-3xl">
         <MapContainer
-          {...(wide ? { bounds: [[-6.5, 95], [7.5, 120]] as [[number, number], [number, number]] } : { center: [1.0, 106] as [number, number], zoom: 5 })}
+          bounds={START}
           zoomSnap={0.5}
           minZoom={4}
           maxZoom={9}
@@ -220,14 +225,7 @@ export default function SmokeMap(props: {
 
       <div className="px-4 pt-3 lg:col-start-2 lg:px-0 lg:pt-0">
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => setPlaying((p) => !p)}
-            disabled={!grid && !replay}
-            aria-label={playing ? "Pause" : "Play"}
-            className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-fg text-bg disabled:opacity-40"
-          >
-            {playing ? <Pause size={18} aria-hidden /> : <Play size={18} aria-hidden />}
-          </button>
+          <PlayButton playing={playing} onClick={() => setPlaying((p) => !p)} disabled={!grid && !replay} what="the smoke map" />
           <div className="flex-1">
             <div className="flex justify-between text-[13px]">
               <span className="font-bold">{day && f < nowIdx ? fmtDate(day.date) : grid ? frameLabel(grid.times[ahead]) : "Now"}</span>

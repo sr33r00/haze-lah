@@ -1,4 +1,4 @@
-import { sgDate, sgHour } from "./util";
+import { SG, sgDate, sgHour } from "./util";
 
 // The 3D globe of NASA pollution data: carbon monoxide and smoke textures drawn by /api/globe/[layer] from
 // NASA GIBS. Pure config, shared by the server and the browser.
@@ -9,8 +9,11 @@ type Rgb = [number, number, number];
 /** Colour stops from t = 0 (`range[0]`) to t = 1 (`range[1]`), what the colours mean and the words for each end. */
 type Ramp = { unit: string; range: [number, number]; ends: [string, string]; stops: [t: number, rgb: Rgb][] };
 
-/** The area the flat poster shows, behind the globe: [south, west, north, east]. */
-export const REGION = [-15, 80, 25, 140] as const;
+/** The area the flat poster shows, behind the globe, centred on Singapore and 3:2: [south, west, north, east]. */
+export const REGION = [SG.lat - 20, SG.lon - 30, SG.lat + 20, SG.lon + 30] as const;
+
+/** One frame per day, the last week up to the newest. */
+export const FRAMES = 8;
 
 export const GLOBE_LAYERS = {
   co: {
@@ -35,20 +38,20 @@ export const GLOBE_LAYERS = {
   },
   smoke: {
     label: "Smoke",
-    days: 2,
-    note: "Smoke and dust seen from space, last 2 days. Red is thick smoke.",
+    days: 1,
+    note: "Thick smoke and dust seen from space. Red is the thickest.",
     ramp: {
       unit: "Aerosol index",
-      range: [1, 5],
-      ends: ["Clear", "Thick smoke"],
-      // Below the first bend it is the dark of the stage, so only smoke glows.
+      range: [2, 5],
+      ends: ["Thick", "Thickest"],
+      // Below 2 is cloud and sun-glint noise, drawn as the dark of the stage, so only thick smoke glows.
       stops: [
         [0, [13, 22, 38]],
-        [0.12, [13, 22, 38]],
-        [0.3, [150, 90, 30]],
-        [0.5, [232, 163, 23]],
-        [0.68, [242, 107, 29]],
-        [0.85, [217, 38, 28]],
+        [0.04, [13, 22, 38]],
+        [0.18, [150, 90, 30]],
+        [0.4, [232, 163, 23]],
+        [0.62, [242, 107, 29]],
+        [0.82, [217, 38, 28]],
         [1, [122, 10, 20]],
       ],
     } satisfies Ramp,
@@ -58,17 +61,23 @@ export const GLOBE_LAYERS = {
 export const GLOBE_CREDIT = "NASA GIBS: AIRS and OMPS";
 
 /**
- * The days a layer averages, oldest first. The satellites pass over around 1:30pm and NASA publishes about three
+ * The date of each frame, oldest first. The satellites pass over around 1:30pm and NASA publishes about three
  * hours later, so today's pass is used from 5pm SGT.
  */
-export function globeDays(layer: GlobeLayer, now: number): string[] {
-  const { days } = GLOBE_LAYERS[layer];
+export function globeDates(now: number): string[] {
   const newest = sgHour(now) >= 17 ? 0 : -1;
-  return Array.from({ length: days }, (_, k) => sgDate(newest - days + 1 + k, new Date(now)));
+  return Array.from({ length: FRAMES }, (_, k) => sgDate(newest - FRAMES + 1 + k, new Date(now)));
 }
 
-/** The equirectangular picture wrapped round the globe, and shown flat as the poster until the globe loads. */
-export const globeTexture = (layer: GlobeLayer) => `/api/globe/${layer}`;
+/** The days a layer's frame for `date` averages, oldest first. */
+export function globeDays(layer: GlobeLayer, date: string): string[] {
+  const { days } = GLOBE_LAYERS[layer];
+  const end = new Date(`${date}T12:00:00+08:00`);
+  return Array.from({ length: days }, (_, k) => sgDate(k + 1 - days, end));
+}
+
+/** The equirectangular picture wrapped round the globe, and shown flat as the poster until the globe loads. No `date` is the newest frame. */
+export const globeTexture = (layer: GlobeLayer, date?: string) => `/api/globe/${layer}${date ? `?date=${date}` : ""}`;
 
 /** The colour of `t` (0 to 1) along a ramp. */
 export function rampRgb({ stops }: Ramp, t: number): Rgb {
