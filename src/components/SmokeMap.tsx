@@ -6,27 +6,18 @@ import { useEffect, useMemo, useState } from "react";
 import { CircleMarker, ImageOverlay, MapContainer, Polyline, TileLayer, Tooltip, useMapEvents } from "react-leaflet";
 import { LEVEL_COLOR, LEVEL_NAME, LEVEL_TEXT, REGIONS, REGION_POINT, pm25Band, pm25Color, psiLevel, stationLevel } from "@/lib/bands";
 import { fmtDate, fmtDay, fmtHour } from "@/lib/format";
+import { FIRE_COLOR, TRAIL_COLOR, trailCaption } from "@/lib/replay";
 import { islandMax } from "@/lib/situation";
-import type { DayPsi, FireSummary, NeaNow, Replay, ReplayDay, Sensor, SmokeGrid, Station } from "@/lib/types";
+import type { DayPsi, FireSummary, NeaNow, Replay, Sensor, SmokeGrid, Station } from "@/lib/types";
 import { sgDate } from "@/lib/util";
 import { sample } from "@/lib/wind";
 import InfoNote from "./InfoNote";
 import WindLayer from "./WindLayer";
 
-const FIRE = "#c2410c";
-const TRAIL = "#a855f7";
-
 function frameLabel(t: string) {
   const day = sgDate(0, new Date(t));
   const offset = [0, 1, 2, 3, 4].find((k) => sgDate(k) === day) ?? 0;
   return `${fmtDay(day, offset)} ${fmtHour(t)}`;
-}
-
-/** One line on where the day's air came from. */
-function trailCaption(d: ReplayDay) {
-  if (!d.from) return "Light winds: the air stayed around Singapore.";
-  const via = d.area && d.near > 0 ? ` via ${d.area}, past ${d.near.toLocaleString("en-SG")} fires` : "";
-  return `Air came from the ${d.from}${via}.`;
 }
 
 /** Reports where the map is clicked. */
@@ -133,15 +124,15 @@ export default function SmokeMap(props: {
           {wind && <WindLayer {...wind} motion={motion} />}
           {day && day.trail.length > 1 && (
             <>
-              <Polyline positions={day.trail} pathOptions={{ color: TRAIL, weight: 18, opacity: 0.3, lineCap: "round" }} />
-              <Polyline positions={day.trail} pathOptions={{ color: TRAIL, weight: 2.5, opacity: 0.95 }} />
+              <Polyline positions={day.trail} pathOptions={{ color: TRAIL_COLOR, weight: 18, opacity: 0.3, lineCap: "round" }} />
+              <Polyline positions={day.trail} pathOptions={{ color: TRAIL_COLOR, weight: 2.5, opacity: 0.95 }} />
             </>
           )}
           {f < nowIdx &&
-            day?.fires.map((p, i) => <CircleMarker key={i} center={p} radius={2.5} pathOptions={{ color: FIRE, weight: 0, fillOpacity: 0.85 }} />)}
+            day?.fires.map((p, i) => <CircleMarker key={i} center={p} radius={2.5} pathOptions={{ color: FIRE_COLOR, weight: 0, fillOpacity: 0.85 }} />)}
           {live &&
             fires.points.map((p, i) => (
-              <CircleMarker key={i} center={[p.lat, p.lon]} radius={2.5} pathOptions={{ color: FIRE, weight: 0, fillOpacity: 0.85 }} />
+              <CircleMarker key={i} center={[p.lat, p.lon]} radius={2.5} pathOptions={{ color: FIRE_COLOR, weight: 0, fillOpacity: 0.85 }} />
             ))}
           <Tap onTap={setSpot} />
           {smokeHere != null && spot && (
@@ -285,12 +276,12 @@ export default function SmokeMap(props: {
             </span>
           ))}
           <span className="flex items-center gap-1.5">
-            <span className="h-2 w-2 rounded-full" style={{ background: FIRE }} />
+            <span className="h-2 w-2 rounded-full" style={{ background: FIRE_COLOR }} />
             Fires
           </span>
           {replay && (
             <span className="flex items-center gap-1.5">
-              <span className="h-1 w-4 rounded-full" style={{ background: TRAIL }} />
+              <span className="h-1 w-4 rounded-full" style={{ background: TRAIL_COLOR }} />
               Air&apos;s path
             </span>
           )}

@@ -29,6 +29,10 @@ const AREAS: [string, number, number][] = [
   ["Peninsular Malaysia", 3.8, 102.0],
 ];
 
+/** Map colours for fires and for the air's path, shared by every view of the replay. */
+export const FIRE_COLOR = "#c2410c";
+export const TRAIL_COLOR = "#a855f7";
+
 const COMPASS = ["north", "north-east", "east", "south-east", "south", "south-west", "west", "north-west"];
 
 /** Equirectangular distance in km; fine at these scales near the equator. */
@@ -67,6 +71,13 @@ function firesPassed(trail: [number, number][], arrival: number, fires: Fire[]) 
   }
   const area = [...counts].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
   return { near, area };
+}
+
+/** One line on where the day's air came from. */
+export function trailCaption(d: ReplayDay) {
+  if (!d.from) return "Light winds: the air stayed around Singapore.";
+  const via = d.area && d.near > 0 ? ` via ${d.area}, past ${d.near.toLocaleString("en-SG")} fires` : "";
+  return `Air came from the ${d.from}${via}.`;
 }
 
 /** Wind of the frame nearest `t`, rounded for the page. */

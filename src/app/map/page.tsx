@@ -6,7 +6,7 @@ import { getHazeData } from "@/lib/data";
 
 export const metadata = pageMeta(
   "Haze map: smoke forecast, fires and wind around Singapore",
-  "Map of the smoke forecast, satellite-detected fires in Sumatra and Borneo, air-quality stations and wind direction around Singapore.",
+  "Map of the smoke forecast, satellite-detected fires in Sumatra and Borneo, daily NASA satellite views of smoke and carbon monoxide, air-quality stations and wind direction around Singapore.",
   "/map",
 );
 export const revalidate = 300;
@@ -25,6 +25,7 @@ export default async function MapPage() {
         biasFactor={data.forecast.biasFactor}
         windDir={wind?.windDir ?? null}
         context={mapContext(data)}
+        now={Date.now()}
       />
     </AppShell>
   );

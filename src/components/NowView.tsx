@@ -10,6 +10,7 @@ import type { Camera, DayOutlook, ForecastPoint, NeaNow, NeaPm25History, Sensor,
 import AirDetail from "./AirDetail";
 import Advice from "./Advice";
 import CigaretteCard from "./CigaretteCard";
+import HazeOrigin from "./HazeOrigin";
 import HazeOutlook from "./HazeOutlook";
 import Hero from "./Hero";
 import LiveViews from "./LiveViews";
@@ -24,7 +25,7 @@ const SgMap = dynamic(() => import("./SgMap"), {
   loading: () => <div className="mx-4 h-[300px] animate-pulse rounded-3xl bg-line" />,
 });
 
-/** The Now tab: the answer for the chosen region, what to do, and what is in the air. */
+/** The Now tab: the answer for the chosen region, what to do, what is in the air and where it came from. */
 export default function NowView({ history, nea, hourly, days, sensors, stations, cameras }: { history: NeaPm25History | null; nea: NeaNow | null; hourly: ForecastPoint[]; days: DayOutlook[]; sensors: Sensor[]; stations: Station[]; cameras: Camera[] }) {
   const { region, setRegion, group, setGroup, locating, locate } = usePrefs(nea ? islandMax(nea.psi24)?.region : undefined);
 
@@ -65,7 +66,7 @@ export default function NowView({ history, nea, hourly, days, sensors, stations,
           <Section className="order-8" title="Live views">
             <LiveViews cameras={cameras} region={region} />
             <Link href="/photos" className="mt-2 block px-5 text-[14px] font-semibold text-accent">
-              Satellite images and camera viewer
+              Camera viewer
             </Link>
           </Section>
         )}
@@ -88,7 +89,9 @@ export default function NowView({ history, nea, hourly, days, sensors, stations,
           </Section>
         )}
 
-        <SupportCard className="order-10 mt-10" />
+        <HazeOrigin className="order-10" />
+
+        <SupportCard className="order-11 mt-10" />
       </div>
     </div>
   );
