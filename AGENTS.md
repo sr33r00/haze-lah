@@ -4,9 +4,9 @@ A mobile-first Singapore haze tracker (Next.js 15 App Router, TypeScript, Tailwi
 
 ## How work is split
 
-- **Opus** (the main session) plans, writes the spec, reviews diffs, runs the checks and talks to the user. It does not write feature code itself, beyond tiny edits already in hand.
-- **Sonnet 5.5** (a general-purpose subagent with `model: "sonnet"`) writes the code. Put the design judgement into its spec. Do not use the `opus-coder` agent.
-- **Haiku 5.5** (`model: "haiku"`) does broad searches of the codebase or the web.
+- **Opus** (the main session) plans the implementation, writes the spec, orchestrates, reviews diffs and talks to the user. It does not write feature code itself, beyond tiny edits already in hand.
+- **Sonnet 5.5 at high effort** (a general-purpose subagent with `model: "sonnet"`, `effort: "high"`) writes the code. It runs only `tsc` and lint. Put the design judgement into its spec. Do not use the `opus-coder` agent.
+- **Haiku 5.5** (`model: "haiku"`) takes the screenshots and runs the tests and measurements (build sizes, route timings, browser checks). It also does broad searches of the codebase or the web. Opus looks at the key screenshots itself before reporting.
 
 ## Rules
 
