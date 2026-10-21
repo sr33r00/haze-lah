@@ -118,12 +118,16 @@ export default function Hero(props: {
         </div>
       </dl>
       {pm25 != null && (
-        <p className="mt-3 text-[13px] leading-snug" style={{ color: soft }}>
-          <b className="font-semibold">On AQICN</b>, this PM2.5 of <span className="tabular">{Math.round(pm25)}</span> shows as <b className="tabular font-semibold">{pm25ToUsAqi(pm25)}</b>. AQICN uses a US scale, not the PSI.{" "}
-          <Link href="/guide#other-apps" className="-my-3.5 inline-block py-3.5 underline" style={{ color: ink }}>
-            Why?
-          </Link>
-        </p>
+        // A neutral panel with its own tag, so the AQICN number reads as another site's scale, not as NEA's reading.
+        <div className="mt-4 flex items-start gap-2.5 rounded-2xl bg-surface px-3 py-2.5 text-fg">
+          <span className="mt-px shrink-0 rounded-md bg-fg px-1.5 py-0.5 text-[11px] font-bold tracking-wide text-bg">ON AQICN</span>
+          <p className="text-[13px] leading-snug">
+            This PM2.5 of <span className="tabular">{Math.round(pm25)}</span> shows as <b className="tabular font-bold">{pm25ToUsAqi(pm25)}</b>. AQICN uses a US scale, not the PSI.{" "}
+            <Link href="/guide#other-apps" className="-my-3.5 inline-block py-3.5 font-semibold text-accent underline">
+              Why?
+            </Link>
+          </p>
+        </div>
       )}
       <p id="explain" hidden={!open} className="mt-3 text-[13px] leading-snug" style={{ color: soft }}>
         {open && EXPLAIN[open]}

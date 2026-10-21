@@ -1,6 +1,7 @@
 import { ImageResponse } from "next/og";
 import { LEVEL_COLOR, LEVEL_NAME, REGIONS, TONE_COLOR, pm25Color, psiLevel, verdict, type Group } from "@/lib/bands";
 import { bestWindowFor, trendDir } from "@/lib/alerts";
+import { INK, LogoMark } from "@/lib/appIcon";
 import { cigarettes } from "@/lib/cigarettes";
 import { windFrom, windSource } from "@/lib/context";
 import { getHazeData } from "@/lib/data";
@@ -10,7 +11,6 @@ import { sgDate } from "@/lib/util";
 
 export const revalidate = 300;
 
-const INK = "#13232e";
 const SIZE = { width: 1200, height: 1200 };
 const GROUPS: [Group, string][] = [
   ["healthy", "Healthy"],
@@ -50,20 +50,6 @@ const Cig = () => (
   </div>
 );
 
-const Logo = () => (
-  <svg width={56} height={56} viewBox="0 0 64 64">
-    <defs>
-      <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stopColor="#60a0ce" />
-        <stop offset="1" stopColor="#e2d4b2" />
-      </linearGradient>
-    </defs>
-    <rect width="64" height="64" rx="14" fill="url(#sky)" />
-    <path d="M10 40c8-6 14-6 22 0s14 6 22 0" fill="none" stroke={INK} strokeWidth="5" strokeLinecap="round" />
-    <path d="M10 28c8-6 14-6 22 0s14 6 22 0" fill="none" stroke={INK} strokeWidth="5" strokeLinecap="round" opacity=".45" />
-  </svg>
-);
-
 const Shell = ({ children }: { children: React.ReactNode }) => (
   <div
     style={{
@@ -85,7 +71,7 @@ const Shell = ({ children }: { children: React.ReactNode }) => (
 const Footer = ({ time }: { time?: string }) => (
   <div style={{ ...row, justifyContent: "space-between", height: 56 }}>
     <div style={row}>
-      <Logo />
+      <LogoMark size={56} />
       <div style={{ marginLeft: 16, fontWeight: 800 }}>hazelah.app</div>
     </div>
     {time && <div>{`${time} SGT`}</div>}

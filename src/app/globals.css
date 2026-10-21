@@ -61,9 +61,10 @@
   --font-sans: "Atkinson Hyperlegible Next Variable", ui-sans-serif, system-ui, sans-serif;
 }
 
-/* Motion: transform and opacity only. Each says something: rise = new content, grow = a value, pop = a count, ring = look here, ember and wisp = burning now. */
+/* Motion: transform and opacity only. Each says something: rise = new content, sheet = a panel opening from the bottom, grow = a value, pop = a count, ring = look here, ember and wisp = burning now. */
 @theme {
   --animate-rise: rise 450ms ease-out both;
+  --animate-sheet: sheet 300ms ease-out both;
   --animate-grow: grow 600ms ease-out both;
   --animate-grow-x: grow-x 600ms ease-out both;
   --animate-pop: pop 350ms ease-out both;
@@ -76,6 +77,11 @@
     from {
       opacity: 0;
       transform: translateY(8px);
+    }
+  }
+  @keyframes sheet {
+    from {
+      transform: translateY(100%);
     }
   }
   @keyframes grow {

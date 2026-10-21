@@ -10,11 +10,14 @@ import InstallPrompt from "./InstallPrompt";
 import Logo from "./Logo";
 import ShareButton from "./ShareButton";
 import ThemeToggle from "./ThemeToggle";
+import WhatsNew from "./WhatsNew";
 
 /** Shared chrome of every tab: header, optional page title, bottom tabs. */
 export default function AppShell({ data, title, children }: { data: HazeData; title?: string; children: React.ReactNode }) {
   return (
     <div className="pb-24 lg:pb-0">
+      {/* First, so its effect reads the stored keys before other components write them. */}
+      <WhatsNew />
       <a
         href="#main"
         className="sr-only focus:not-sr-only focus:fixed focus:left-2 focus:top-2 focus:z-[1100] focus:rounded-full focus:bg-surface focus:px-4 focus:py-2 focus:text-[14px] focus:font-semibold"

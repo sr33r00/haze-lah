@@ -105,6 +105,24 @@ export type SmokeGrid = {
   wind: { u: number[][]; v: number[][] } | null; // null when the wind request failed
 };
 
+/** How the air reaching Singapore travelled, from the back-trail. */
+export type Journey = {
+  hours: number; // time the trail covers; under 72 when the path left the wind grid
+  km: number; // path length, rounded to 10 km
+  start: string | null; // area nearest the trail's oldest point; null when no known area is near
+  left: string; // ISO; when the air was at that oldest point
+};
+
+/** Smoke from today's strongest fires, carried by the wind forecast. Only for the newest replay day. */
+export type Ahead = {
+  fires: number; // how many of the `checked` fires send smoke within 75 km of Singapore within 72 h
+  checked: number; // the strongest fires of the last 24 h in Sumatra and Borneo
+  area: string | null; // province or state with most of the fires that reach
+  hours: number | null; // median hours to reach among those fires; null when none reach
+  at: string | null; // ISO; now + hours
+  path: [number, number][]; // forward trail of the reaching fire closest to the median, from the fire towards Singapore
+};
+
 /** One day of the past-week replay; the last day is today, up to the latest 3-hour step. */
 export type ReplayDay = {
   date: string; // YYYY-MM-DD, SGT
@@ -113,6 +131,8 @@ export type ReplayDay = {
   from: string | null; // compass point the air came from, e.g. "south-east"
   near: number; // fires within reach of the trail while the air passed
   area: string | null; // province or state with most of those fires
+  journey: Journey | null; // null when the winds were light and the air stayed near Singapore
+  ahead: Ahead | null; // newest day only; null when there is no fire or wind data to work from
   fires: [number, number][]; // that UTC day's strongest fires, for the map
   total: number; // all fires that UTC day in Sumatra and Borneo
   wind: { u: number[]; v: number[] }; // on the smoke grid, at `arrival`
