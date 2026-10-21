@@ -1,14 +1,17 @@
 "use client";
 
-import { Map as MapLibre, Marker, NavigationControl, Popup, setWorkerUrl, type ExpressionSpecification, type GeoJSONSource, type ImageSource } from "maplibre-gl";
+import { Map as MapLibre, Marker, NavigationControl, Popup, setWorkerUrl, type GeoJSONSource, type ImageSource } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { Globe, LocateFixed } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { BASEMAP, trimStyle } from "@/lib/basemap";
 import { DATA_OPACITY, GLOBE_LAYERS, MERC_LAT, fmtReading, isClear, mercY, rampRgb, type GlobeLayer } from "@/lib/globe";
 import { FIRE_COLOR, TRAIL_COLOR } from "@/lib/replay";
 import type { Fire, Replay, ReplayDay } from "@/lib/types";
 import { SG } from "@/lib/util";
+import { windOf, type WindView } from "@/lib/windParticles";
+import { globeView } from "./globeWind";
+import { useWindParticles } from "./useWindParticles";
 
 // MapLibre's worker is a file of its own; the bundler puts it among the static files and this is its address.
 setWorkerUrl(new URL("maplibre-gl/dist/maplibre-gl-worker.mjs", import.meta.url).href);
@@ -17,13 +20,14 @@ const MIN_ZOOM = 1.2;
 const MAX_ZOOM = 9;
 const SPAN = 36; // degrees of the Earth across the card's short side at the start: Southeast Asia fills it
 const FLY_MS = 800;
+const WIND_INK = "#ffffff"; // the globe is dark, whatever the page's theme
 const HOME: [number, number] = [SG.lon, SG.lat];
 const CORNERS: [[number, number], [number, number], [number, number], [number, number]] = [[-180, MERC_LAT], [180, MERC_LAT], [180, -MERC_LAT], [-180, -MERC_LAT]];
 
 /** Singapore's pulsing ring and label as a DOM element on the map. The label sits above, clear of the air's path. */
 function marker() {
   const el = document.createElement("div");
-  el.className = "pointer-events-none relative";
+  el.className = "pointer-events-none relative z-[2]"; // above the wind, below the controls
   el.setAttribute("aria-hidden", "true");
   el.innerHTML = '<span class="sg-ring"></span><span class="sg-label bottom-3 left-0 -translate-x-1/2">Singapore</span>';
   return el;
@@ -70,55 +74,10 @@ const line = (trail: ReplayDay["trail"]): GeoJSON.FeatureCollection => ({
 /** The wind on the replay's grid, at one moment. */
 export type Flow = Pick<Replay, "lats" | "lons"> & { wind: ReplayDay["wind"] };
 
-const ARROW = 64; // the arrow's picture, in pixels: drawn at pixelRatio 2, so 32 on screen
-const ARROW_EDGE = [[32, 10], [46, 30], [37, 30], [37, 54], [27, 54], [27, 30], [18, 30]]; // an arrow pointing north
-const SDF_RADIUS = 8; // how far the distance field reaches, in pixels
-const SDF_CUTOFF = 0.25; // where the edge sits in it: the same encoding as MapLibre's glyphs
-
-/** Distance from (x, y) to the arrow's outline, negative inside it. */
-function arrowDistance(x: number, y: number) {
-  let near = Infinity;
-  let inside = false;
-  ARROW_EDGE.forEach(([ax, ay], i) => {
-    const [bx, by] = ARROW_EDGE[(i + 1) % ARROW_EDGE.length];
-    const t = Math.max(0, Math.min(1, ((x - ax) * (bx - ax) + (y - ay) * (by - ay)) / ((bx - ax) ** 2 + (by - ay) ** 2)));
-    near = Math.min(near, Math.hypot(x - ax - t * (bx - ax), y - ay - t * (by - ay)));
-    if (ay > y !== by > y && x < ax + ((y - ay) / (by - ay)) * (bx - ax)) inside = !inside;
-  });
-  return inside ? -near : near;
-}
-
-/** The wind arrow as a signed distance field, so that MapLibre can colour it and give it a halo. Drawn once. */
-function arrowImage() {
-  const data = new Uint8ClampedArray(ARROW * ARROW * 4).fill(255);
-  for (let y = 0; y < ARROW; y++)
-    for (let x = 0; x < ARROW; x++) data[(y * ARROW + x) * 4 + 3] = Math.max(0, Math.min(255, Math.round(255 - 255 * (arrowDistance(x + 0.5, y + 0.5) / SDF_RADIUS + SDF_CUTOFF))));
-  return new ImageData(data, ARROW, ARROW);
-}
-
-/** One arrow per grid point: `speed` in m/s, `bearing` in degrees clockwise from north, the way the wind blows. Every second point is `major`, so that a wide view can show fewer. */
-const arrows = (flow: Flow | undefined): GeoJSON.FeatureCollection => ({
-  type: "FeatureCollection",
-  features: flow
-    ? flow.lats.flatMap((lat, i) =>
-        flow.lons.flatMap((lon, j) => {
-          const u = flow.wind.u[i * flow.lons.length + j];
-          const v = flow.wind.v[i * flow.lons.length + j];
-          if (!Number.isFinite(u) || !Number.isFinite(v)) return [];
-          const bearing = (Math.atan2(u, v) * 180) / Math.PI;
-          return [{ type: "Feature" as const, properties: { speed: Math.hypot(u, v), bearing: (bearing + 360) % 360, major: i % 2 === 0 && j % 2 === 0 ? 1 : 0 }, geometry: { type: "Point" as const, coordinates: [lon, lat] } }];
-        }),
-      )
-    : [],
-});
-
-/** Arrow size (1 is the picture's own size) by wind speed, scaled by `k`. */
-const arrowSize = (k: number): ExpressionSpecification => ["interpolate", ["linear"], ["get", "speed"], 0, 0.35 * k, 15, 0.9 * k];
-
 /**
  * Southeast Asia on a globe you can turn, zoom and move: MapLibre with OpenFreeMap's vector map, so that coasts, borders and
  * names stay sharp at any zoom, and the NASA picture laid between them and the colours. Fills the card it is in. `fires`,
- * `trail` (where the air came from), `ahead` (where today's smoke should go) and `flow` (the wind, as arrows) are drawn when given; `url` is the picture to lay (undefined until the browser has it, so that it is read from its
+ * `trail` (where the air came from), `ahead` (where today's smoke should go) and `flow` (the wind, as moving particles: still arrows under reduced motion unless `motion`) are drawn when given; `url` is the picture to lay (undefined until the browser has it, so that it is read from its
  * cache and not fetched twice; the map and the fly-in do not wait for it, and it fades in); `onReady` says the map is up,
  * `onFail` that it could not start. MapLibre draws only when something moves or loads.
  */
@@ -129,6 +88,7 @@ export default function GlobeMap({
   trail,
   ahead,
   flow,
+  motion,
   onReady,
   onFail,
 }: {
@@ -138,6 +98,7 @@ export default function GlobeMap({
   trail: ReplayDay["trail"] | undefined;
   ahead: ReplayDay["trail"] | undefined;
   flow: Flow | undefined;
+  motion: boolean;
   onReady: () => void;
   onFail: () => void;
 }) {
@@ -148,6 +109,7 @@ export default function GlobeMap({
   const now = useRef<{ url?: string; layer: GlobeLayer }>({ layer }); // what a click reads
   const frame = useRef<{ url: string; ctx: Promise<CanvasRenderingContext2D> }>(undefined);
   const [ready, setReady] = useState(false);
+  const [view, setView] = useState<WindView>(); // the wind's way of seeing the map, once it is up
   const [styled, setStyled] = useState(false); // the style is loaded: layers can be added
   const [away, setAway] = useState(false); // the view has moved off Singapore
   const [hint, setHint] = useState(true); // how to use the map, until the first drag or zoom
@@ -191,34 +153,7 @@ export default function GlobeMap({
           m.setProjection({ type: "globe" });
           const { layers } = m.getStyle();
           const firstLabel = layers.find((l) => l.type === "symbol")!.id;
-          // The wind, fires and the air's paths go between the borders and the names, the paths on top; the data, under the borders, is added once its picture is here.
-          // The arrows fade in with zoom, the minor ones last, so that the first view stays clear.
-          m.addImage("arrow", arrowImage(), { sdf: true, pixelRatio: 2 });
-          m.addSource("wind", { type: "geojson", data: arrows(undefined) });
-          m.addLayer(
-            {
-              id: "wind",
-              type: "symbol",
-              source: "wind",
-              layout: {
-                "icon-image": "arrow",
-                "icon-rotate": ["get", "bearing"],
-                "icon-rotation-alignment": "map",
-                "icon-pitch-alignment": "map",
-                "icon-size": ["interpolate", ["linear"], ["zoom"], 2, arrowSize(0.7), 6, arrowSize(1.2)],
-                "icon-allow-overlap": true,
-                "icon-ignore-placement": true,
-              },
-              paint: {
-                "icon-color": "#ffffff",
-                "icon-halo-color": "rgba(0,0,0,0.6)",
-                "icon-halo-width": 1.2,
-                "icon-opacity": ["interpolate", ["linear"], ["zoom"], 2, 0, 2.6, ["*", 0.75, ["get", "major"]], 4, ["*", 0.75, ["get", "major"]], 5, 0.75],
-                "icon-opacity-transition": { duration: 0 },
-              },
-            },
-            firstLabel,
-          );
+          // Fires and the air's paths go between the borders and the names, the paths on top; the data, under the borders, is added once its picture is here.
           m.addSource("fires", { type: "geojson", data: points([]) });
           m.addLayer(
             {
@@ -262,6 +197,7 @@ export default function GlobeMap({
         });
         m.once("load", () => {
           setReady(true);
+          setView(globeView(m));
           onReady();
         });
         m.on("movestart", (e) => e.originalEvent && setHint(false));
@@ -311,9 +247,9 @@ export default function GlobeMap({
   useEffect(() => {
     if (ready) (map.current!.getSource("ahead") as GeoJSONSource).setData(line(ahead ?? []));
   }, [ready, ahead]);
-  useEffect(() => {
-    if (ready) (map.current!.getSource("wind") as GeoJSONSource).setData(arrows(flow));
-  }, [ready, flow]);
+
+  const wind = useMemo(() => flow && windOf(flow.lats, flow.lons, flow.wind.u, flow.wind.v), [flow]);
+  useWindParticles(view, wind, motion, WIND_INK);
 
   return (
     <>
