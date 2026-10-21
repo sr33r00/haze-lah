@@ -3,7 +3,8 @@
   "pm25Band": 1,
   "neaUrl": "https://www.nea.gov.sg/media/news/advisories/index/haze-situation-update-20-october-2026",
   "newsUrls": [
-    "https://www.channelnewsasia.com/singapore/haze-psi-pm25-oct-21-6476941",
+    "https://www.straitstimes.com/singapore/housing/builders-reduce-workers-exposure-to-haze-take-steps-to-seek-time-extensions-for-construction-delays",
+    "https://www.channelnewsasia.com/singapore/singapore-air-pollution-october-21-haze-psi-pm25-6476941",
     "https://www.straitstimes.com/singapore/haze-in-singapore-air-quality-lies-between-moderate-and-unhealthy-bands-overnight",
     "https://www.channelnewsasia.com/singapore/air-purifier-haze-costs-hepa-filter-6475021",
     "https://www.straitstimes.com/singapore/n95-masks-available-at-all-fairprice-outlets-pharmacies-other-retailers-to-restock-by-end-of-week",
@@ -13,6 +14,7 @@
     "https://www.straitstimes.com/singapore/environment/consumers-can-put-pressure-on-haze-linked-firms-by-buying-green-labelled-products-experts",
     "https://www.straitstimes.com/singapore/behind-the-blazes-st-looks-at-10-firms-issued-notices-under-spore-haze-law",
     "https://www.straitstimes.com/singapore/haze-in-singapore-air-quality-improves-with-3-of-5-regions-recording-moderate-psi-levels",
+    "https://www.channelnewsasia.com/singapore/haze-psi-pm25-oct-21-6476941",
     "https://www.straitstimes.com/singapore/firefly-plans-oct-22-resumption-of-all-subang-seletar-flights-after-haze-cancellations",
     "https://www.channelnewsasia.com/singapore/haze-asia-pulp-paper-environment-council-6471366",
     "https://www.channelnewsasia.com/singapore/haze-alfresco-outdoor-dining-busking-drop-6471381",
@@ -30,11 +32,9 @@
     "https://www.channelnewsasia.com/singapore/haze-western-region-daily-routines-psi-businesses-6469406",
     "https://www.straitstimes.com/singapore/haze-in-singapore-runners-train-in-malls-families-head-for-indoor-playgrounds",
     "https://www.straitstimes.com/singapore/fb-businesses-struggle-as-haze-conditions-worsen",
-    "https://www.channelnewsasia.com/singapore/haze-oct-18-psi-west-remains-very-unhealthy-6468376",
-    "https://www.straitstimes.com/singapore/air-quality-in-most-of-singapore-unhealthy-as-haze-persists-psi-in-west-very-unhealthy",
-    "https://www.straitstimes.com/singapore/environment/cloaked-in-grey-the-causes-and-effects-of-haze-in-singapore"
+    "https://www.channelnewsasia.com/singapore/haze-oct-18-psi-west-remains-very-unhealthy-6468376"
   ],
   "briefDate": "2026-10-21",
   "outlookDate": "2026-10-20",
-  "hourTime": "2026-10-21T09:00:00+08:00"
+  "hourTime": "2026-10-21T17:00:00+08:00"
 }
