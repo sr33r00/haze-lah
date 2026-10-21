@@ -7,7 +7,7 @@ export default function SupportCard({ className = "" }: { className?: string }) 
     <div className={`mx-4 rounded-3xl bg-surface p-4 ${className}`}>
       <p className="text-[17px] font-bold">Keep Haze Lah running</p>
       {/* Written by hand: update when new supporters agree to be named. */}
-      <p className="mt-1 text-[14px] font-semibold leading-snug">Kept running by Tanu, Jonathan, Annie, S and others.</p>
+      <p className="mt-1 text-[14px] font-semibold leading-snug">Kept running by Tanu, Jonathan, Annie, Jessica, S and others.</p>
       <p className="mt-1 text-[14px] leading-snug text-muted">Free, no ads, made by one person. A coffee pays for the servers and the data.</p>
       <a
         href={BMC_URL}
