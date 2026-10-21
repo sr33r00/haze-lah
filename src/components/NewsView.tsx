@@ -6,7 +6,6 @@ import { LEVEL_NAME, LEVEL_TEXT, psiLevel } from "@/lib/bands";
 import { ALERTS_URL } from "@/lib/links";
 import { fmtTime, fmtWhen } from "@/lib/format";
 import type { TimelineItem } from "@/lib/situation";
-import type { Supporters } from "@/lib/types";
 import { sgDate } from "@/lib/util";
 import SupportCard from "./SupportCard";
 
@@ -73,7 +72,7 @@ function Item({ n, i }: { n: TimelineItem; i: number }) {
 }
 
 /** The News tab: PSI status, source filter and day-grouped updates. */
-export default function NewsView({ items, streak, psi, supporters }: { items: TimelineItem[]; streak: number; psi: { min: number; max: number } | null; supporters: Supporters | null }) {
+export default function NewsView({ items, streak, psi }: { items: TimelineItem[]; streak: number; psi: { min: number; max: number } | null }) {
   const [filter, setFilter] = useState(0);
   const allowed = FILTERS[filter].sources;
   const shown = allowed ? items.filter((i) => allowed.includes(i.source)) : items;
@@ -116,7 +115,7 @@ export default function NewsView({ items, streak, psi, supporters }: { items: Ti
           </div>
         )}
 
-        <SupportCard supporters={supporters} className="hidden lg:block" />
+        <SupportCard className="hidden lg:block" />
 
         <div role="group" aria-label="Filter updates" className="mt-3 flex gap-1.5 px-4 lg:mt-0 lg:px-0">
           {FILTERS.map((f, i) => (

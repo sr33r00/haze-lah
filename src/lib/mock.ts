@@ -105,7 +105,6 @@ export function mockInputs(): Inputs {
     weather,
     news: mockNews(),
     psiDaily: [112, 124, 98, 135, 150, 168, 190].map((max, i): DayPsi => ({ date: sgDate(i - 6), max, region: i % 2 ? "west" : "central" })),
-    supporters: { names: ["Wei Ling", "Arjun", "Mei", "Siti", "Daniel"], anonymous: 4, total: 9 },
     errors: [],
   };
 }
