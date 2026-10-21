@@ -104,6 +104,9 @@ export function globeDates(now: number, before = 0): string[] {
 /** A week, in days. */
 export const WEEK = 7;
 
+/** Whether `date` (YYYY-MM-DD, SGT) is older than 2 days, so that NASA adds no more passes to it. */
+export const isSettled = (date: string) => date < sgDate(-2);
+
 /** The date a week before `date` (YYYY-MM-DD, SGT). */
 export const weekBefore = (date: string) => sgDate(-WEEK, new Date(`${date}T12:00:00+08:00`));
 

@@ -57,6 +57,16 @@ const COAST_AT: CSSProperties = {
 };
 const AT_SG = { x: ((SG.lon + 180) / 360) * 100, y: mercY(SG.lat) * 100 };
 
+/** Runs `run` when the browser is idle (at the latest after `timeout` ms); returns the way to cancel it. */
+function whenIdle(run: () => void, timeout: number) {
+  if (!("requestIdleCallback" in window)) {
+    const id = setTimeout(run, 300);
+    return () => clearTimeout(id);
+  }
+  const id = requestIdleCallback(run, { timeout });
+  return () => cancelIdleCallback(id);
+}
+
 type Connection = { saveData?: boolean; effectiveType?: string };
 
 /** The map only loads where it will run well: WebGL, no data saver, not 2G. */
@@ -91,8 +101,9 @@ export default function SpaceView({ now, fires }: { now: number; fires: Fire[] }
   const [capable, setCapable] = useState(false);
   const [inView, setInView] = useState(false);
   const [ready, setReady] = useState(false);
+  const [late, setLate] = useState(false); // the default layer's picture is here and the browser is idle: time for the other layers
   const stage = useRef<HTMLDivElement>(null);
-  const asked = useRef(false); // the readings have been asked for
+  const asked = useRef(new Set<GlobeLayer>()); // the layers whose readings have been asked for
 
   const { label, ramp, note, days: span } = GLOBE_LAYERS[layer];
   const dates = useMemo(() => globeDates(now), [now]);
@@ -122,25 +133,31 @@ export default function SpaceView({ now, fires }: { now: number; fires: Fire[] }
   const mark = useCallback((url: string, ok: boolean) => setLoaded((l) => (l[url] === ok ? l : { ...l, [url]: ok })), []);
   const onReady = useCallback(() => setReady(true), []);
   const onFail = useCallback(() => setCapable(false), []); // the poster stays, and does the playing
+  const primed = loaded[frames[LAYERS[0]][LAST].url] !== undefined; // the default layer's newest picture has arrived (or failed)
+  const picture = loaded[mine[view].url] !== undefined ? mine[view].url : undefined; // the map takes a picture only once the poster's <img> has it: from the browser's cache, not a second request
 
   useEffect(() => {
     setCapable(canRunMap());
-    const seen = new IntersectionObserver(([e]) => setInView(e.isIntersecting), { rootMargin: "100px" });
+    const seen = new IntersectionObserver(([e]) => setInView(e.isIntersecting), { rootMargin: "800px" });
     seen.observe(stage.current!);
     return () => seen.disconnect();
   }, []);
 
-  // The readings are tiny: fetched when the section comes into view, with or without the map.
+  // The other layers wait for the default one's picture, so that it gets the server first; they follow when the browser is idle.
+  useEffect(() => (primed ? whenIdle(() => setLate(true), 2000) : undefined), [primed]);
+
+  // The readings are tiny: fetched when the section comes into view, with or without the map; the layer on view first, the rest once `late`.
   useEffect(() => {
-    if (!inView || asked.current) return;
-    asked.current = true;
-    LAYERS.forEach((key) =>
+    if (!inView) return;
+    new Set(late ? LAYERS : [LAYERS[0], layer]).forEach((key) => {
+      if (asked.current.has(key)) return;
+      asked.current.add(key);
       fetch(globeSeries(key))
         .then((r) => (r.ok ? r.json() : Promise.reject()))
         .then(({ values }: { values: Series }) => setSeries((s) => ({ ...s, [key]: values })))
-        .catch(() => setSeries((s) => ({ ...s, [key]: {} }))), // no readings: the bars and the card just say so
-    );
-  }, [inView]);
+        .catch(() => setSeries((s) => ({ ...s, [key]: {} }))); // no readings: the bars and the card just say so
+    });
+  }, [inView, late, layer]);
 
   // Load the map code when the stage is in view and the browser has nothing better to do; the replay's path with it.
   useEffect(() => {
@@ -154,11 +171,10 @@ export default function SpaceView({ now, fires }: { now: number; fires: Fire[] }
         .then((r) => live && setTrail(r.days.at(-1)?.trail))
         .catch(() => {});
     };
-    const handle = "requestIdleCallback" in window ? requestIdleCallback(load, { timeout: 3000 }) : setTimeout(load, 300);
+    const cancel = whenIdle(load, 500);
     return () => {
       live = false;
-      if ("cancelIdleCallback" in window) cancelIdleCallback(handle as number);
-      else clearTimeout(handle);
+      cancel();
     };
   }, [capable, inView, GlobeMap]);
 
@@ -208,6 +224,7 @@ export default function SpaceView({ now, fires }: { now: number; fires: Fire[] }
               frames[key].map(({ url, range }, i) => {
                 const on = key === layer && i === view;
                 if (i !== LAST && !(key === layer && wanted && !capable)) return null;
+                if (i === LAST && key !== LAYERS[0] && key !== layer && !late) return null; // the other layers' newest pictures wait for `late`
                 return (
                   // eslint-disable-next-line @next/next/no-img-element -- the server builds sized images; no optimisation needed
                   <img
@@ -233,7 +250,7 @@ export default function SpaceView({ now, fires }: { now: number; fires: Fire[] }
 
         {capable && GlobeMap && (
           <div className={`absolute inset-0 ${FADE} ${ready ? "" : "opacity-0"}`}>
-            <GlobeMap url={mine[view].url} layer={layer} fires={today ? fires : NONE} trail={today ? trail : undefined} onReady={onReady} onFail={onFail} />
+            <GlobeMap url={picture} layer={layer} fires={today ? fires : NONE} trail={today ? trail : undefined} onReady={onReady} onFail={onFail} />
           </div>
         )}
 
