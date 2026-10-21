@@ -254,13 +254,6 @@ body {
   filter: invert(1);
 }
 
-.space-card .maplibregl-cooperative-gesture-screen {
-  background: rgb(5 7 13 / 0.72);
-  font-size: 14px;
-  font-weight: 600;
-  text-align: center;
-}
-
 .sg-pop .maplibregl-popup-content {
   border-radius: 0.75rem;
   background: rgb(0 0 0 / 0.8);
