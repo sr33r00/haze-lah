@@ -200,7 +200,7 @@ export default function SpaceView({ now, fires }: { now: number; fires: Fire[] }
         ))}
       </div>
 
-      <div ref={stage} data-no-swipe className="stars space-card relative aspect-square max-h-[640px] overflow-hidden rounded-3xl [container-type:size] sm:aspect-[16/9]">
+      <div ref={stage} className="stars space-card relative aspect-square max-h-[640px] overflow-hidden rounded-3xl [container-type:size] sm:aspect-[16/9]">
         <div aria-hidden={ready} className={`absolute inset-0 ${FADE} ${ready ? "opacity-0" : ""}`}>
           <div className="absolute" style={POSTER}>
             {/* The newest picture of each layer always stays mounted, so switching layers swaps them with no wait; the other days are here only when the poster plays (no map). */}

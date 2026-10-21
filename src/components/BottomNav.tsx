@@ -5,8 +5,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
-/** Tab order, also used for swipe navigation. */
-export const ITEMS = [
+/** Tab order. */
+const ITEMS = [
   { href: "/", label: "Now", icon: CircleGauge },
   { href: "/forecast", label: "Forecast", icon: CalendarDays },
   { href: "/map", label: "Map", icon: Map },

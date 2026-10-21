@@ -8,7 +8,6 @@ import BottomNav, { TopNav } from "./BottomNav";
 import Freshness from "./Freshness";
 import InstallPrompt from "./InstallPrompt";
 import Logo from "./Logo";
-import SwipeTabs from "./SwipeTabs";
 import ShareButton from "./ShareButton";
 import ThemeToggle from "./ThemeToggle";
 
@@ -65,7 +64,6 @@ export default function AppShell({ data, title, children }: { data: HazeData; ti
         {children}
       </main>
       <InstallPrompt />
-      <SwipeTabs />
       <BottomNav newest={newestTime(data)} />
     </div>
   );
