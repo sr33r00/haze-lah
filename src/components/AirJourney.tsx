@@ -2,7 +2,7 @@
 
 import { Share2 } from "lucide-react";
 import { useRef, useState } from "react";
-import { SITE_URL } from "@/lib/links";
+import { BMC_LABEL, BMC_URL, SITE_URL } from "@/lib/links";
 import { FIRE_COLOR, TRAIL_COLOR, journeyText } from "@/lib/replay";
 import type { ReplayDay } from "@/lib/types";
 
@@ -20,7 +20,7 @@ const End = ({ text, at, right }: { text: string; at: string; right?: boolean })
 );
 
 /** Shares the journey as a picture; where the browser cannot, opens the picture in a new tab. */
-function ShareJourney({ text }: { text: string }) {
+function ShareJourney({ text, onShared }: { text: string; onShared: () => void }) {
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
   const file = useRef<File | null>(null);
@@ -41,6 +41,7 @@ function ShareJourney({ text }: { text: string }) {
       }
       await navigator.share({ files: [file.current], title: "Today's air in Singapore", text, url: `${SITE_URL}/#origin` });
       setStatus("");
+      onShared();
     } catch (e) {
       const name = e instanceof DOMException ? e.name : "";
       // The phone wants a fresh tap once the picture is ready; it is kept for that tap.
@@ -72,6 +73,7 @@ function ShareJourney({ text }: { text: string }) {
 
 /** The air's journey as a travel ticket: where it left, where it arrived and the fires it passed. Null on calm days, when the air stayed near Singapore. */
 export default function AirJourney({ day }: { day: ReplayDay }) {
+  const [shared, setShared] = useState(false);
   const t = journeyText(day);
   if (!t) return null;
   return (
@@ -96,8 +98,18 @@ export default function AirJourney({ day }: { day: ReplayDay }) {
           {day.near > 0 && <span aria-hidden className="size-2.5 shrink-0 rounded-full" style={{ background: FIRE_COLOR }} />}
           {t.fires}
         </p>
-        <ShareJourney text={`Today's air travelled ${t.trip} to reach Singapore.`} />
+        <ShareJourney text={`Today's air travelled ${t.trip} to reach Singapore.`} onShared={() => setShared(true)} />
       </div>
+      <p aria-live="polite" className={`px-4 text-[13px] leading-snug text-muted ${shared ? "pb-3" : ""}`}>
+        {shared && (
+          <>
+            Thanks for sharing. Haze Lah is free. Supporters keep it running.{" "}
+            <a href={BMC_URL} target="_blank" rel="noreferrer" className="font-semibold text-accent underline">
+              {BMC_LABEL}
+            </a>
+          </>
+        )}
+      </p>
     </div>
   );
 }

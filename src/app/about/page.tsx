@@ -6,6 +6,7 @@ import { GROUP_LABEL, LEVEL_COLOR, LEVEL_NAME, NEA_ADVICE, type Group } from "@/
 import AccuracyTable from "@/components/AccuracyTable";
 import AppShell from "@/components/AppShell";
 import SectionNav from "@/components/SectionNav";
+import { BmcButton } from "@/components/SupportCard";
 import { Bullets } from "@/components/ui";
 import { fetchAccuracy } from "@/lib/accuracy";
 import { CIGARETTE_NOTES, CIGARETTE_SOURCES } from "@/lib/cigarettes";
@@ -30,6 +31,7 @@ const SECTIONS = [
   { id: "cigarettes", title: "Cigarette comparison" },
   { id: "privacy", title: "Privacy" },
   { id: "whats-new", title: "What's new" },
+  { id: "supporters", title: "Supporters" },
 ];
 
 const ADVICE_POINTS = [
@@ -298,6 +300,27 @@ export default async function About() {
                   </li>
                 ))}
               </ul>
+            </section>
+
+            <section id="supporters" className="scroll-mt-20 space-y-3">
+              <h2 className={H2}>Supporters</h2>
+              <p>Thank you to everyone who keeps Haze Lah running.</p>
+              {data.supporters && data.supporters.names.length > 0 && (
+                <ul className="flex flex-wrap gap-x-2 gap-y-1 text-[15px] font-semibold">
+                  {data.supporters.names.map((name) => (
+                    <li key={name} className="rounded-full bg-surface px-3 py-1">
+                      {name}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {data.supporters && data.supporters.anonymous > 0 && (
+                <p className="text-muted">
+                  and {data.supporters.anonymous} anonymous supporter{data.supporters.anonymous === 1 ? "" : "s"}
+                </p>
+              )}
+              <p className="text-[13px] text-muted">On Buy Me a Coffee you can use your name, another name, or leave it empty to stay anonymous.</p>
+              <BmcButton />
             </section>
 
             <section className="rounded-2xl border border-line bg-surface p-3">

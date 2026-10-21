@@ -1,6 +1,6 @@
 import { Coffee, Info } from "lucide-react";
 import Link from "next/link";
-import { ALERTS_URL, BMC_LABEL, BMC_URL } from "@/lib/links";
+import { ALERTS_URL, BMC_ICON_LABEL, BMC_URL } from "@/lib/links";
 import { newestTime } from "@/lib/situation";
 import type { HazeData } from "@/lib/types";
 import AlertsButton from "./AlertsButton";
@@ -16,7 +16,6 @@ import WhatsNew from "./WhatsNew";
 export default function AppShell({ data, title, children }: { data: HazeData; title?: string; children: React.ReactNode }) {
   return (
     <div className="pb-24 lg:pb-0">
-      {/* First, so its effect reads the stored keys before other components write them. */}
       <WhatsNew />
       <a
         href="#main"
@@ -50,8 +49,8 @@ export default function AppShell({ data, title, children }: { data: HazeData; ti
               href={BMC_URL}
               target="_blank"
               rel="noreferrer"
-              aria-label={BMC_LABEL}
-              title={BMC_LABEL}
+              aria-label={BMC_ICON_LABEL}
+              title={BMC_ICON_LABEL}
               className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-line bg-surface transition-colors hover:bg-line"
             >
               <Coffee size={16} aria-hidden />
