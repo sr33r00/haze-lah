@@ -9,6 +9,16 @@ export type GuideSection = { id: string; title: string; items: GuideItem[] };
 const NEA_GUIDE: Source = ["NEA PSI and PM2.5 guide", "https://www.haze.gov.sg/docs/default-source/posters/haze-pm-psi-guide-a4-english.pdf"];
 const AQICN: Source = ["AQICN Singapore page", "https://aqicn.org/city/singapore/"];
 const AQICN_SCALE: Source = ["AQICN scale", "https://aqicn.org/scale/"];
+
+/** AQICN's words for its US AQI ranges (aqicn.org/scale). */
+const AQICN_WORDS = [
+  ["0 to 50", "Good"],
+  ["51 to 100", "Moderate"],
+  ["101 to 150", "Unhealthy for sensitive groups"],
+  ["151 to 200", "Unhealthy"],
+  ["201 to 300", "Very unhealthy"],
+  ["301 and above", "Hazardous"],
+] as const;
 const NEA_HAZE: Source = ["NEA: managing haze", "https://www.nea.gov.sg/our-services/pollution-control/air-pollution/managing-haze"];
 const NEA_QA: Source = ["NEA air pollution FAQ", NEA_FAQ[1]];
 const MOH_HAZE: Source = ["MOH haze advice", MOH[1]];
@@ -56,14 +66,17 @@ export const GUIDE: GuideSection[] = [
       {
         id: "other-apps",
         q: "Why does AQICN show a bigger number than NEA?",
-        a: "The air is the same. AQICN uses NEA's readings. It shows them on a US scale, and that scale gives bigger numbers.",
+        a: "Both start from the same NEA reading. AQICN puts it on a US scale, and that scale gives bigger numbers.",
         points: [
-          "AQICN takes NEA's PM2.5 for the last hour. It changes that reading to a US AQI number.",
-          "NEA's PSI and the US AQI both go from 0 to 500. For the same air, the US AQI number is bigger.",
-          ...[24, 49, 55, 65, 100].map((c) => `NEA PM2.5 ${c}: AQICN shows ${pm25ToUsAqi(c)}. As a PSI, it is ${pm25ToPsi(c)}.`),
-          "NEA's PSI is the average of the past 24 hours. When haze comes in fast, the last-hour reading goes up first.",
-          "On the Now card, under \"Right now\", this app shows the number that AQICN shows for the same PM2.5 reading.",
-          "NEA's health advice uses NEA's numbers. Follow NEA's advice, not the US AQI words.",
+          "AQICN: NEA's PM2.5 for the last hour, changed to the US scale.",
+          "NEA's PSI: the past 24 hours, from six pollutants. In haze, PM2.5 is the main one.",
+          "Both scales go from 0 to 500. For the same PM2.5, the US scale climbs faster:",
+          ...[12, 35, 55, 100].map((c) => `PM2.5 of ${c} µg/m³: PSI ${pm25ToPsi(c)}, AQICN ${pm25ToUsAqi(c)}.`),
+          "AQICN's words for its numbers:",
+          ...AQICN_WORDS.map(([range, word]) => `${range}: ${word}.`),
+          "When haze comes in fast, the last-hour reading goes up first. So AQICN can rise hours before the PSI.",
+          "On the Now card, the line under \"Right now\" shows the AQICN number for that reading.",
+          "The advice in this app uses NEA's PSI and PM2.5 bands.",
         ],
         sources: [NEA_GUIDE, AQICN, AQICN_SCALE],
       },
