@@ -31,7 +31,7 @@ The site is independent and is not an official NEA service. For official advisor
 | [Malaysia DOE APIMS](https://eqms.doe.gov.my/APIMS/main) | Malaysian Air Pollutant Index | Public data, attributed |
 | [NASA FIRMS](https://firms.modaps.eosdis.nasa.gov) | Satellite fire detections (VIIRS) | NASA open data |
 | [NASA GIBS](https://gibs.earthdata.nasa.gov) | Satellite views: smoke (OMPS aerosol index) and carbon monoxide (AIRS) | NASA open data |
-| [OpenFreeMap](https://openfreemap.org) with [MapLibre GL JS](https://maplibre.org) | The vector map under the satellite data: coasts, borders and place names | OpenFreeMap: free, no key. Map data © [OpenStreetMap contributors](https://www.openstreetmap.org/copyright) (ODbL), schema © [OpenMapTiles](https://openmaptiles.org) (CC BY 4.0). MapLibre: BSD-3-Clause |
+| [OpenFreeMap](https://openfreemap.org) with [MapLibre GL JS](https://maplibre.org) | The vector map under the satellite data: coasts, borders and place names. Zoomed out, a light outline of [Natural Earth](https://www.naturalearthdata.com) (public domain) stands in for its heavy world tiles | OpenFreeMap: free, no key. Map data © [OpenStreetMap contributors](https://www.openstreetmap.org/copyright) (ODbL), schema © [OpenMapTiles](https://openmaptiles.org) (CC BY 4.0). MapLibre: BSD-3-Clause |
 | [Copernicus CAMS via Open-Meteo](https://open-meteo.com/en/docs/air-quality-api) | PM2.5 forecast and regional smoke map | CC BY 4.0, contains modified Copernicus information |
 | [ECMWF via Open-Meteo](https://open-meteo.com) | Wind at 850 hPa and rain | CC BY 4.0 |
 
