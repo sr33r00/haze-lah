@@ -16,7 +16,7 @@ setWorkerUrl(new URL("maplibre-gl/dist/maplibre-gl-worker.mjs", import.meta.url)
 const MIN_ZOOM = 1.2;
 const MAX_ZOOM = 9;
 const SPAN = 36; // degrees of the Earth across the card's short side at the start: Southeast Asia fills it
-const FLY_MS = 1500;
+const FLY_MS = 800;
 const HOME: [number, number] = [SG.lon, SG.lat];
 const CORNERS: [[number, number], [number, number], [number, number], [number, number]] = [[-180, MERC_LAT], [180, MERC_LAT], [180, -MERC_LAT], [-180, -MERC_LAT]];
 
@@ -70,8 +70,9 @@ const line = (trail: ReplayDay["trail"]): GeoJSON.FeatureCollection => ({
 /**
  * Southeast Asia on a globe you can turn, zoom and move: MapLibre with OpenFreeMap's vector map, so that coasts, borders and
  * names stay sharp at any zoom, and the NASA picture laid between them and the colours. Fills the card it is in. `fires` and
- * `trail` are drawn when given; `onReady` says the first picture is up, `onFail` that the map could not start. MapLibre draws
- * only when something moves or loads.
+ * `trail` are drawn when given; `url` is the picture to lay (undefined until the browser has it, so that it is read from its
+ * cache and not fetched twice; the map and the fly-in do not wait for it, and it fades in); `onReady` says the map is up,
+ * `onFail` that it could not start. MapLibre draws only when something moves or loads.
  */
 export default function GlobeMap({
   url,
@@ -81,7 +82,7 @@ export default function GlobeMap({
   onReady,
   onFail,
 }: {
-  url: string;
+  url: string | undefined;
   layer: GlobeLayer;
   fires: Fire[];
   trail: ReplayDay["trail"] | undefined;
@@ -91,16 +92,16 @@ export default function GlobeMap({
   const box = useRef<HTMLDivElement>(null);
   const map = useRef<MapLibre>(undefined);
   const home = useRef(0); // the zoom the map starts at and comes back to
-  const first = useRef(url); // the picture the map starts with
-  const shown = useRef(url); // the picture it has now
-  const now = useRef({ url, layer }); // what a click reads
+  const shown = useRef<string>(undefined); // the picture it has now
+  const now = useRef<{ url?: string; layer: GlobeLayer }>({ layer }); // what a click reads
   const frame = useRef<{ url: string; ctx: Promise<CanvasRenderingContext2D> }>(undefined);
   const [ready, setReady] = useState(false);
+  const [styled, setStyled] = useState(false); // the style is loaded: layers can be added
   const [away, setAway] = useState(false); // the view has moved off Singapore
   const [hint, setHint] = useState(true); // how to use the map, until the first drag or zoom
 
   useEffect(() => {
-    now.current = { url, layer };
+    if (url) now.current = { url, layer };
   }, [url, layer]);
 
   useEffect(() => {
@@ -137,11 +138,8 @@ export default function GlobeMap({
         m.once("style.load", () => {
           m.setProjection({ type: "globe" });
           const { layers } = m.getStyle();
-          const firstLine = layers.find((l) => l.type === "line")!.id;
           const firstLabel = layers.find((l) => l.type === "symbol")!.id;
-          // The data goes under the borders and names; fires and the air's path between them and the names.
-          m.addSource("data", { type: "image", url: first.current, coordinates: CORNERS });
-          m.addLayer({ id: "data", type: "raster", source: "data", paint: { "raster-opacity": DATA_OPACITY, "raster-resampling": "linear", "raster-fade-duration": 0 } }, firstLine);
+          // Fires and the air's path go between the borders and the names; the data, under the borders, is added once its picture is here.
           m.addSource("fires", { type: "geojson", data: points([]) });
           m.addLayer(
             {
@@ -178,11 +176,12 @@ export default function GlobeMap({
           const trailLine = { type: "line", source: "trail", layout: { "line-cap": "round", "line-join": "round" } } as const;
           m.addLayer({ ...trailLine, id: "trail-glow", paint: { "line-color": TRAIL_COLOR, "line-opacity": 0.3, "line-blur": 3, "line-width": ["interpolate", ["linear"], ["zoom"], 1, 5, 8, 10] } }, firstLabel);
           m.addLayer({ ...trailLine, id: "trail", paint: { "line-color": TRAIL_COLOR, "line-width": ["interpolate", ["linear"], ["zoom"], 1, 1.6, 8, 3] } }, firstLabel);
+          setStyled(true);
+          if (!still) m.easeTo({ zoom: home.current, duration: FLY_MS });
         });
         m.once("load", () => {
           setReady(true);
           onReady();
-          if (!still) m.easeTo({ zoom: home.current, duration: FLY_MS });
         });
         m.on("movestart", (e) => e.originalEvent && setHint(false));
         m.on("moveend", () => {
@@ -191,6 +190,7 @@ export default function GlobeMap({
         });
         m.on("click", (e) => {
           const { url: at, layer: of } = now.current;
+          if (!at) return;
           const { lat, lng } = e.lngLat.wrap();
           if (frame.current?.url !== at) frame.current = { url: at, ctx: drawn(at) };
           frame.current.ctx
@@ -207,12 +207,20 @@ export default function GlobeMap({
     };
   }, [onReady, onFail]);
 
-  // A new day or layer is a swap of the picture; fires and the air's path are only there when given.
+  // The first picture is laid under the borders and fades in; a new day or layer is a swap of it. Fires and the air's path are only there when given.
   useEffect(() => {
-    if (!ready || shown.current === url) return;
+    const m = map.current;
+    if (!styled || !m || !url || shown.current === url) return;
     shown.current = url;
-    (map.current!.getSource("data") as ImageSource).updateImage({ url });
-  }, [ready, url]);
+    const source = m.getSource("data") as ImageSource | undefined;
+    if (source) return void source.updateImage({ url });
+    m.addSource("data", { type: "image", url, coordinates: CORNERS });
+    m.addLayer(
+      { id: "data", type: "raster", source: "data", paint: { "raster-opacity": 0, "raster-resampling": "linear", "raster-fade-duration": 0 } },
+      m.getStyle().layers.find((l) => l.type === "line")!.id,
+    );
+    m.once("idle", () => m.setPaintProperty("data", "raster-opacity", DATA_OPACITY)); // idle: the picture is drawn
+  }, [styled, url]);
   useEffect(() => {
     if (ready) (map.current!.getSource("fires") as GeoJSONSource).setData(points(fires));
   }, [ready, fires]);

@@ -2,7 +2,7 @@ import { globeDates } from "@/lib/globe";
 import { fetchGlobePicture } from "@/lib/sources/gibsTexture";
 import { cacheControl, layerOf } from "../shared";
 
-// One frame per day for the last week; no `date` is the newest. Built on request and cached by the CDN.
+// One frame per day for the last week; no `date` is the newest. Built on request, kept in the data cache by fetchGlobePicture and by the CDN.
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 

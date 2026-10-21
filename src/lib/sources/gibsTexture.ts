@@ -1,12 +1,13 @@
+import { unstable_cache } from "next/cache";
 import sharp from "sharp";
-import { GLOBE_LAYERS, READ_BOX, globeDays, isClear, rampRgb, rampT, type GlobeLayer } from "../globe";
+import { GLOBE_LAYERS, READ_BOX, globeDays, isClear, isSettled, rampRgb, rampT, type GlobeLayer } from "../globe";
 import { gibsMap } from "../satellite";
 import { SG, getText } from "../util";
 
 // Pollution pictures for the map, built from NASA GIBS satellite passes. GIBS only serves each pass as a coloured
 // picture, so the colours are turned back into values, the passes averaged and smoothed, and the result coloured
-// again with our own ramp. Also each day's mean over Singapore, from tiny pictures of just that box. The routes that
-// serve them cache each answer on the CDN.
+// again with our own ramp. Also each day's mean over Singapore, from tiny pictures of just that box. Each finished answer
+// is kept in Next's data cache (so a rebuild from GIBS takes seconds and happens once, not per request) and by the CDN.
 
 type Source = {
   layers: string[]; // one picture per layer and day
@@ -170,8 +171,33 @@ function toMercator(value: Float32Array) {
   return out;
 }
 
-/** The picture of `layer` for the frame of `date` (YYYY-MM-DD, SGT) as a WebP in Web Mercator, transparent where there is nothing to show, and whether every pass it needs arrived. Throws when no satellite pass could be fetched. */
-export async function fetchGlobePicture(layer: GlobeLayer, date: string): Promise<{ webp: Buffer; complete: boolean }> {
+/** Thrown inside a cached build to keep an incomplete answer out of the cache: it carries the answer for the caller. */
+class Incomplete<T> extends Error {
+  constructor(readonly answer: T) {
+    super("incomplete");
+  }
+}
+
+/** `build` kept in the data cache for `revalidate` seconds under `name`, except an incomplete answer, which is returned but never kept. Answers must be JSON. */
+function cachedWhole<A extends unknown[], T extends { complete: boolean }>(name: string, revalidate: number, build: (...args: A) => Promise<T>) {
+  const cached = unstable_cache(
+    async (...args: A) => {
+      const answer = await build(...args);
+      if (!answer.complete) throw new Incomplete(answer);
+      return answer;
+    },
+    [name],
+    { revalidate },
+  );
+  return (...args: A): Promise<T> =>
+    cached(...args).catch((e) => {
+      if (e instanceof Incomplete) return e.answer as T;
+      throw e;
+    });
+}
+
+/** The WebP of `layer` for the frame of `date` as base64 (the data cache holds JSON), and whether every pass it needs arrived. Throws when no satellite pass could be fetched. */
+async function buildPicture(layer: GlobeLayer, date: string): Promise<{ webp: string; complete: boolean }> {
   const src = SOURCES[layer];
   const { ramp } = GLOBE_LAYERS[layer];
   const urls = globeDays(layer, date).flatMap((time) => src.layers.map((l) => gibsMap(l, W, H, { format: "png", time })));
@@ -193,14 +219,21 @@ export async function fetchGlobePicture(layer: GlobeLayer, date: string): Promis
   const webp = await sharp(rgba, { raw: { width: SIZE, height: SIZE, channels: 4 } })
     .webp({ quality: 80, alphaQuality: 90, smartSubsample: true })
     .toBuffer();
-  return { webp, complete: got.length === passes.length };
+  return { webp: webp.toString("base64"), complete: got.length === passes.length };
 }
 
-/**
- * The mean reading over the box around Singapore on each of `dates`, by date (null where no pass covered it), and whether
- * every pass arrived. The same averaging as the picture, on pictures of just the box; readings under the layer's floor count as none.
- */
-export async function fetchGlobeSeries(layer: GlobeLayer, dates: string[]): Promise<{ values: Record<string, number | null>; complete: boolean }> {
+const SETTLED_S = 7 * 86400; // a day older than 2 days will not change
+const RECENT_S = 6 * 3600; // NASA adds a day's passes once a day
+const settledPicture = cachedWhole("globe-picture-settled", SETTLED_S, buildPicture);
+const recentPicture = cachedWhole("globe-picture-recent", RECENT_S, buildPicture);
+
+/** The picture of `layer` for the frame of `date` (YYYY-MM-DD, SGT) as a WebP in Web Mercator, transparent where there is nothing to show, and whether every pass it needs arrived. Kept in the data cache once complete. Throws when no satellite pass could be fetched. */
+export async function fetchGlobePicture(layer: GlobeLayer, date: string): Promise<{ webp: Buffer; complete: boolean }> {
+  const { webp, complete } = await (isSettled(date) ? settledPicture : recentPicture)(layer, date);
+  return { webp: Buffer.from(webp, "base64"), complete };
+}
+
+async function buildSeries(layer: GlobeLayer, dates: string[]): Promise<{ values: Record<string, number | null>; complete: boolean }> {
   const src = SOURCES[layer];
   const { digits } = GLOBE_LAYERS[layer].read;
   const days = [...new Set(dates.flatMap((d) => globeDays(layer, d)))];
@@ -220,3 +253,10 @@ export async function fetchGlobeSeries(layer: GlobeLayer, dates: string[]): Prom
   );
   return { values, complete: fetched.every((day) => day.every((p) => p !== null)) };
 }
+
+/**
+ * The mean reading over the box around Singapore on each of `dates`, by date (null where no pass covered it), and whether
+ * every pass arrived. The same averaging as the picture, on pictures of just the box; readings under the layer's floor count as none.
+ * Kept in the data cache once complete; the newest date is always recent.
+ */
+export const fetchGlobeSeries = cachedWhole("globe-series", RECENT_S, buildSeries);
