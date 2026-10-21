@@ -6,7 +6,7 @@ import { tips } from "@/lib/advice";
 import { trend3h } from "@/lib/format";
 import { adviceStep, psiLevel } from "@/lib/bands";
 import { currentReading, islandMax } from "@/lib/situation";
-import type { Camera, DayOutlook, ForecastPoint, NeaNow, NeaPm25History, Sensor, Station, Supporters } from "@/lib/types";
+import type { Camera, DayOutlook, ForecastPoint, NeaNow, NeaPm25History, Sensor, Station } from "@/lib/types";
 import AirDetail from "./AirDetail";
 import Advice from "./Advice";
 import CigaretteCard from "./CigaretteCard";
@@ -26,7 +26,7 @@ const SgMap = dynamic(() => import("./SgMap"), {
 });
 
 /** The Now tab: the answer for the chosen region, what to do, what is in the air and where it came from. */
-export default function NowView({ history, nea, hourly, days, sensors, stations, cameras, supporters }: { history: NeaPm25History | null; nea: NeaNow | null; hourly: ForecastPoint[]; days: DayOutlook[]; sensors: Sensor[]; stations: Station[]; cameras: Camera[]; supporters: Supporters | null }) {
+export default function NowView({ history, nea, hourly, days, sensors, stations, cameras }: { history: NeaPm25History | null; nea: NeaNow | null; hourly: ForecastPoint[]; days: DayOutlook[]; sensors: Sensor[]; stations: Station[]; cameras: Camera[] }) {
   const { region, setRegion, group, setGroup, locating, locate } = usePrefs(nea ? islandMax(nea.psi24)?.region : undefined);
 
   const { latest, psi, level } = currentReading({ history, nea }, region);
@@ -91,7 +91,7 @@ export default function NowView({ history, nea, hourly, days, sensors, stations,
 
         <HazeOrigin className="order-10" />
 
-        <SupportCard supporters={supporters} className="order-11 mt-10" />
+        <SupportCard className="order-11 mt-10" />
       </div>
     </div>
   );
