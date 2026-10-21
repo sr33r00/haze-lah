@@ -111,11 +111,11 @@ function gridQuery() {
 /** u (towards the east) and v (towards the north) in m/s from speed and the direction the wind comes from. */
 const toUV = (s: number, d: number) => [-s * Math.sin((d * Math.PI) / 180), -s * Math.cos((d * Math.PI) / 180)];
 
-/** 850 hPa wind over the grid for the past week, every 3 hours (ECMWF analysis and short-range forecast). */
-export async function fetchPastWind(): Promise<WindFrame[]> {
+/** 850 hPa wind over the grid for the past week and the next 3 days, every 3 hours (ECMWF analysis and forecast). */
+export async function fetchWindFrames(): Promise<WindFrame[]> {
   const { lats, lons, where } = gridQuery();
   const w = await getJson<GridWind[]>(
-    `https://api.open-meteo.com/v1/forecast?${where}&hourly=wind_speed_850hPa,wind_direction_850hPa&wind_speed_unit=ms&timezone=GMT&past_days=7&forecast_days=1&temporal_resolution=hourly_3`,
+    `https://api.open-meteo.com/v1/forecast?${where}&hourly=wind_speed_850hPa,wind_direction_850hPa&wind_speed_unit=ms&timezone=GMT&past_days=7&forecast_days=4&temporal_resolution=hourly_3`,
     { revalidate: 10800 },
   );
   return w[0].hourly.time.map((t, i) => {

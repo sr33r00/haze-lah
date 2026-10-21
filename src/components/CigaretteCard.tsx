@@ -1,3 +1,4 @@
+import { BREATH_NOTES, BREATH_SOURCES, dustSoFar, fmtDust, timesNormal } from "@/lib/breath";
 import { CIGARETTE_NOTES, CIGARETTE_SOURCES, cigarettes, cigarettesSoFar, exactSoFar } from "@/lib/cigarettes";
 import type { HourPoint } from "@/lib/types";
 import { cap } from "./ui";
@@ -20,10 +21,13 @@ export default function CigaretteCard({ region, pm25, today }: { region: string;
   const exact = exactSoFar(today);
   const burnt = exact != null ? exact / per : null;
 
+  const normal = timesNormal(pm25);
+  const dust = dustSoFar(today);
+
   const notes = [sofar != null ? `About ${sofar} so far` : null, `24-hr PM2.5 ${pm25} µg/m³`, extra > 0 ? `1 icon = ${Math.round(per * 10) / 10}` : null].filter(Boolean);
 
   return (
-    <div className="mx-4 mt-3 overflow-hidden rounded-3xl px-4 py-3 text-white ring-1 ring-white/10" style={{ background: "linear-gradient(160deg, #2f241d, #17120f)" }}>
+    <div id="everyday" className="mx-4 mt-3 scroll-mt-20 overflow-hidden rounded-3xl px-4 py-3 text-white ring-1 ring-white/10" style={{ background: "linear-gradient(160deg, #2f241d, #17120f)" }}>
       <div className="flex items-center gap-4">
         <div className="min-w-0 flex-1">
           <p className="text-[13px] text-white/70">Today in {cap(region)}, like smoking</p>
@@ -47,11 +51,35 @@ export default function CigaretteCard({ region, pm25, today }: { region: string;
           ))}
         </div>
       </div>
-      <details className="mt-2 text-[12px]">
+      {normal && (
+        <div className="mt-3 grid grid-cols-2 gap-4 border-t border-white/10 pt-3" aria-live="polite">
+          <div className="min-w-0">
+            <p className="tabular text-2xl font-extrabold leading-none">{normal.big}</p>
+            <p className="mt-1.5 text-[12px] text-white/70">{normal.label}</p>
+          </div>
+          {dust && (
+            <div className="min-w-0">
+              <p className="tabular text-2xl font-extrabold leading-none" suppressHydrationWarning>
+                {fmtDust(dust.ug)}
+              </p>
+              <p className="mt-1.5 text-balance text-[12px] text-white/70">fine dust breathed since midnight</p>
+              <p className="mt-0.5 text-balance text-[12px] text-white/70" suppressHydrationWarning>
+                A normal day by now: {fmtDust(dust.normalUg)}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+      <details className="mt-3 text-[12px]">
         <summary className="cursor-pointer font-semibold text-[#ffb27a]">How is this worked out?</summary>
         <p className="mt-2 text-white/75">{CIGARETTE_NOTES.join(" ")}</p>
-        <p className="mt-2 flex gap-3">
-          {CIGARETTE_SOURCES.map(([name, url]) => (
+        {BREATH_NOTES.map((t) => (
+          <p key={t} className="mt-2 text-white/75">
+            {t}
+          </p>
+        ))}
+        <p className="mt-2 flex flex-wrap gap-x-3 gap-y-1">
+          {[...CIGARETTE_SOURCES, ...BREATH_SOURCES].map(([name, url]) => (
             <a key={url} href={url} target="_blank" rel="noreferrer" className="text-[#ffb27a] underline">
               {name}
             </a>

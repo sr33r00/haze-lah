@@ -18,9 +18,16 @@ export const fmtTime = (t: string | number) =>
 export const fmtWeekday = (date: string, weekday: "short" | "long" = "short") =>
   new Intl.DateTimeFormat("en-SG", { timeZone: TZ, weekday }).format(new Date(`${date}T12:00:00+08:00`));
 
+/** "Thu 11am" for a moment in time, in Singapore. */
+export const fmtDayHour = (t: string | number) => `${fmtWeekday(sgDate(0, new Date(t)))} ${fmtHour(t)}`;
+
 /** "Sat, 17 Oct" for an SGT date (YYYY-MM-DD). */
 export const fmtDate = (date: string) =>
   new Intl.DateTimeFormat("en-SG", { timeZone: TZ, weekday: "short", day: "numeric", month: "short" }).format(new Date(`${date}T12:00:00+08:00`));
+
+/** "17 Oct 2026" for an SGT date (YYYY-MM-DD). */
+export const fmtFullDate = (date: string) =>
+  new Intl.DateTimeFormat("en-SG", { timeZone: TZ, day: "numeric", month: "short", year: "numeric" }).format(new Date(`${date}T12:00:00+08:00`));
 
 /** "Sat 17 Oct" for an SGT date (YYYY-MM-DD): `fmtDate` without the comma. */
 export const fmtDateShort = (date: string) => fmtDate(date).replace(",", "");

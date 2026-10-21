@@ -11,6 +11,7 @@ import { fetchAccuracy } from "@/lib/accuracy";
 import { CIGARETTE_NOTES, CIGARETTE_SOURCES } from "@/lib/cigarettes";
 import { getHazeData } from "@/lib/data";
 import { FORECAST_METHOD } from "@/lib/forecast";
+import { RELEASE, RELEASE_LABEL } from "@/lib/releases";
 
 export const metadata = pageMeta(
   "About Haze Lah: data sources, forecast method and accuracy",
@@ -28,6 +29,7 @@ const SECTIONS = [
   { id: "accuracy", title: "Accuracy" },
   { id: "cigarettes", title: "Cigarette comparison" },
   { id: "privacy", title: "Privacy" },
+  { id: "whats-new", title: "What's new" },
 ];
 
 const ADVICE_POINTS = [
@@ -281,6 +283,21 @@ export default async function About() {
                 No accounts and no cookies. Anonymous page-view counts are collected with Vercel Web Analytics. Your region and group
                 choices stay on your device.
               </p>
+            </section>
+
+            <section id="whats-new" className="scroll-mt-20 space-y-3">
+              <h2 className={H2}>What&apos;s new</h2>
+              <p className="text-[13px] text-muted">{RELEASE_LABEL}</p>
+              <ul className="divide-y divide-line rounded-2xl bg-surface">
+                {RELEASE.items.map(({ title, text, href }) => (
+                  <li key={title} className="p-3">
+                    <Link href={href} className="font-semibold text-accent">
+                      {title}
+                    </Link>
+                    <div className="text-[14px] text-muted">{text}</div>
+                  </li>
+                ))}
+              </ul>
             </section>
 
             <section className="rounded-2xl border border-line bg-surface p-3">
