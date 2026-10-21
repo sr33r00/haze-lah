@@ -1,7 +1,7 @@
 import { Info, Maximize2 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
-import { GROUP_LABEL, LEVEL_COLOR, LEVEL_NAME, STEP_TEXT, TONE_COLOR, adviceStep, pm25Band, pm25Color, psiLevel, verdictFor, type Group } from "@/lib/bands";
+import { GROUP_LABEL, LEVEL_COLOR, LEVEL_NAME, STEP_TEXT, TONE_COLOR, adviceStep, pm25Band, pm25Color, pm25ToUsAqi, psiLevel, verdictFor, type Group } from "@/lib/bands";
 import { fmtHour } from "@/lib/format";
 import type { ForecastPoint } from "@/lib/types";
 import { cap } from "./ui";
@@ -12,8 +12,8 @@ const GROUP_SHORT: Record<Group, string> = { healthy: "Healthy adult", sensitive
 
 // Wording follows the NEA haze advisory: 1-hr PM2.5 for the next few hours, 24-hr PSI for planning the day.
 const EXPLAIN = {
-  pm25: "The last hour's fine smoke particles. NEA advises using it to decide what to do in the next few hours.",
-  psi: "Singapore's official index over the past day. Use it to plan the day; above 100 is unhealthy.",
+  pm25: "This is the PM2.5 for the last hour, in µg/m³. PM2.5 is fine dust from smoke. Use this number to decide what to do now.",
+  psi: "This is NEA's PSI, the average of the past 24 hours. Use this number to plan the day. Above 100 is unhealthy.",
 } as const;
 
 export default function Hero(props: {
@@ -46,8 +46,7 @@ export default function Hero(props: {
         <Maximize2 size={20} aria-hidden />
       </Link>
       <p className="pr-8 text-[15px]" style={{ color: soft }}>
-        {cap(props.region)}
-        {props.readingTime ? `, ${fmtHour(props.readingTime)}` : ""}. Should I go out?
+        {cap(props.region)}.{props.readingTime ? ` Measured at ${fmtHour(props.readingTime)}.` : ""} Should I go out?
       </p>
       <div key={`${props.region}-${group}-${v?.headline}`} className="animate-rise">
         <h1 className="mt-1 text-balance text-[40px] font-extrabold leading-[1.02] tracking-[-0.02em]">{v ? v.headline : "No reading yet."}</h1>
@@ -78,7 +77,7 @@ export default function Hero(props: {
               className="flex items-center gap-1 text-left text-[13px]"
               style={{ color: soft }}
             >
-              PM2.5 now, 1-hour
+              Right now
               <Info size={14} aria-hidden />
             </button>
           </dt>
@@ -87,10 +86,10 @@ export default function Hero(props: {
           </dd>
           <dd className="mt-1 flex items-center gap-1.5 text-[15px] font-semibold">
             {pm25 != null && <Dot color={pm25Color(pm25)} />}
-            {pm25 != null ? `${pm25Band(pm25).name}, band ${pm25Band(pm25).band}` : ""}
+            {pm25 != null ? pm25Band(pm25).name : ""}
           </dd>
           <dd className="text-[12px]" style={{ color: soft }}>
-            µg/m³{props.trend ? `, ${props.trend.toLowerCase()}` : ""}
+            PM2.5, last hour{props.trend ? `. ${props.trend}` : ""}
           </dd>
         </div>
         <div>
@@ -102,7 +101,7 @@ export default function Hero(props: {
               className="flex items-center gap-1 text-left text-[13px]"
               style={{ color: soft }}
             >
-              PSI, 24-hour
+              Today&apos;s average
               <Info size={14} aria-hidden />
             </button>
           </dt>
@@ -114,10 +113,18 @@ export default function Hero(props: {
             {psi != null ? LEVEL_NAME[psiLevel(psi)] : ""}
           </dd>
           <dd className="text-[12px]" style={{ color: soft }}>
-            for planning the day
+            PSI, past 24 hours
           </dd>
         </div>
       </dl>
+      {pm25 != null && (
+        <p className="mt-3 text-[13px] leading-snug" style={{ color: soft }}>
+          <b className="font-semibold">On AQICN</b>, this PM2.5 of <span className="tabular">{Math.round(pm25)}</span> shows as <b className="tabular font-semibold">{pm25ToUsAqi(pm25)}</b>. AQICN uses a US scale, not the PSI.{" "}
+          <Link href="/guide#other-apps" className="-my-3.5 inline-block py-3.5 underline" style={{ color: ink }}>
+            Why?
+          </Link>
+        </p>
+      )}
       <p id="explain" hidden={!open} className="mt-3 text-[13px] leading-snug" style={{ color: soft }}>
         {open && EXPLAIN[open]}
       </p>

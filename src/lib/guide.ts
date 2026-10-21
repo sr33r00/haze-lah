@@ -1,4 +1,5 @@
 import { ECDA, MOE, MOH, NEA_FAQ } from "./advice";
+import { pm25ToPsi, pm25ToUsAqi } from "./bands";
 
 type Source = [name: string, url: string];
 export type GuideItem = { id: string; q: string; a: string; points?: string[]; sources: Source[] };
@@ -6,6 +7,8 @@ export type GuideSection = { id: string; title: string; items: GuideItem[] };
 
 // Named for the reader: several sources share an agency, so "NEA, NEA" would say nothing.
 const NEA_GUIDE: Source = ["NEA PSI and PM2.5 guide", "https://www.haze.gov.sg/docs/default-source/posters/haze-pm-psi-guide-a4-english.pdf"];
+const AQICN: Source = ["AQICN Singapore page", "https://aqicn.org/city/singapore/"];
+const AQICN_SCALE: Source = ["AQICN scale", "https://aqicn.org/scale/"];
 const NEA_HAZE: Source = ["NEA: managing haze", "https://www.nea.gov.sg/our-services/pollution-control/air-pollution/managing-haze"];
 const NEA_QA: Source = ["NEA air pollution FAQ", NEA_FAQ[1]];
 const MOH_HAZE: Source = ["MOH haze advice", MOH[1]];
@@ -49,6 +52,20 @@ export const GUIDE: GuideSection[] = [
         a: "The 1-hour PM2.5 for the next few hours, and the 24-hour PSI forecast to plan the next day.",
         points: ["PM2.5 is the main pollutant of concern in smoke haze.", "The 24-hour PSI averages the past day, so the 1-hour PM2.5 shows changes sooner."],
         sources: [NEA_GUIDE, NEA_HAZE],
+      },
+      {
+        id: "other-apps",
+        q: "Why does AQICN show a bigger number than NEA?",
+        a: "The air is the same. AQICN uses NEA's readings. It shows them on a US scale, and that scale gives bigger numbers.",
+        points: [
+          "AQICN takes NEA's PM2.5 for the last hour. It changes that reading to a US AQI number.",
+          "NEA's PSI and the US AQI both go from 0 to 500. For the same air, the US AQI number is bigger.",
+          ...[24, 49, 55, 65, 100].map((c) => `NEA PM2.5 ${c}: AQICN shows ${pm25ToUsAqi(c)}. As a PSI, it is ${pm25ToPsi(c)}.`),
+          "NEA's PSI is the average of the past 24 hours. When haze comes in fast, the last-hour reading goes up first.",
+          "On the Now card, under \"Right now\", this app shows the number that AQICN shows for the same PM2.5 reading.",
+          "NEA's health advice uses NEA's numbers. Follow NEA's advice, not the US AQI words.",
+        ],
+        sources: [NEA_GUIDE, AQICN, AQICN_SCALE],
       },
       {
         id: "psi-bands",

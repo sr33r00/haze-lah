@@ -77,28 +77,56 @@ export function pm25ToLevel(pm: number): Level {
   return 4;
 }
 
+/** One linear segment: concentration range [clo, chi] maps to index range [ilo, ihi]. */
+type Segment = readonly [clo: number, chi: number, ilo: number, ihi: number];
+
+/** Linear interpolation on the first segment whose top reaches `c`. Past the last segment: null, or its slope when `extend`. */
+function interpolate(segments: readonly Segment[], c: number, extend = false): number | null {
+  const s = segments.find((seg) => c <= seg[1]) ?? (extend ? segments[segments.length - 1] : undefined);
+  return s ? s[2] + ((c - s[0]) / (s[1] - s[0])) * (s[3] - s[2]) : null;
+}
+
 /**
  * NEA PSI sub-index for 24-hour mean PM2.5 (µg/m³). Linear interpolation
  * between the published breakpoints; matches NEA's published sub-index values.
  */
-const PM25_BREAKS: [number, number][] = [
-  [0, 0],
-  [12, 50],
-  [55, 100],
-  [150, 200],
-  [250, 300],
-  [350, 400],
-  [500, 500],
+const PM25_PSI_SEGMENTS: Segment[] = [
+  [0, 12, 0, 50],
+  [12, 55, 50, 100],
+  [55, 150, 100, 200],
+  [150, 250, 200, 300],
+  [250, 350, 300, 400],
+  [350, 500, 400, 500],
 ];
 
 export function pm25ToPsi(c: number): number {
   if (c <= 0) return 0;
-  for (let i = 1; i < PM25_BREAKS.length; i++) {
-    const [c0, p0] = PM25_BREAKS[i - 1];
-    const [c1, p1] = PM25_BREAKS[i];
-    if (c <= c1) return Math.floor(p0 + ((c - c0) / (c1 - c0)) * (p1 - p0));
-  }
-  return 500;
+  const psi = interpolate(PM25_PSI_SEGMENTS, c);
+  return psi == null ? 500 : Math.floor(psi);
+}
+
+/**
+ * US AQI breakpoints for PM2.5 (µg/m³) as AQICN uses them: the US EPA table before its 2024 update
+ * (AQICN, https://aqicn.org/scale/, "US-EPA 2016 standard"). On 21 Oct 2026 this table, rounded down,
+ * gave AQICN's figure for all five NEA regions from NEA's 1-hour PM2.5; the 2024 table did not.
+ */
+const PM25_US_AQI_SEGMENTS: Segment[] = [
+  [0, 12, 0, 50],
+  [12.1, 35.4, 51, 100],
+  [35.5, 55.4, 101, 150],
+  [55.5, 150.4, 151, 200],
+  [150.5, 250.4, 201, 300],
+  [250.5, 350.4, 301, 400],
+  [350.5, 500.4, 401, 500],
+];
+
+/**
+ * US AQI for a 1-hour PM2.5 reading, the number AQICN shows for the same NEA reading.
+ * The concentration is cut to 1 decimal and the result rounded down, as AQICN does. Above 500.4 the last slope continues.
+ */
+export function pm25ToUsAqi(c: number): number {
+  if (c <= 0) return 0;
+  return Math.floor(interpolate(PM25_US_AQI_SEGMENTS, Math.floor(c * 10 + 1e-9) / 10, true) ?? 0);
 }
 
 /** Level for a neighbouring station: its API if measured, else modelled PM2.5. */
