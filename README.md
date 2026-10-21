@@ -102,4 +102,4 @@ Issues and pull requests are welcome. Please keep the interface simple, cite a s
 
 ## Licence
 
-[MIT](LICENSE). Data remains under the licences of its providers listed above.
+[GNU AGPL v3](LICENSE) with an attribution term ([NOTICE](NOTICE)): you may use, change and share Haze Lah, including running it as a website, if you publish your source under the same licence and keep a visible credit "Based on Haze Lah by Sr33". Data remains under the licences of its providers listed above.
