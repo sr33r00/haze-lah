@@ -236,7 +236,7 @@ export default function GlobeMap({
         </button>
       )}
       {ready && hint && (
-        <p className="pointer-events-none absolute inset-x-0 bottom-16 z-10 mx-auto w-fit rounded-full bg-black/70 px-3 py-1.5 text-[12px] font-semibold text-white">
+        <p className="pointer-events-none absolute inset-x-0 bottom-24 z-10 mx-auto w-fit rounded-full bg-black/70 px-3 py-1.5 text-[12px] font-semibold text-white">
           Drag to move · Zoom out to see the whole globe
         </p>
       )}
