@@ -7,6 +7,7 @@ import {
   FRAMES,
   GLOBE_CREDIT,
   GLOBE_LAYERS,
+  LAYERS,
   PASS_TIME,
   REGION,
   REGION_COAST,
@@ -21,6 +22,7 @@ import {
   weekBefore,
   type GlobeLayer,
 } from "@/lib/globe";
+import { fetchBasemap } from "@/lib/basemap";
 import { WIND_NOTE } from "@/lib/links";
 import { FIRE_COLOR, TRAIL_COLOR, fetchReplay } from "@/lib/replay";
 import type { Fire, Replay } from "@/lib/types";
@@ -35,7 +37,6 @@ const CHIP = "min-h-[32px] min-w-0 flex-auto rounded-full px-3 text-[12px] font-
 const STEP_MS = 800; // time on each day while playing
 const HOLD_MS = 1500; // time on the newest day before it loops
 const LAST = FRAMES - 1;
-const LAYERS = Object.keys(GLOBE_LAYERS) as GlobeLayer[];
 type Series = Record<string, number | null>;
 const NONE: Fire[] = []; // one empty list, so showing no fires is not a change each step
 const FADE = "transition-opacity duration-700 motion-reduce:transition-none";
@@ -69,6 +70,20 @@ function whenIdle(run: () => void, timeout: number) {
   return () => cancelIdleCallback(id);
 }
 
+/** Runs `run` once the page has loaded and the browser is idle, so that it takes nothing from the page itself; returns the way to cancel it. */
+function whenQuiet(run: () => void) {
+  let cancel = () => {};
+  const go = () => {
+    cancel = whenIdle(run, 2000);
+  };
+  if (document.readyState === "complete") go();
+  else addEventListener("load", go, { once: true });
+  return () => {
+    removeEventListener("load", go);
+    cancel();
+  };
+}
+
 type Connection = { saveData?: boolean; effectiveType?: string };
 
 /** The map only loads where it will run well: WebGL, no data saver, not 2G. */
@@ -86,7 +101,8 @@ function canRunMap() {
 
 /**
  * NASA satellite pollution data on a map you can zoom and move. A flat poster of Southeast Asia is the whole experience
- * until the stage is on screen, the browser is idle and the device can run WebGL; then the map loads and fades in over it.
+ * until the stage is on screen and the device can run WebGL; then the map starts and fades in over it. The map's code (and its
+ * style) load once the page is quiet, where the device can run it, so that they are here by the time the stage is.
  * The card tells the day's reading over Singapore either way, and the bars under it are the days: tap one, or play
  * through the last week, one picture per day, fetched only once asked for. `now` comes from the server so both renders
  * build the same URLs; `fires` are the strongest recent detections.
@@ -102,6 +118,7 @@ export default function SpaceView({ now, fires }: { now: number; fires: Fire[] }
   const [series, setSeries] = useState<Partial<Record<GlobeLayer, Series>>>({}); // each layer's readings over Singapore, once they arrive
   const [capable, setCapable] = useState(false);
   const [inView, setInView] = useState(false);
+  const [woken, setWoken] = useState(false); // the stage has been in view (or near it): the map is made, and stays
   const [ready, setReady] = useState(false);
   const [late, setLate] = useState(false); // the default layer's picture is here and the browser is idle: time for the other layers
   const { reduced, motion, toggle: toggleMotion } = useWindMotion();
@@ -141,7 +158,10 @@ export default function SpaceView({ now, fires }: { now: number; fires: Fire[] }
 
   useEffect(() => {
     setCapable(canRunMap());
-    const seen = new IntersectionObserver(([e]) => setInView(e.isIntersecting), { rootMargin: "800px" });
+    const seen = new IntersectionObserver(([e]) => {
+      setInView(e.isIntersecting);
+      if (e.isIntersecting) setWoken(true);
+    }, { rootMargin: "800px" });
     seen.observe(stage.current!);
     return () => seen.disconnect();
   }, []);
@@ -149,9 +169,8 @@ export default function SpaceView({ now, fires }: { now: number; fires: Fire[] }
   // The other layers wait for the default one's picture, so that it gets the server first; they follow when the browser is idle.
   useEffect(() => (primed ? whenIdle(() => setLate(true), 2000) : undefined), [primed]);
 
-  // The readings are tiny: fetched when the section comes into view, with or without the map; the layer on view first, the rest once `late`.
+  // The readings are tiny, and preloaded by the page: the layer on view first, the rest once `late`.
   useEffect(() => {
-    if (!inView) return;
     new Set(late ? LAYERS : [LAYERS[0], layer]).forEach((key) => {
       if (asked.current.has(key)) return;
       asked.current.add(key);
@@ -160,25 +179,27 @@ export default function SpaceView({ now, fires }: { now: number; fires: Fire[] }
         .then(({ values }: { values: Series }) => setSeries((s) => ({ ...s, [key]: values })))
         .catch(() => setSeries((s) => ({ ...s, [key]: {} }))); // no readings: the bars and the card just say so
     });
-  }, [inView, late, layer]);
+  }, [late, layer]);
 
-  // Load the map code when the stage is in view and the browser has nothing better to do; the replay's path with it.
+  // The air's wind, for the map: asked for as soon as the device is known to run it (the page has started the request, and the smoke map shares it).
   useEffect(() => {
-    if (!capable || !inView || GlobeMap) return;
-    let live = true;
+    if (capable)
+      fetchReplay()
+        .then(setReplay)
+        .catch(() => {});
+  }, [capable]);
+
+  // The map's code and style are fetched once the page is quiet, or at once when the stage is already in view; the map itself is made only when the stage is near.
+  useEffect(() => {
+    if (!capable || GlobeMap) return;
     const load = () => {
       import("./GlobeMap")
-        .then((m) => live && setGlobeMap(() => m.default))
-        .catch(() => live && setCapable(false));
-      fetchReplay()
-        .then((r) => live && setReplay(r))
-        .catch(() => {});
+        .then((m) => setGlobeMap(() => m.default))
+        .catch(() => setCapable(false));
+      fetchBasemap().catch(() => {}); // the map asks again, and fails the card over to the poster, if it cannot be had
     };
-    const cancel = whenIdle(load, 500);
-    return () => {
-      live = false;
-      cancel();
-    };
+    if (inView) return void load();
+    return whenQuiet(load);
   }, [capable, inView, GlobeMap]);
 
   // With the map, the days are fetched oldest first, into the browser's cache, so that no step waits. Otherwise the poster's pictures load them.
@@ -255,7 +276,7 @@ export default function SpaceView({ now, fires }: { now: number; fires: Fire[] }
           </div>
         </div>
 
-        {capable && GlobeMap && (
+        {capable && GlobeMap && woken && (
           <div className={`absolute inset-0 ${FADE} ${ready ? "" : "opacity-0"}`}>
             <GlobeMap url={picture} layer={layer} fires={today ? fires : NONE} trail={air?.trail} ahead={ahead} flow={flow} motion={motion} onReady={onReady} onFail={onFail} />
           </div>

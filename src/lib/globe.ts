@@ -90,6 +90,9 @@ export const GLOBE_LAYERS: Record<GlobeLayer, Layer> = {
   },
 };
 
+/** The layers, the default first. */
+export const LAYERS = Object.keys(GLOBE_LAYERS) as GlobeLayer[];
+
 export const GLOBE_CREDIT = "NASA GIBS: AIRS and OMPS · Map: OpenFreeMap, OpenStreetMap";
 
 /**

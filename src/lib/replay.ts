@@ -38,8 +38,31 @@ const AREAS: [string, number, number][] = [
 export const FIRE_COLOR = "#c2410c";
 export const TRAIL_COLOR = "#a855f7";
 
-/** The replay from /api/replay (cached by the CDN), in the browser. Rejects when it is unavailable. */
-export const fetchReplay = (): Promise<Replay> => fetch("/api/replay").then((r) => (r.ok ? r.json() : Promise.reject()));
+/** The browser-side API paths that pages preload (`preload(url, { as: "fetch", crossOrigin: "anonymous" })`), so that the data is on its way before the code that uses it has loaded. */
+export const REPLAY_URL = "/api/replay";
+export const SMOKE_URL = "/api/smoke";
+
+const REPLAY_TTL = 300_000; // the browser's cache lifetime of the answer; a longer-lived page asks again
+let replay: { at: number; promise: Promise<Replay> } | undefined;
+
+/**
+ * The replay from /api/replay (cached by the CDN), in the browser. Every caller shares one request, in flight or done, for
+ * REPLAY_TTL; after a failure the next call asks again. Rejects when it is unavailable.
+ */
+export function fetchReplay(): Promise<Replay> {
+  if (replay && Date.now() - replay.at < REPLAY_TTL) return replay.promise;
+  const mine = {
+    at: Date.now(),
+    promise: fetch(REPLAY_URL)
+      .then((r) => (r.ok ? (r.json() as Promise<Replay>) : Promise.reject()))
+      .catch((e) => {
+        if (replay === mine) replay = undefined;
+        throw e;
+      }),
+  };
+  replay = mine;
+  return mine.promise;
+}
 
 const COMPASS = ["north", "north-east", "east", "south-east", "south", "south-west", "west", "north-west"];
 

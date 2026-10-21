@@ -76,6 +76,28 @@ const city = (big: boolean) => {
   }, false);
 };
 
+let style: Promise<StyleSpecification> | undefined;
+
+/**
+ * OpenFreeMap's stock style, fetched once and shared: the card starts it with the map's code, long before the map is made. Once it is here,
+ * the tile list and the one font range the names use are fetched too, so that the browser has them by the time the map asks. Rejects when unavailable; a later call asks again.
+ */
+export function fetchBasemap(): Promise<StyleSpecification> {
+  style ??= fetch(BASEMAP)
+    .then((r) => (r.ok ? (r.json() as Promise<StyleSpecification>) : Promise.reject()))
+    .then((json) => {
+      const tiles = json.sources.openmaptiles;
+      const urls = [json.glyphs?.replace("{fontstack}", encodeURIComponent(FONT[0])).replace("{range}", "0-255"), "url" in tiles ? tiles.url : undefined];
+      for (const url of urls) if (url) fetch(url).catch(() => {});
+      return json;
+    })
+    .catch((e) => {
+      style = undefined;
+      throw e;
+    });
+  return style;
+}
+
 /** The stock style cut down to the layers above, plus the water's edge as a line: the coastlines. Singapore's name is left off: the map has its own pin there. Below SWITCH the outline stands in for the tiles. */
 export function trimStyle(style: StyleSpecification): StyleSpecification {
   const kept = style.layers.flatMap((l) => {

@@ -4,7 +4,7 @@ import { Map as MapLibre, Marker, NavigationControl, Popup, setWorkerUrl, type G
 import "maplibre-gl/dist/maplibre-gl.css";
 import { Globe, LocateFixed } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { BASEMAP, trimStyle } from "@/lib/basemap";
+import { fetchBasemap, trimStyle } from "@/lib/basemap";
 import { DATA_OPACITY, GLOBE_LAYERS, MERC_LAT, fmtReading, isClear, mercY, rampRgb, type GlobeLayer } from "@/lib/globe";
 import { FIRE_COLOR, TRAIL_COLOR } from "@/lib/replay";
 import type { Fire, Replay, ReplayDay } from "@/lib/types";
@@ -14,7 +14,10 @@ import { globeView } from "./globeWind";
 import { useWindParticles } from "./useWindParticles";
 
 // MapLibre's worker is a file of its own; the bundler puts it among the static files and this is its address.
-setWorkerUrl(new URL("maplibre-gl/dist/maplibre-gl-worker.mjs", import.meta.url).href);
+// The code is loaded while the card is still off screen, so the file is fetched now too: the browser has it when the map starts.
+const WORKER = new URL("maplibre-gl/dist/maplibre-gl-worker.mjs", import.meta.url).href;
+setWorkerUrl(WORKER);
+fetch(WORKER).catch(() => {});
 
 const MIN_ZOOM = 1.2;
 const MAX_ZOOM = 9;
@@ -122,8 +125,7 @@ export default function GlobeMap({
     const el = box.current!;
     const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
     let live = true;
-    fetch(BASEMAP)
-      .then((r) => (r.ok ? r.json() : Promise.reject()))
+    fetchBasemap()
       .then((style) => {
         if (!live) return;
         home.current = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, Math.log2((Math.min(el.clientWidth, el.clientHeight) / SPAN) * (360 / 512))));
