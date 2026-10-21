@@ -2,7 +2,7 @@
 
 import { Map as MapLibre, Marker, NavigationControl, Popup, setWorkerUrl, type GeoJSONSource, type ImageSource } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { LocateFixed } from "lucide-react";
+import { Globe, LocateFixed } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { BASEMAP, trimStyle } from "@/lib/basemap";
 import { DATA_OPACITY, GLOBE_LAYERS, MERC_LAT, fmtReading, isClear, mercY, rampRgb, type GlobeLayer } from "@/lib/globe";
@@ -97,6 +97,7 @@ export default function GlobeMap({
   const frame = useRef<{ url: string; ctx: Promise<CanvasRenderingContext2D> }>(undefined);
   const [ready, setReady] = useState(false);
   const [away, setAway] = useState(false); // the view has moved off Singapore
+  const [hint, setHint] = useState(true); // how to use the map, until the first drag or zoom
 
   useEffect(() => {
     now.current = { url, layer };
@@ -119,12 +120,11 @@ export default function GlobeMap({
           minZoom: MIN_ZOOM,
           maxZoom: MAX_ZOOM,
           dragRotate: false, // north stays up
-          scrollZoom: { around: "center" }, // a globe cannot ease around a point
+          scrollZoom: false, // the wheel scrolls the page; zoom with the buttons, a double click or a pinch
           touchZoomRotate: { around: "center" },
           touchPitch: false,
           pitchWithRotate: false,
           maxPitch: 0,
-          cooperativeGestures: true, // one finger and the wheel scroll the page; the map takes two fingers or ctrl and the wheel
           attributionControl: { compact: true },
           canvasContextAttributes: { powerPreference: "low-power" },
           pixelRatio: Math.min(devicePixelRatio, 2),
@@ -184,6 +184,7 @@ export default function GlobeMap({
           onReady();
           if (!still) m.easeTo({ zoom: home.current, duration: FLY_MS });
         });
+        m.on("movestart", (e) => e.originalEvent && setHint(false));
         m.on("moveend", () => {
           const c = m.getCenter();
           setAway(Math.hypot(c.lng - SG.lon, c.lat - SG.lat) > 1 || Math.abs(m.getZoom() - home.current) > 0.5);
@@ -222,15 +223,22 @@ export default function GlobeMap({
   return (
     <>
       <div ref={box} className="size-full" />
-      {away && (
+      {ready && (
         <button
-          aria-label="Centre the map on Singapore"
-          onClick={() => map.current?.easeTo({ center: HOME, zoom: home.current, duration: matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 800 })}
+          onClick={() => {
+            setHint(false);
+            map.current?.easeTo({ center: HOME, zoom: away ? home.current : MIN_ZOOM, duration: matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 800 });
+          }}
           className="absolute right-14 top-2.5 z-10 flex h-10 items-center gap-1.5 rounded-full bg-black/70 px-3 text-[12px] font-semibold text-white"
         >
-          <LocateFixed size={14} aria-hidden />
-          Singapore
+          {away ? <LocateFixed size={14} aria-hidden /> : <Globe size={14} aria-hidden />}
+          {away ? "Back to Singapore" : "Whole globe"}
         </button>
+      )}
+      {ready && hint && (
+        <p className="pointer-events-none absolute inset-x-0 bottom-16 z-10 mx-auto w-fit rounded-full bg-black/70 px-3 py-1.5 text-[12px] font-semibold text-white">
+          Drag to move · Zoom out to see the whole globe
+        </p>
       )}
     </>
   );
