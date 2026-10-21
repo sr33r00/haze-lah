@@ -15,7 +15,7 @@ export default async function News() {
   const data = await getHazeData();
   return (
     <AppShell data={data} title="News">
-      <NewsView items={buildTimeline(data)} streak={unhealthyStreak(data.psiDaily)} psi={islandSummary(data)?.psi ?? null} />
+      <NewsView items={buildTimeline(data)} streak={unhealthyStreak(data.psiDaily)} psi={islandSummary(data)?.psi ?? null} supporters={data.supporters} />
     </AppShell>
   );
 }

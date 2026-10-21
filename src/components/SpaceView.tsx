@@ -22,9 +22,10 @@ import {
   type GlobeLayer,
 } from "@/lib/globe";
 import { FIRE_COLOR, TRAIL_COLOR, fetchReplay } from "@/lib/replay";
-import type { Fire } from "@/lib/types";
+import type { Fire, Replay } from "@/lib/types";
 import { SG, sgDate } from "@/lib/util";
 import DayBars from "./DayBars";
+import type { Flow } from "./GlobeMap";
 import PlayButton from "./PlayButton";
 import SgPin from "./SgPin";
 
@@ -33,7 +34,6 @@ const STEP_MS = 800; // time on each day while playing
 const HOLD_MS = 1500; // time on the newest day before it loops
 const LAST = FRAMES - 1;
 const LAYERS = Object.keys(GLOBE_LAYERS) as GlobeLayer[];
-type Trail = [number, number][];
 type Series = Record<string, number | null>;
 const NONE: Fire[] = []; // one empty list, so showing no fires is not a change each step
 const FADE = "transition-opacity duration-700 motion-reduce:transition-none";
@@ -96,7 +96,7 @@ export default function SpaceView({ now, fires }: { now: number; fires: Fire[] }
   const [playing, setPlaying] = useState(false);
   const [loaded, setLoaded] = useState<Record<string, boolean>>({}); // every frame asked for: did it arrive?
   const [GlobeMap, setGlobeMap] = useState<typeof import("./GlobeMap").default>();
-  const [trail, setTrail] = useState<Trail>(); // today's air path, if it could be fetched
+  const [replay, setReplay] = useState<Replay>(); // the last 5 days of the air's path and wind, if they could be fetched
   const [series, setSeries] = useState<Partial<Record<GlobeLayer, Series>>>({}); // each layer's readings over Singapore, once they arrive
   const [capable, setCapable] = useState(false);
   const [inView, setInView] = useState(false);
@@ -168,7 +168,7 @@ export default function SpaceView({ now, fires }: { now: number; fires: Fire[] }
         .then((m) => live && setGlobeMap(() => m.default))
         .catch(() => live && setCapable(false));
       fetchReplay()
-        .then((r) => live && setTrail(r.days.at(-1)?.trail))
+        .then((r) => live && setReplay(r))
         .catch(() => {});
     };
     const cancel = whenIdle(load, 500);
@@ -200,9 +200,13 @@ export default function SpaceView({ now, fires }: { now: number; fires: Fire[] }
     setPlaying(!playing);
   };
 
-  const today = view === LAST; // fires and the air's path are today's
-  const values = series[layer];
+  const today = view === LAST; // fires and the forecast path are today's
   const date = dates[view];
+  // The replay's day for the one on view, matched by its SGT date (YYYY-MM-DD, as the bars are labelled). The newest picture is always the newest replay day. Older days outside the replay have none.
+  const air = replay && (today ? replay.days.at(-1) : replay.days.find((d) => d.date === date));
+  const ahead = today && air?.ahead && air.ahead.fires > 0 ? air.ahead.path : undefined;
+  const flow = useMemo<Flow | undefined>(() => (replay && air ? { lats: replay.lats, lons: replay.lons, wind: air.wind } : undefined), [replay, air]);
+  const values = series[layer];
   const reading = values?.[date];
   const before = values?.[weekBefore(date)];
   const pct = reading != null && before != null && !isClear(layer, reading) && !isClear(layer, before) && before > 0 ? Math.round(((reading - before) / before) * 100) : null;
@@ -250,7 +254,7 @@ export default function SpaceView({ now, fires }: { now: number; fires: Fire[] }
 
         {capable && GlobeMap && (
           <div className={`absolute inset-0 ${FADE} ${ready ? "" : "opacity-0"}`}>
-            <GlobeMap url={picture} layer={layer} fires={today ? fires : NONE} trail={today ? trail : undefined} onReady={onReady} onFail={onFail} />
+            <GlobeMap url={picture} layer={layer} fires={today ? fires : NONE} trail={air?.trail} ahead={ahead} flow={flow} onReady={onReady} onFail={onFail} />
           </div>
         )}
 
@@ -314,20 +318,31 @@ export default function SpaceView({ now, fires }: { now: number; fires: Fire[] }
         <p className="tabular mb-1 mt-0.5 text-center text-[11px] opacity-80">
           {ramp.unit}: {ramp.range[0]} to {ramp.range[1]}+
         </p>
-        <div className="mb-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-[12px]">
-          {fires.length > 0 && (
+        <div className="mb-1 flex min-h-5 flex-wrap items-center gap-x-4 gap-y-1 text-[12px]">
+          {today && fires.length > 0 && (
             <span className="flex items-center gap-1.5">
               <span className="h-2 w-2 rounded-full" style={{ background: FIRE_COLOR }} />
               Fires
             </span>
           )}
-          {trail && (
+          {air && (
             <span className="flex items-center gap-1.5">
               <span className="h-1 w-4 rounded-full" style={{ background: TRAIL_COLOR }} />
               Air&apos;s path, last 3 days
             </span>
           )}
+          {ahead && (
+            <span className="flex items-center gap-1.5">
+              <span aria-hidden className="w-4 border-t-[3px] border-dashed" style={{ borderColor: FIRE_COLOR }} />
+              Smoke on the way
+            </span>
+          )}
         </div>
+        {replay && (
+          <p aria-live="polite" className={`mb-1 text-[12px] ${flow ? "" : "invisible"}`}>
+            Arrows show the wind about 1.5 km up.
+          </p>
+        )}
         <p aria-live="polite">{note}</p>
       </div>
       <p className="mt-1 text-[12px] text-muted">{GLOBE_CREDIT}</p>

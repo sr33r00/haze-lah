@@ -1,6 +1,6 @@
 import { fmtFullDate } from "./format";
 
-/** The current release, shown once to returning visitors in the "What's new" sheet and listed on the About page. Keep `version` in step with package.json. */
+/** The current release, shown once to each visitor in the "What's new" sheet and listed on the About page. Keep `version` in step with package.json. */
 export const RELEASE = {
   version: "1.2.0",
   date: "2026-10-21",
@@ -19,6 +19,11 @@ export const RELEASE = {
       title: "Smoke on the way",
       text: "See if smoke from today's fires will reach Singapore, and about when.",
       href: "/#origin",
+    },
+    {
+      title: "Wind on the globe",
+      text: "The From space globe now shows the wind and the air's path for each day. Press play to see them change.",
+      href: "/map#space",
     },
     {
       title: "AQICN number",

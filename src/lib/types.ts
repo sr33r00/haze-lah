@@ -62,6 +62,13 @@ export type NewsItem = {
   url: string;
 };
 
+/** People who support Haze Lah on Buy Me a Coffee. Public names only: `total` is `names.length + anonymous`. */
+export type Supporters = {
+  names: string[]; // newest first, no repeats
+  anonymous: number;
+  total: number;
+};
+
 /** Highest 24-hr PSI of one SGT day, and where. */
 export type DayPsi = { date: string; max: number; region: Region };
 
@@ -151,6 +158,7 @@ export type HazeData = {
   fires: FireSummary;
   news: NewsItem[];
   psiDaily: DayPsi[];
+  supporters: Supporters | null;
   weather: WeatherHour[];
   forecast: {
     available: boolean;

@@ -9,7 +9,7 @@ export default async function Home() {
   const data = await getHazeData();
   return (
     <AppShell data={data}>
-      <NowView history={data.history} nea={data.nea} hourly={data.forecast.hourly} days={data.forecast.days} sensors={data.sensors} stations={data.stations} cameras={data.cameras} />
+      <NowView history={data.history} nea={data.nea} hourly={data.forecast.hourly} days={data.forecast.days} sensors={data.sensors} stations={data.stations} cameras={data.cameras} supporters={data.supporters} />
       <Footer errors={data.errors} />
     </AppShell>
   );

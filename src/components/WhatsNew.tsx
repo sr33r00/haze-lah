@@ -2,16 +2,15 @@
 
 import Link from "next/link";
 import { useEffect, useRef } from "react";
+import { BMC_LABEL, BMC_URL } from "@/lib/links";
 import { RELEASE, RELEASE_LABEL } from "@/lib/releases";
 
 const SEEN = "seen-release";
-/** Keys other parts of the app store, so a browser that has any of them has been here before. */
-const VISITED_KEYS = ["region", "group", "theme", "wind-motion", "visits", "install-dismissed", "newsSeen"];
 const DELAY = 1200; // ms: let the page settle first
 
 /**
- * A "What's new" sheet, shown once after a release to people who have visited before.
- * A first visit stores the version silently. Native dialog: focus trap and Esc come free.
+ * A "What's new" sheet, shown once after each release to every visitor, first visits included.
+ * Native dialog: focus trap and Esc come free.
  */
 export default function WhatsNew() {
   const dialog = useRef<HTMLDialogElement>(null);
@@ -19,12 +18,7 @@ export default function WhatsNew() {
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | undefined;
     try {
-      const seen = localStorage.getItem(SEEN);
-      if (seen === RELEASE.version) return;
-      if (seen == null && !VISITED_KEYS.some((k) => localStorage.getItem(k) != null)) {
-        localStorage.setItem(SEEN, RELEASE.version);
-        return;
-      }
+      if (localStorage.getItem(SEEN) === RELEASE.version) return;
       timer = setTimeout(() => {
         if (dialog.current && !dialog.current.open) dialog.current.showModal();
       }, DELAY);
@@ -63,6 +57,12 @@ export default function WhatsNew() {
             </li>
           ))}
         </ul>
+        <p className="mt-2 text-[13px] leading-snug text-muted">
+          Supporters pay for new features like these.{" "}
+          <a href={BMC_URL} target="_blank" rel="noreferrer" className="font-semibold text-accent underline">
+            {BMC_LABEL}
+          </a>
+        </p>
         <button
           type="button"
           autoFocus
