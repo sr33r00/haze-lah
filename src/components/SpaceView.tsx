@@ -21,6 +21,7 @@ import {
   weekBefore,
   type GlobeLayer,
 } from "@/lib/globe";
+import { WIND_NOTE } from "@/lib/links";
 import { FIRE_COLOR, TRAIL_COLOR, fetchReplay } from "@/lib/replay";
 import type { Fire, Replay } from "@/lib/types";
 import { SG, sgDate } from "@/lib/util";
@@ -28,6 +29,7 @@ import DayBars from "./DayBars";
 import type { Flow } from "./GlobeMap";
 import PlayButton from "./PlayButton";
 import SgPin from "./SgPin";
+import WindMotionButton, { useWindMotion } from "./WindMotion";
 
 const CHIP = "min-h-[32px] min-w-0 flex-auto rounded-full px-3 text-[12px] font-semibold transition-colors";
 const STEP_MS = 800; // time on each day while playing
@@ -102,6 +104,7 @@ export default function SpaceView({ now, fires }: { now: number; fires: Fire[] }
   const [inView, setInView] = useState(false);
   const [ready, setReady] = useState(false);
   const [late, setLate] = useState(false); // the default layer's picture is here and the browser is idle: time for the other layers
+  const { reduced, motion, toggle: toggleMotion } = useWindMotion();
   const stage = useRef<HTMLDivElement>(null);
   const asked = useRef(new Set<GlobeLayer>()); // the layers whose readings have been asked for
 
@@ -254,7 +257,7 @@ export default function SpaceView({ now, fires }: { now: number; fires: Fire[] }
 
         {capable && GlobeMap && (
           <div className={`absolute inset-0 ${FADE} ${ready ? "" : "opacity-0"}`}>
-            <GlobeMap url={picture} layer={layer} fires={today ? fires : NONE} trail={air?.trail} ahead={ahead} flow={flow} onReady={onReady} onFail={onFail} />
+            <GlobeMap url={picture} layer={layer} fires={today ? fires : NONE} trail={air?.trail} ahead={ahead} flow={flow} motion={motion} onReady={onReady} onFail={onFail} />
           </div>
         )}
 
@@ -340,9 +343,10 @@ export default function SpaceView({ now, fires }: { now: number; fires: Fire[] }
         </div>
         {replay && (
           <p aria-live="polite" className={`mb-1 text-[12px] ${flow ? "" : "invisible"}`}>
-            Arrows show the wind about 1.5 km up.
+            {WIND_NOTE}
           </p>
         )}
+        {reduced && flow && <WindMotionButton motion={motion} onToggle={toggleMotion} className="mb-1" />}
         <p aria-live="polite">{note}</p>
       </div>
       <p className="mt-1 text-[12px] text-muted">{GLOBE_CREDIT}</p>

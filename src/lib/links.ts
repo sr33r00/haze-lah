@@ -16,3 +16,6 @@ export const BMC_ICON_LABEL = `Support Haze Lah: ${BMC_LABEL.toLowerCase()}`;
 export const mapLink = (lat: number, lon: number) => `https://www.openstreetmap.org/?mlat=${lat.toFixed(5)}&mlon=${lon.toFixed(5)}#map=16/${lat.toFixed(5)}/${lon.toFixed(5)}`;
 
 export const OPEN_DATA_LICENCE = "https://data.gov.sg/open-data-licence";
+
+/** What the wind lines on the Smoke and fires map and the globe show. */
+export const WIND_NOTE = "Lines show the wind at about 1.5 km up.";

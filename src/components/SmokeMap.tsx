@@ -1,12 +1,12 @@
 "use client";
 
 import "leaflet/dist/leaflet.css";
-import { Wind } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { CircleMarker, ImageOverlay, MapContainer, Polyline, TileLayer, Tooltip, useMapEvents } from "react-leaflet";
 import { LEVEL_COLOR, LEVEL_NAME, LEVEL_TEXT, REGIONS, REGION_POINT, pm25Band, pm25Color, psiLevel, stationLevel } from "@/lib/bands";
 import { fmtDate, fmtDay, fmtHour } from "@/lib/format";
 import { FIRE_COLOR, TRAIL_COLOR, fetchReplay, trailCaption } from "@/lib/replay";
+import { WIND_NOTE } from "@/lib/links";
 import { islandMax } from "@/lib/situation";
 import type { DayPsi, FireSummary, NeaNow, Replay, Sensor, SmokeGrid, Station } from "@/lib/types";
 import { SG, sgDate } from "@/lib/util";
@@ -14,6 +14,7 @@ import { sample } from "@/lib/wind";
 import InfoNote from "./InfoNote";
 import PlayButton from "./PlayButton";
 import WindLayer from "./WindLayer";
+import WindMotionButton, { useWindMotion } from "./WindMotion";
 
 /** Centred on Singapore, wide enough for Sumatra's and Borneo's fires on a phone as well as a monitor. */
 const START: [[number, number], [number, number]] = [
@@ -49,27 +50,7 @@ export default function SmokeMap(props: {
   const [frame, setFrame] = useState<number | null>(null); // null until loaded: then "now"
   const [playing, setPlaying] = useState(false);
   const [spot, setSpot] = useState<[number, number] | null>(null);
-  // With reduced motion the wind is drawn as still arrows; the viewer can still ask for the animation.
-  const [reduced, setReduced] = useState(false);
-  const [motion, setMotion] = useState(false);
-  useEffect(() => {
-    const mq = matchMedia("(prefers-reduced-motion: reduce)");
-    const sync = () => setReduced(mq.matches);
-    sync();
-    mq.addEventListener("change", sync);
-    try {
-      setMotion(localStorage.getItem("wind-motion") === "1");
-    } catch {}
-    return () => mq.removeEventListener("change", sync);
-  }, []);
-  const toggleMotion = () => {
-    setMotion((m) => {
-      try {
-        localStorage.setItem("wind-motion", m ? "0" : "1");
-      } catch {}
-      return !m;
-    });
-  };
+  const { reduced, motion, toggle: toggleMotion } = useWindMotion();
   const scale = props.biasFactor ?? 1;
 
   useEffect(() => {
@@ -206,16 +187,7 @@ export default function SmokeMap(props: {
             {day && <p className="text-muted">{trailCaption(day)}</p>}
           </div>
         )}
-        {reduced && wind && (
-          <button
-            onClick={toggleMotion}
-            aria-pressed={motion}
-            className="absolute right-3 top-3 z-[500] flex min-h-[36px] items-center gap-1.5 rounded-full bg-surface px-3 text-[13px] font-semibold shadow hover:bg-line"
-          >
-            <Wind size={15} aria-hidden />
-            {motion ? "Still wind" : "Animate wind"}
-          </button>
-        )}
+        {reduced && wind && <WindMotionButton motion={motion} onToggle={toggleMotion} className="absolute right-3 top-3 z-[500]" />}
         {!grid && (
           <div role="status" className="pointer-events-none absolute inset-x-0 top-3 z-[500] mx-auto w-fit rounded-full bg-surface px-3 py-1 text-[13px] text-muted shadow">
             {failed ? "Smoke forecast unavailable; showing live readings only" : "Loading smoke forecast…"}
@@ -317,8 +289,8 @@ export default function SmokeMap(props: {
             }
           >
             <p>
-              Shading is the Copernicus PM2.5 forecast, scaled by how far it has been off from NEA&apos;s readings recently. Lines show the wind
-              at about 1.5 km up. Drag back to see past days: the purple trail is where the air reaching Singapore that afternoon had been over
+              Shading is the Copernicus PM2.5 forecast, scaled by how far it has been off from NEA&apos;s readings recently. {WIND_NOTE}
+              Drag back to see past days: the purple trail is where the air reaching Singapore that afternoon had been over
               the 3 days before, traced back along that wind. It is an estimate, and fires near its path are a likely but not certain source.
             </p>
             {sensors.length > 0 && (

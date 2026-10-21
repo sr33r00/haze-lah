@@ -58,7 +58,7 @@ export default function WhatsNew() {
           ))}
         </ul>
         <p className="mt-2 text-[13px] leading-snug text-muted">
-          Supporters pay for new features like these.{" "}
+          Haze Lah is free for everyone. Supporters help keep it running.{" "}
           <a href={BMC_URL} target="_blank" rel="noreferrer" className="font-semibold text-accent underline">
             {BMC_LABEL}
           </a>
