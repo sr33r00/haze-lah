@@ -6,7 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { SMOKE_TILE_ZOOM, WORLD_CORNERS, globeDates, globePicture, smokeTiles } from "@/lib/globe";
 import { FONT } from "@/lib/basemap";
 import { dotFeatures, type Dot } from "@/lib/readings";
-import { SG } from "@/lib/util";
+import { SG, sgDate } from "@/lib/util";
 import type { WindView } from "@/lib/windParticles";
 import { globeView } from "@/components/globeWind";
 import { useWindParticles } from "@/components/useWindParticles";
@@ -47,7 +47,7 @@ function homeCamera(w: number, h: number) {
 const INTRO_MS = 2800;
 const MOVE_MS = 1400;
 const ease = (t: number) => 1 - (1 - t) ** 3;
-const z = (...stops: (number | string)[]) => ["interpolate", ["linear"], ["zoom"], ...stops] as ExpressionSpecification;
+const z = (...stops: (number | string | ExpressionSpecification)[]) => ["interpolate", ["linear"], ["zoom"], ...stops] as ExpressionSpecification;
 
 /** The first line layer: the pollution pictures go under the coast and border lines. */
 const FIRST = "o_coast";
@@ -116,19 +116,31 @@ function addOverlays(m: MapLibre) {
   m.addLayer({ id: "sg-label", type: "symbol", source: "sg", layout: { ...text, "text-field": "Singapore", "text-size": 12, "text-offset": [0, -1.5], "text-anchor": "bottom", "text-allow-overlap": true }, paint: { "text-color": "#fff", "text-halo-color": "rgba(2,3,10,0.85)", "text-halo-width": 1.4 } });
 }
 
-/** The reading dots: measured ones filled with a light outline, model values hollow rings, and a larger invisible layer so a fingertip hits them. */
+/** The zoom from which dots of each rank show: NEA's regions always, Malaysian stations and model cities (1) from 3.5, community sensors (2) from 6. */
+const RANK_ZOOM = [0, 3.5, 6];
+
+/**
+ * The reading dots: measured ones filled with a light outline, model values hollow rings, and a larger invisible layer so a
+ * fingertip hits them. Small when zoomed out and bigger as the viewer zooms in; placed under the names and Singapore.
+ */
 function addReadings(m: MapLibre) {
   m.addSource("readings", { type: "geojson", data: EMPTY });
-  m.addLayer({ id: "readings-hit", type: "circle", source: "readings", paint: { "circle-radius": 14, "circle-opacity": 0 } });
   const model: ExpressionSpecification = ["==", ["get", "kind"], "model"];
-  m.addLayer({
-    id: "readings", type: "circle", source: "readings",
-    paint: {
-      "circle-radius": z(2, 3, 8, 7),
-      "circle-color": ["case", model, "rgba(0,0,0,0)", ["get", "color"]],
-      "circle-stroke-color": ["case", model, ["get", "color"], "rgba(235,242,255,0.9)"],
-      "circle-stroke-width": ["case", model, 1.8, 1],
-    },
+  RANK_ZOOM.forEach((minzoom, rank) => {
+    const at = { source: "readings", minzoom, filter: ["==", ["get", "rank"], rank] as ExpressionSpecification };
+    m.addLayer({ ...at, id: `readings-hit${rank}`, type: "circle", paint: { "circle-radius": 14, "circle-opacity": 0 } }, "places");
+    m.addLayer(
+      {
+        ...at, id: `readings${rank}`, type: "circle",
+        paint: {
+          "circle-radius": z(2, 1.8, 5, 3.5, 8, 7),
+          "circle-color": ["case", model, "rgba(0,0,0,0)", ["get", "color"]],
+          "circle-stroke-color": ["case", model, ["get", "color"], "rgba(235,242,255,0.9)"],
+          "circle-stroke-width": z(2, ["case", model, 1, 0.3], 4, ["case", model, 1.2, 0.7], 6, ["case", model, 1.8, 1]),
+        },
+      },
+      "places",
+    );
   });
 }
 
@@ -151,7 +163,7 @@ function wireReadings(m: MapLibre): () => void {
       .addTo(m);
   };
   const hide = () => pop?.remove();
-  const on = (type: "mouseenter" | "mouseleave" | "click", fn: (e: MapLayerMouseEvent) => void) => m.on(type, "readings-hit", fn);
+  const on = (type: "mouseenter" | "mouseleave" | "click", fn: (e: MapLayerMouseEvent) => void) => RANK_ZOOM.forEach((_, rank) => m.on(type, `readings-hit${rank}`, fn));
   const hover = matchMedia("(hover: hover)").matches;
   const pointer = () => (m.getCanvas().style.cursor = "pointer");
   const arrow = () => (m.getCanvas().style.cursor = "");
@@ -167,17 +179,22 @@ function wireReadings(m: MapLibre): () => void {
   return hide;
 }
 
-/** The satellite picture of `date`: the server's picture for the last few days, else NASA's tiles. Not drawn when `date` is null. */
+/**
+ * The satellite picture of `date`: the server's picture for the last few days, else NASA's tiles. NASA has none for a day that has not
+ * been passed yet, so today before the evening shows the newest pass; a forecast day shows none. Not drawn when `date` is null.
+ */
 function setSatellite(m: MapLibre, date: string | null) {
   if (m.getLayer("sat")) m.removeLayer("sat");
   if (m.getSource("sat")) m.removeSource("sat");
-  if (!date) return;
+  if (!date || date > sgDate()) return;
   const frames = globeDates(Date.now());
+  const newest = frames[frames.length - 1];
+  const day = date > newest ? newest : date;
   m.addSource(
     "sat",
-    frames.includes(date)
-      ? { type: "image", url: globePicture("smoke", date === frames[frames.length - 1] ? undefined : date), coordinates: WORLD_CORNERS }
-      : { type: "raster", tiles: [`${SMOKE_SCHEME}://${smokeTiles(date)}`], tileSize: 256, maxzoom: SMOKE_TILE_ZOOM, attribution: "NASA GIBS" },
+    frames.includes(day)
+      ? { type: "image", url: globePicture("smoke", day === newest ? undefined : day), coordinates: WORLD_CORNERS }
+      : { type: "raster", tiles: [`${SMOKE_SCHEME}://${smokeTiles(day)}`], tileSize: 256, maxzoom: SMOKE_TILE_ZOOM, attribution: "NASA GIBS" },
   );
   m.addLayer({ id: "sat", type: "raster", source: "sat", paint: { "raster-opacity": 0.45, "raster-saturation": -0.35, "raster-resampling": "linear", "raster-fade-duration": 0 } }, FIRST);
 }

@@ -120,3 +120,10 @@ test("dotData keeps only the newest NEA hour and the stations' reading fields", 
   assert.deepEqual(out.history?.regions.west, [{ time: "t2", value: 7 }]);
   assert.deepEqual(out.stations, [{ name: "S", country: "MY", lat: 1, lon: 2, api: 5, pm25: 9 }]);
 });
+
+test("dots carry a rank: NEA regions 0, stations 1, sensors 2", () => {
+  const dots = readingDots(data(), "pm25", true, NOW);
+  assert.ok(dots.filter((d) => d.label.endsWith("NEA")).every((d) => d.rank === 0));
+  assert.ok(dots.filter((d) => d.label.endsWith("Sensor")).every((d) => d.rank === 2));
+  assert.ok(dots.filter((d) => d.label.endsWith("Malaysia")).every((d) => d.rank === 1));
+});

@@ -24,7 +24,7 @@ export async function GET() {
 
   const body = `# Haze Lah
 
-> Live Singapore haze tracker: NEA PSI and PM2.5 by region, a plain answer on whether it is safe to go out, a 5-day haze forecast and a smoke map. Independent, free, not an official government service.
+> Live Singapore haze tracker: NEA PSI and PM2.5 by region, a plain answer on whether it is safe to go out, a 5-day haze forecast and a globe of the air around Singapore. Independent, free, not an official government service.
 
 Canonical site: ${SITE_URL}
 

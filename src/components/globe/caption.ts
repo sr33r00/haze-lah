@@ -1,3 +1,5 @@
+import { fmtDateShort } from "@/lib/format";
+import { globeDates } from "@/lib/globe";
 import { POLLUTANTS, bandNames, bandOf } from "@/lib/pollutants";
 import { aheadParts, fromDirection, newZonesText, trailCaption, windAtSg, windText } from "@/lib/replay";
 import type { ReplayDay } from "@/lib/types";
@@ -6,13 +8,13 @@ import { sample } from "@/lib/wind";
 import type { GlobeDay, LayerChoice } from "./frame";
 
 /** What the card says about a day. `live` is the live replay's day for the same date (it knows the fires the air passed), `fires` the day's fire count, `psi` Singapore's highest 24-hr PSI. */
-export type CaptionInput = { day: GlobeDay; layer: LayerChoice; live?: ReplayDay; fires: number | null; psi?: number };
+export type CaptionInput = { day: GlobeDay; layer: LayerChoice; live?: ReplayDay; fires: number | null; psi?: number; now?: number };
 
 /**
  * The headline and the facts of a day. The headline is where the air came from (a forecast day: where it should come from), or, on
  * a day with smoke on the way, when that smoke should reach Singapore; the air's path then moves to the facts. Pure.
  */
-export function captionOf({ day, layer, live, fires, psi }: CaptionInput): { headline: string; facts: string[] } {
+export function captionOf({ day, layer, live, fires, psi, now = Date.now() }: CaptionInput): { headline: string; facts: string[] } {
   const future = day.kind === "forecast";
   const origin = live ?? (day.trail.length ? { from: fromDirection(day.trail), area: null, near: 0 } : null);
   const path = origin ? trailCaption(origin, future) : null;
@@ -27,7 +29,11 @@ export function captionOf({ day, layer, live, fires, psi }: CaptionInput): { hea
     const band = p.bands ? `, ${bandNames(p)[bandOf(p, v)]}` : "";
     facts.push(`Model ${p.label} over Singapore: ${Math.round(v).toLocaleString("en-SG")} ${p.unit}${band}`);
   }
-  if (layer === "smoke" && future) facts.push("No satellite picture for this day.");
+  if (layer === "smoke") {
+    const latest = globeDates(now).at(-1)!; // NASA's newest pass: today's only from the evening
+    if (future) facts.push("No satellite picture for this day.");
+    else if (day.date > latest) facts.push(`Satellite picture: the latest pass, ${fmtDateShort(latest)}`);
+  }
   if (fires != null && !(day.kind === "today" && fires === 0)) facts.push(fires === 0 ? "No fires seen in Sumatra and Borneo" : `${fires.toLocaleString("en-SG")} ${fires === 1 ? "fire" : "fires"} in Sumatra and Borneo`);
   if (day.fresh.length) facts.push(newZonesText(day.fresh.length));
   if (psi != null) facts.push(`Highest 24-hour PSI in Singapore: ${psi}`);

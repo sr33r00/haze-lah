@@ -19,16 +19,16 @@ test("newFires keeps one ring per 30 km", () => {
   assert.equal(zones.length, 1);
 });
 
-test("windAtSg turns u=-5,v=5 m/s into a south-east wind of 25 km/h", () => {
+test("windAtSg turns u=-5,v=5 m/s into a southeast wind of 25 km/h", () => {
   const cells = [-5, -5, -5, -5];
   const wind = windAtSg({ lats: [0, 2], lons: [103, 104] }, { u: cells, v: cells.map(() => 5) });
   assert.deepEqual(wind, { from: "southeast", kmh: 25 });
 });
 
 test("trailCaption: past and forecast wording; a forecast day has no fires to name", () => {
-  const d = { from: "south-east", area: "Riau", near: 1200 };
-  assert.equal(trailCaption(d), "Air came from the south-east via Riau, past 1,200 fires.");
-  assert.equal(trailCaption(d, true), "Air should come from the south-east.");
+  const d = { from: "southeast", area: "Riau", near: 1200 };
+  assert.equal(trailCaption(d), "Air came from the southeast via Riau, past 1,200 fires.");
+  assert.equal(trailCaption(d, true), "Air should come from the southeast.");
   assert.equal(trailCaption({ from: null, area: null, near: 0 }), "Light winds: the air stayed around Singapore.");
   assert.equal(trailCaption({ from: null, area: null, near: 0 }, true), "Light winds: the air should stay around Singapore.");
 });
@@ -47,5 +47,5 @@ test("aheadParts: null unless smoke reaches Singapore; strongest is left out for
 test("newZonesText and windText", () => {
   assert.equal(newZonesText(1), "1 new fire zone");
   assert.equal(newZonesText(4), "4 new fire zones");
-  assert.equal(windText({ from: "south-west", kmh: 12 }), "Wind from the south-west, 12 km/h");
+  assert.equal(windText({ from: "southwest", kmh: 12 }), "Wind from the southwest, 12 km/h");
 });

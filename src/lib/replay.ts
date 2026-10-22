@@ -75,8 +75,6 @@ export const fetchReplay = () => fetchShared<Replay>(REPLAY_URL);
 /** The smoke forecast grid from /api/smoke, in the browser. */
 export const fetchSmoke = () => fetchShared<SmokeGrid>(SMOKE_URL);
 
-const COMPASS = ["north", "north-east", "east", "south-east", "south", "south-west", "west", "north-west"];
-
 /** Equirectangular distance in km; fine at these scales near the equator. */
 function km(a: [number, number], lat: number, lon: number) {
   const x = (lon - a[1]) * Math.cos((lat * Math.PI) / 180);
@@ -101,7 +99,7 @@ export function fromDirection(trail: [number, number][]) {
   const [lat, lon] = trail.at(-1)!;
   if (km([SG.lat, SG.lon], lat, lon) < 150) return null;
   const deg = (Math.atan2(lon - SG.lon, lat - SG.lat) * 180) / Math.PI;
-  return COMPASS[Math.round(((deg + 360) % 360) / 45) % 8];
+  return windFrom(deg);
 }
 
 /** Whether a point lies within NEAR_KM of the trail. */
@@ -201,7 +199,7 @@ export function aheadParts({ fires, checked, area, hours, at }: Ahead) {
 /** "3 new fire zones". */
 export const newZonesText = (n: number) => `${n.toLocaleString("en-SG")} new fire ${n === 1 ? "zone" : "zones"}`;
 
-/** Wind at Singapore as a phrase: "Wind from the south-west, 12 km/h". */
+/** Wind at Singapore as a phrase: "Wind from the southwest, 12 km/h". */
 export const windText = ({ from, kmh }: NonNullable<ReturnType<typeof windAtSg>>) => `Wind from the ${from}, ${kmh} km/h`;
 
 /** "1 hour" or "38 hours". */

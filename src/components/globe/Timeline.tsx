@@ -1,14 +1,14 @@
 "use client";
 
-import { useEffect, useRef, type KeyboardEvent, type PointerEvent } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 import { fmtMonth } from "@/lib/format";
 import type { Bar, Mark } from "@/lib/timeline";
 import PlayButton from "../PlayButton";
 
 /** How many days the strip shows across its width; a longer timeline scrolls back. */
 const VISIBLE_DAYS = 90;
-/** Share of the strip's width a mark's label needs (fractions), under which two labels would touch. */
-const LABEL_SHARE = 0.17;
+/** Marks whose ticks are closer than this (px) share one label, so that labels never touch. */
+const GROUP_PX = 70;
 
 const FORECAST_HATCH = "repeating-linear-gradient(135deg, rgba(251,191,119,0.85) 0 1.5px, transparent 1.5px 4px)";
 
@@ -40,8 +40,18 @@ export default function Timeline({ bars, marks, selected, readout, busy, playing
   const scroller = useRef<HTMLDivElement>(null);
   const track = useRef<HTMLDivElement>(null);
   const dragging = useRef(false);
+  const lastPick = useRef<number | null>(null);
+  const [width, setWidth] = useState(0); // the track's width in px
   const n = bars.length;
   const most = Math.max(1, ...bars.map((b) => b.fires ?? 0));
+
+  useEffect(() => {
+    const el = track.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setWidth(el.clientWidth));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   // Keep the selected day in view.
   useEffect(() => {
@@ -60,13 +70,19 @@ export default function Timeline({ bars, marks, selected, readout, busy, playing
     const at = clamp(Math.floor(((clientX - box.left) / box.width) * n), 0, n - 1);
     for (let d = 0; d < n; d++) {
       const i = [at + d, at - d].find((j) => j >= 0 && j < n && bars[j].source !== "none");
-      if (i != null) return onPick(i);
+      if (i == null) continue;
+      if (i !== lastPick.current) onPick(i); // one change per bar passed, not one per pointer move
+      lastPick.current = i;
+      return;
     }
   };
   const down = (e: PointerEvent<HTMLDivElement>) => {
     if (e.button !== 0) return;
-    e.currentTarget.setPointerCapture(e.pointerId);
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {} // an untracked pointer (a synthetic one) cannot be captured; dragging still works inside the strip
     dragging.current = true;
+    lastPick.current = null;
     pick(e.clientX);
   };
   const move = (e: PointerEvent<HTMLDivElement>) => {
@@ -86,32 +102,21 @@ export default function Timeline({ bars, marks, selected, readout, busy, playing
   };
 
   const at = (i: number) => ((i + 0.5) / n) * 100;
-  // Each label runs away from its tick, to the left on the right half of the strip. A label close to the one before it takes the other
-  // side if there is room, else a second row.
-  const labels: { label: string; i: number; left: boolean; row: number }[] = [];
-  for (const m of marks) {
-    const i = bars.findIndex((b) => b.date === m.date);
-    if (i < 0) continue;
-    const prev = labels.at(-1);
-    let left = at(i) > 55;
-    let row = 0;
-    if (prev && Math.abs(at(i) - at(prev.i)) < LABEL_SHARE * 100 && prev.row === 0) {
-      left = !prev.left;
-      if (left ? at(i) < LABEL_SHARE * 100 : at(i) > (1 - LABEL_SHARE) * 100) {
-        left = prev.left;
-        row = 1;
-      }
-    }
-    labels.push({ label: m.label, i, left, row });
+  // Marks close together share one label ("PSI 100+ · PSI 200+"), on the side of its ticks that has room: to the left on the right half.
+  const ticks = marks.map((m) => ({ label: m.label, i: bars.findIndex((b) => b.date === m.date) })).filter((t) => t.i >= 0);
+  const groups: { label: string; first: number; last: number }[] = [];
+  for (const t of ticks) {
+    const g = groups.at(-1);
+    if (g && ((t.i - g.last) / n) * width < GROUP_PX) Object.assign(g, { label: `${g.label} · ${t.label}`, last: t.i });
+    else groups.push({ label: t.label, first: t.i, last: t.i });
   }
-  const rows = labels.some((l) => l.row) ? 2 : 1;
   const today = bars.findIndex((b) => b.kind === "today");
 
   return (
     <section aria-label="Timeline" className={`px-4 pb-2.5 pt-0.5 ${className}`}>
       <div className="flex items-center gap-3">
         <PlayButton playing={playing} loading={busy && playing} onClick={onPlay} what="the timeline" className="bg-white text-[#02030a]" />
-        <div aria-live="polite" aria-atomic="true" className="min-w-0 flex-1">
+        <div aria-live={playing ? "off" : "polite"} aria-atomic="true" className="min-w-0 flex-1">
           <p className="truncate text-[16px] font-bold leading-6 tabular">
             {readout.text}
             {readout.tag && <span className="ml-2 rounded-full bg-white/15 px-2 py-0.5 align-[1px] text-[11px] font-semibold uppercase tracking-wide text-white/85">{readout.tag}</span>}
@@ -138,15 +143,18 @@ export default function Timeline({ bars, marks, selected, readout, busy, playing
       >
         <div ref={track} className="relative select-none" style={{ width: n > VISIBLE_DAYS ? `${(n / VISIBLE_DAYS) * 100}%` : "100%" }}>
           {/* Event marks */}
-          <div aria-hidden className="relative" style={{ height: rows * 16 }}>
-            {labels.map(({ label, i, left, row }) =>
-              i < 0 ? null : (
-                <span key={label} className="absolute flex items-center gap-1 whitespace-nowrap text-[11px] font-semibold leading-4 text-white/85" style={{ left: `${at(i)}%`, top: row * 16, transform: left ? "translateX(-100%)" : undefined, flexDirection: left ? "row-reverse" : "row" }}>
-                  <span className="size-0 border-x-4 border-t-[5px] border-x-transparent border-t-white/85" style={{ marginInline: left ? "0 -4px" : "-4px 0" }} />
+          <div aria-hidden className="relative h-4">
+            {ticks.map(({ label, i }) => (
+              <span key={label} className="absolute top-1 size-0 -translate-x-1/2 border-x-4 border-t-[5px] border-x-transparent border-t-white/85" style={{ left: `${at(i)}%` }} />
+            ))}
+            {groups.map(({ label, first, last }) => {
+              const left = at(last) > 55;
+              return (
+                <span key={label} className="absolute top-0 whitespace-nowrap text-[11px] font-semibold leading-4 text-white/85" style={left ? { left: `calc(${at(first)}% - 9px)`, transform: "translateX(-100%)" } : { left: `calc(${at(last)}% + 9px)` }}>
                   {label}
                 </span>
-              ),
-            )}
+              );
+            })}
           </div>
           {/* Bars */}
           <div aria-hidden className="flex h-12 items-end min-[700px]:h-16">

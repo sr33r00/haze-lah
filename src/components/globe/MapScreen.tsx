@@ -75,6 +75,14 @@ export default function MapScreen({ dots: dotData, psiDaily, summary }: Props) {
   const [playing, setPlaying] = useState(false);
   const [hist, setHist] = useState<History | null>(null);
   const [shown, setShown] = useState<GlobeDay>();
+  const [note, setNote] = useState<string | null>(null);
+
+  // The notice on a layer that is not available goes after a few seconds.
+  useEffect(() => {
+    if (!note) return;
+    const t = setTimeout(() => setNote(null), 3000);
+    return () => clearTimeout(t);
+  }, [note]);
 
   useEffect(() => {
     // "?view=path" (the link from Now) frames the air's path; any other query, and the old "#space" anchor, the default view.
@@ -122,9 +130,7 @@ export default function MapScreen({ dots: dotData, psiDaily, summary }: Props) {
     () => (sel && bar && ready ? globeDay({ history: hist?.date === sel.date ? (hist.day ?? undefined) : undefined, before: hist?.before, replay: replay ?? undefined, smoke: smoke ?? undefined }, sel.date, sel.step, layer, today) : null),
     [sel, bar, ready, hist, replay, smoke, layer, today],
   );
-  useEffect(() => {
-    if (fresh) setShown(fresh);
-  }, [fresh]);
+  if (fresh && fresh !== shown) setShown(fresh); // derived during render: no extra frame with the old day
   const blank = useMemo(() => globeDay({}, today, 0, "off", today), [today]);
   const day = shown ?? blank;
 
@@ -154,7 +160,7 @@ export default function MapScreen({ dots: dotData, psiDaily, summary }: Props) {
   const go = (to: Sel | null) => {
     if (!to) return;
     setPlaying(false);
-    setSel(to);
+    if (to.date !== sel?.date || to.step !== sel.step) setSel(to); // the same moment is not a change: no new frame for the globe
   };
   const play = () => {
     if (playing || !sel) return setPlaying(false);
@@ -207,6 +213,12 @@ export default function MapScreen({ dots: dotData, psiDaily, summary }: Props) {
       {failed ? (
         <>
           <div className="px-3 pt-[max(0.75rem,env(safe-area-inset-top))]">{back}</div>
+          {note && (
+            <p role="status" className={`pointer-events-none absolute left-1/2 top-[calc(max(0.75rem,env(safe-area-inset-top))+3.75rem)] z-20 -translate-x-1/2 rounded-full px-4 py-2 text-[13px] font-semibold ${PANEL} border border-white/15`}>
+              {note}
+            </p>
+          )}
+
           <main id="main" tabIndex={-1} className="size-full overflow-y-auto outline-none">
             {summaryBlock}
           </main>
@@ -222,11 +234,10 @@ export default function MapScreen({ dots: dotData, psiDaily, summary }: Props) {
                   <button
                     key={id}
                     type="button"
-                    disabled={off}
+                    aria-disabled={off}
                     aria-pressed={layer === id}
-                    aria-label={off ? `${name}, not available now` : name}
-                    title={off ? "Not available now" : undefined}
-                    onClick={() => setLayer(id)}
+                    aria-label={name}
+                    onClick={() => (off ? setNote(`${label} is not available now`) : setLayer(id))}
                     className={`${chip} border-transparent ${layer === id ? "bg-white text-[#02030a]" : "text-white/85 hover:bg-white/10"} ${off ? "opacity-35" : ""}`}
                   >
                     {label}
@@ -248,6 +259,7 @@ export default function MapScreen({ dots: dotData, psiDaily, summary }: Props) {
                     layer={layer}
                     day={day}
                     dots={dots}
+                    live={!playing}
                     expanded={open}
                     onToggle={(to) => setOpen((o) => to ?? !o)}
                     className={`min-[700px]:pointer-events-auto min-[700px]:w-[440px] min-[700px]:shrink-0 ${SIDE_PANEL}`}

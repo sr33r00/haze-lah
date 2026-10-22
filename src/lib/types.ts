@@ -132,7 +132,7 @@ export type ReplayDay = {
   date: string; // YYYY-MM-DD, SGT
   arrival: string; // ISO; when the traced air reached Singapore
   trail: [number, number][]; // where that air was, hourly going back up to 72 h, Singapore first
-  from: string | null; // compass point the air came from, e.g. "south-east"
+  from: string | null; // compass point the air came from, e.g. "southeast"
   near: number; // fires within reach of the trail while the air passed
   area: string | null; // province or state with most of those fires
   journey: Journey | null; // null when the winds were light and the air stayed near Singapore

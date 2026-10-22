@@ -1,8 +1,8 @@
 import { unstable_cache } from "next/cache";
 import sharp from "sharp";
-import { GLOBE_LAYERS, READ_BOX, globeDays, isClear, isSettled, rampRgb, rampT, type GlobeLayer } from "../globe";
+import { GLOBE_LAYERS, globeDays, isSettled, rampRgb, rampT, type GlobeLayer } from "../globe";
 import { gibsMap } from "../satellite";
-import { SG, getText } from "../util";
+import { getText } from "../util";
 
 // Pollution pictures for the map, built from NASA GIBS satellite passes. GIBS only serves each pass as a coloured
 // picture, so the colours are turned back into values, the passes averaged and smoothed, and the result coloured
@@ -32,7 +32,6 @@ const SOURCES: Record<GlobeLayer, Source> = {
 const W = 1440; // the size of every pass: 0.25 degrees a pixel, about the sharpness of the instruments
 const H = 720;
 const SIZE = 2048; // the finished picture is this many pixels square, in Web Mercator: smooth and about 100 KB as WebP when zoomed to a city
-const TINY = 16; // the passes of the box over Singapore are this many pixels square
 const SIGMA = 5; // pixels of smoothing, about 1.25 degrees
 const COARSE = 8; // gaps wider than that are filled on a picture this many times smaller
 
@@ -232,31 +231,3 @@ export async function fetchGlobePicture(layer: GlobeLayer, date: string): Promis
   const { webp, complete } = await (isSettled(date) ? settledPicture : recentPicture)(layer, date);
   return { webp: Buffer.from(webp, "base64"), complete };
 }
-
-async function buildSeries(layer: GlobeLayer, dates: string[]): Promise<{ values: Record<string, number | null>; complete: boolean }> {
-  const src = SOURCES[layer];
-  const { digits } = GLOBE_LAYERS[layer].read;
-  const days = [...new Set(dates.flatMap((d) => globeDays(layer, d)))];
-  const box = [SG.lat - READ_BOX, SG.lon - READ_BOX, SG.lat + READ_BOX, SG.lon + READ_BOX] as const;
-  const [lookup, ...fetched] = await Promise.all([
-    valueLookup(src.colormap),
-    ...days.map((time) => Promise.all(src.layers.map((l) => fetchPng(gibsMap(l, TINY, TINY, { box, format: "png", time }), TINY, TINY)))),
-  ]);
-  const passes = new Map(days.map((d, i) => [d, fetched[i]]));
-  const values = Object.fromEntries(
-    dates.map((date) => {
-      const { mean, have } = meanValues(globeDays(layer, date).flatMap((d) => passes.get(d)!).filter((p) => p !== null), lookup, TINY * TINY);
-      const n = have.reduce((s, h) => s + h, 0);
-      const avg = mean.reduce((s, v, i) => s + (have[i] ? (isClear(layer, v) ? 0 : v) : 0), 0) / n;
-      return [date, n ? Math.round(avg * 10 ** digits) / 10 ** digits : null];
-    }),
-  );
-  return { values, complete: fetched.every((day) => day.every((p) => p !== null)) };
-}
-
-/**
- * The mean reading over the box around Singapore on each of `dates`, by date (null where no pass covered it), and whether
- * every pass arrived. The same averaging as the picture, on pictures of just the box; readings under the layer's floor count as none.
- * Kept in the data cache once complete; the newest date is always recent.
- */
-export const fetchGlobeSeries = cachedWhole("globe-series", RECENT_S, buildSeries);

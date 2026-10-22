@@ -10,16 +10,16 @@ const LONS = [100, 101, 102, 103, 104, 105];
 const base = (extra: Partial<GlobeDay> = {}): GlobeDay => ({
   date: "2026-10-23", kind: "today", fires: [], older: [], fresh: [], trail: [], ahead: [], grid: { lats: LATS, lons: LONS }, wind: null, field: null, ...extra,
 });
-const live = (extra: Partial<ReplayDay> = {}) => ({ from: "south-east", area: "Riau", near: 12, ahead: null, ...extra }) as ReplayDay;
+const live = (extra: Partial<ReplayDay> = {}) => ({ from: "southeast", area: "Riau", near: 12, ahead: null, ...extra }) as ReplayDay;
 
 test("the headline is where the air came from, with the fires it passed when the live replay knows them", () => {
-  assert.equal(captionOf({ day: base(), layer: "off", live: live(), fires: 100 }).headline, "Air came from the south-east via Riau, past 12 fires.");
+  assert.equal(captionOf({ day: base(), layer: "off", live: live(), fires: 100 }).headline, "Air came from the southeast via Riau, past 12 fires.");
 });
 
 test("a day with only a trail names the direction; a forecast day says should; none says so", () => {
   const trail: [number, number][] = [[SG.lat, SG.lon], [SG.lat - 5, SG.lon + 5]];
-  assert.equal(captionOf({ day: base({ kind: "past", trail }), layer: "off", fires: null }).headline, "Air came from the south-east.");
-  assert.equal(captionOf({ day: base({ kind: "forecast", trail }), layer: "off", fires: null }).headline, "Air should come from the south-east.");
+  assert.equal(captionOf({ day: base({ kind: "past", trail }), layer: "off", fires: null }).headline, "Air came from the southeast.");
+  assert.equal(captionOf({ day: base({ kind: "forecast", trail }), layer: "off", fires: null }).headline, "Air should come from the southeast.");
   assert.equal(captionOf({ day: base({ kind: "forecast" }), layer: "off", fires: null }).headline, "No air path for this day.");
 });
 
@@ -27,7 +27,7 @@ test("smoke on the way becomes the headline on today, and the air's path moves t
   const ahead = { fires: 5, checked: 150, area: "Riau", hours: 30, at: "2026-10-24T12:00:00.000Z", path: [] as [number, number][] };
   const { headline, facts } = captionOf({ day: base(), layer: "off", live: live({ ahead }), fires: null });
   assert.match(headline, /^Smoke from 5 of today's 150 strongest fires/);
-  assert.ok(facts.includes("Air came from the south-east via Riau, past 12 fires."));
+  assert.ok(facts.includes("Air came from the southeast via Riau, past 12 fires."));
 });
 
 test("facts: the model value over Singapore with its band, fires, new zones, PSI and wind", () => {
@@ -48,4 +48,12 @@ test("facts: a day that has just begun has no fire count; the satellite layer ha
   assert.ok(!captionOf({ day: base(), layer: "off", fires: 0 }).facts.some((f) => f.includes("fires")));
   assert.ok(captionOf({ day: base({ kind: "past" }), layer: "off", fires: 0 }).facts.includes("No fires seen in Sumatra and Borneo"));
   assert.ok(captionOf({ day: base({ kind: "forecast" }), layer: "smoke", fires: null }).facts.includes("No satellite picture for this day."));
+});
+
+test("the satellite layer on today before the evening says it shows the latest pass", () => {
+  const morning = Date.parse("2026-10-23T03:00:00+08:00"); // NASA's newest frame is yesterday's until 5pm SGT
+  const { facts } = captionOf({ day: base({ date: "2026-10-23" }), layer: "smoke", fires: null, now: morning });
+  assert.ok(facts.some((f) => f.startsWith("Satellite picture: the latest pass, ")));
+  const evening = Date.parse("2026-10-23T18:00:00+08:00");
+  assert.ok(!captionOf({ day: base({ date: "2026-10-23" }), layer: "smoke", fires: null, now: evening }).facts.some((f) => f.includes("latest pass")));
 });

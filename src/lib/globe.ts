@@ -1,7 +1,6 @@
 import { sgDate, sgHour } from "./util";
 
-// The globe of NASA pollution data: carbon monoxide and smoke pictures drawn by /api/globe/[layer] from NASA GIBS,
-// and each day's reading over Singapore from /api/globe/[layer]/series. Pure config, shared by the server and the browser.
+// The globe of NASA pollution data: carbon monoxide and smoke pictures drawn by /api/globe/[layer] from NASA GIBS. Pure config, shared by the server and the browser.
 
 export type GlobeLayer = "co" | "smoke";
 type Rgb = [number, number, number];
@@ -21,24 +20,15 @@ export const WORLD_CORNERS: [[number, number], [number, number], [number, number
 /** How far down a Web Mercator square of the world `lat` sits, from 0 (top) to 1. */
 export const mercY = (lat: number) => 0.5 - Math.log(Math.tan(Math.PI / 4 + (lat * Math.PI) / 360)) / (2 * Math.PI);
 
-/** The box over Singapore, in degrees each way, whose mean is the reading of a day. */
-export const READ_BOX = 1;
-
 /** One frame per day, the last week up to the newest. */
 const FRAMES = 8;
 
-/** How a reading is written, to `digits` decimals; a reading under `floor` is "clear". */
-type Read = { prefix: string; suffix: string; digits: number; floor?: number };
-
-/** What a layer is: its words, how many days it averages, its colours and how a reading is written. */
-type Layer = { label: string; days: number; note: string; ramp: Ramp; read: Read };
+/** What a layer is: how many days it averages and its colours. */
+type Layer = { days: number; ramp: Ramp };
 
 export const GLOBE_LAYERS: Record<GlobeLayer, Layer> = {
   co: {
-    label: "Carbon monoxide",
     days: 3,
-    note: "Carbon monoxide about 5.5 km up, averaged over 3 days. It comes from burning: red is heavy.",
-    read: { prefix: "", suffix: " ppbv", digits: 0 },
     ramp: {
       unit: "CO, ppbv",
       range: [50, 300],
@@ -56,10 +46,7 @@ export const GLOBE_LAYERS: Record<GlobeLayer, Layer> = {
     },
   },
   smoke: {
-    label: "Smoke",
     days: 1,
-    note: "Thick smoke and dust seen from space. Red is the thickest.",
-    read: { prefix: "AI ", suffix: "", digits: 1, floor: 2 },
     ramp: {
       unit: "Aerosol index",
       range: [2, 5],
@@ -81,12 +68,12 @@ export const GLOBE_LAYERS: Record<GlobeLayer, Layer> = {
 export const LAYERS = Object.keys(GLOBE_LAYERS) as GlobeLayer[];
 
 /**
- * The date of each frame, oldest first, and `before` more days ahead of them. The satellites pass over around 1:30pm
+ * The date of each frame, oldest first. The satellites pass over around 1:30pm
  * and NASA publishes about three hours later, so today's pass is used from 5pm SGT.
  */
-export function globeDates(now: number, before = 0): string[] {
+export function globeDates(now: number): string[] {
   const newest = sgHour(now) >= 17 ? 0 : -1;
-  return Array.from({ length: FRAMES + before }, (_, k) => sgDate(newest - FRAMES - before + 1 + k, new Date(now)));
+  return Array.from({ length: FRAMES }, (_, k) => sgDate(newest - FRAMES + 1 + k, new Date(now)));
 }
 
 /** NASA GIBS tiles in Web Mercator (EPSG:3857), the "best" product line. */
@@ -103,9 +90,6 @@ export const SMOKE_TILE_ZOOM = 6;
  */
 export const smokeTiles = (date: string) => `${GIBS_WMTS}/OMPS_NOAA20_NadirMapper_AerosolIndex_380/default/${date}/GoogleMapsCompatible_Level${SMOKE_TILE_ZOOM}/{z}/{y}/{x}.png`;
 
-/** A week, in days. */
-export const WEEK = 7;
-
 /** Whether `date` (YYYY-MM-DD, SGT) is older than 2 days, so that NASA adds no more passes to it. */
 export const isSettled = (date: string) => date < sgDate(-2);
 
@@ -118,9 +102,6 @@ export function globeDays(layer: GlobeLayer, date: string): string[] {
 
 /** The picture laid over the map, and shown flat as the poster until the map loads: the whole world in Web Mercator. No `date` is the newest frame. */
 export const globePicture = (layer: GlobeLayer, date?: string) => `/api/globe/${layer}${date ? `?date=${date}` : ""}`;
-
-/** Each day's mean reading over Singapore, by date: a week more than the frames show, for the change on a week earlier. */
-export const globeSeries = (layer: GlobeLayer) => `/api/globe/${layer}/series`;
 
 /** The colour of `t` (0 to 1) along a ramp. */
 export function rampRgb({ stops }: Ramp, t: number): Rgb {
@@ -138,6 +119,3 @@ export function rampT({ range: [lo, hi] }: Ramp, value: number) {
 
 /** A CSS gradient of a ramp, for the legend. */
 export const rampCss = ({ stops }: Ramp) => `linear-gradient(to right, ${stops.map(([t, c]) => `rgb(${c}) ${t * 100}%`).join(", ")})`;
-
-/** Is `value` too faint to count, so that the layer draws nothing there? */
-export const isClear = (layer: GlobeLayer, value: number) => value < (GLOBE_LAYERS[layer].read.floor ?? -Infinity);

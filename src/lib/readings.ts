@@ -1,7 +1,7 @@
 import { REGIONS, REGION_POINT, psiLevel, type Region } from "@/lib/bands";
 import { cap } from "@/lib/format";
 import { POLLUTANTS, bandOf, colorOf, type Pollutant, type PollutantId } from "@/lib/pollutants";
-import type { HazeData, Station } from "@/lib/types";
+import type { HazeData, NeaNow, Station } from "@/lib/types";
 import { MAX_SENSOR_AGE_MS } from "@/lib/util";
 
 /** A real (or, for Indonesian cities, modelled) reading drawn as a dot on the globe. */
@@ -15,11 +15,13 @@ export type Dot = {
   band: 0 | 1 | 2 | 3 | null;
   /** Measured readings are filled dots; model values are hollow rings. */
   kind: "measured" | "model";
+  /** What shows first when zoomed out: 0 NEA's regions, 1 Malaysian stations and Indonesian cities, 2 community sensors. */
+  rank: 0 | 1 | 2;
 };
 
 /** What the dots need of the page's data: small enough to send to the browser (the stations without their extras, only the newest NEA hour). */
 export type DotData = {
-  nea: HazeData["nea"];
+  nea: Pick<NeaNow, "sub" | "no2_1h_max"> | null;
   history: { regions: Record<Region, { value: number }[]> } | null;
   stations: Pick<Station, "name" | "country" | "lat" | "lon" | "pm25" | "api">[];
   sensors: HazeData["sensors"];
@@ -28,7 +30,7 @@ export type DotData = {
 /** `data` cut down to `DotData`. */
 export function dotData({ nea, history, stations, sensors }: HazeData): DotData {
   return {
-    nea,
+    nea: nea && { sub: nea.sub, no2_1h_max: nea.no2_1h_max },
     history: history && { regions: Object.fromEntries(REGIONS.map((r) => [r, history.regions[r].slice(-1)])) as unknown as Record<Region, { value: number }[]> },
     stations: stations.map(({ name, country, lat, lon, pm25, api }) => ({ name, country, lat, lon, pm25, api })),
     sensors,
@@ -41,14 +43,14 @@ const PM25 = pollutant("pm25");
 /** NEA PSI bands (sub-index 50, 100, 200) as the four bands; PSI above 200 is band 3 (NEA, haze.gov.sg PSI table). */
 const psiBand = (psi: number) => Math.min(psiLevel(psi), 3) as 0 | 1 | 2 | 3;
 
-const pm25Dot = (p: Pick<Dot, "lat" | "lon" | "label" | "kind">, v: number): Dot => ({ ...p, value: `${Math.round(v)} ${PM25.unit} ${PM25.label}`, band: bandOf(PM25, v) });
+const pm25Dot = (p: Pick<Dot, "lat" | "lon" | "label" | "kind" | "rank">, v: number): Dot => ({ ...p, value: `${Math.round(v)} ${PM25.unit} ${PM25.label}`, band: bandOf(PM25, v) });
 
 /** NEA region dots: the chosen pollutant (1-hour PM2.5, a PSI sub-index, or the NO2 1-hour maximum). */
 function neaDots(data: DotData, p: Pollutant): Dot[] {
   const { nea, history } = data;
   const out: Dot[] = [];
   for (const r of REGIONS) {
-    const at = { lat: REGION_POINT[r][0], lon: REGION_POINT[r][1], label: `${cap(r)}, NEA`, kind: "measured" as const };
+    const at = { lat: REGION_POINT[r][0], lon: REGION_POINT[r][1], label: `${cap(r)}, NEA`, kind: "measured" as const, rank: 0 as const };
     if (p.id === "pm25") {
       const v = history?.regions[r].at(-1)?.value;
       if (v != null && Number.isFinite(v)) out.push(pm25Dot(at, v));
@@ -73,13 +75,13 @@ export function readingDots(data: DotData, layer: PollutantId | "smoke" | "off",
   const out = neaDots(data, pollutant(layer));
   for (const s of data.stations) {
     if (s.country === "SG") continue; // NEA's regions cover Singapore
-    const at = { lat: s.lat, lon: s.lon, label: `${s.name}, ${s.country === "ID" ? "Model" : "Malaysia"}`, kind: s.country === "ID" ? ("model" as const) : ("measured" as const) };
+    const at = { lat: s.lat, lon: s.lon, label: `${s.name}, ${s.country === "ID" ? "Model" : "Malaysia"}`, kind: s.country === "ID" ? ("model" as const) : ("measured" as const), rank: 1 as const };
     if (s.pm25 != null) out.push(pm25Dot(at, s.pm25));
     else if (s.api != null && s.country === "MY") out.push({ ...at, value: `API ${s.api}`, band: psiBand(s.api) }); // Malaysia's API has the PSI's band edges
   }
   for (const s of data.sensors) {
     if (now - new Date(s.time).getTime() >= MAX_SENSOR_AGE_MS) continue;
-    out.push(pm25Dot({ lat: s.lat, lon: s.lon, label: `${s.name}, Sensor`, kind: "measured" }, s.pm25));
+    out.push(pm25Dot({ lat: s.lat, lon: s.lon, label: `${s.name}, Sensor`, kind: "measured", rank: 2 }, s.pm25));
   }
   return out;
 }
@@ -88,11 +90,12 @@ export function readingDots(data: DotData, layer: PollutantId | "smoke" | "off",
 const BAND_VALUE = [55, 100, 200, 350] as const;
 const GREY = "rgb(150,150,150)";
 
-/** The ramp colour of a band at full opacity (the same ramp as the field, so a dot matches the colours around it). */
+/** The ramp colour of a band at full opacity (the same ramp as the field, so a dot matches the colours around it); Normal is darkened so that a ring of quiet readings does not look like a hazard. */
 export function bandColor(band: Dot["band"]): string {
   if (band == null) return GREY;
+  const k = band === 0 ? 0.6 : 1;
   const [r, g, b] = colorOf(PM25, BAND_VALUE[band]);
-  return `rgb(${Math.round(r)},${Math.round(g)},${Math.round(b)})`;
+  return `rgb(${Math.round(r * k)},${Math.round(g * k)},${Math.round(b * k)})`;
 }
 
 /** The dots as GeoJSON points for the map's source. */
@@ -101,7 +104,7 @@ export function dotFeatures(dots: Dot[]): GeoJSON.FeatureCollection<GeoJSON.Poin
     type: "FeatureCollection",
     features: dots.map((d) => ({
       type: "Feature",
-      properties: { label: d.label, value: d.value, kind: d.kind, color: bandColor(d.band) },
+      properties: { label: d.label, value: d.value, kind: d.kind, rank: d.rank, color: bandColor(d.band) },
       geometry: { type: "Point", coordinates: [d.lon, d.lat] },
     })),
   };
