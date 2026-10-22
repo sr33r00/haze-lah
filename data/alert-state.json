@@ -1,8 +1,16 @@
 {
-  "psiLevel": 2,
+  "psiLevel": 1,
   "pm25Band": 1,
-  "neaUrl": "https://www.nea.gov.sg/media/news/advisories/index/haze-situation-update-21-october-2026",
+  "neaUrl": "https://www.nea.gov.sg/media/news/advisories/index/haze-situation-update-22-october-2026",
   "newsUrls": [
+    "https://www.straitstimes.com/singapore/environment/shelters-nparks-mandai-wildlife-group-take-haze-relief-measures-to-protect-animals",
+    "https://www.straitstimes.com/singapore/air-quality-improves-to-good-to-moderate-range-across-singapore-after-18-days-of-unhealthy-air",
+    "https://www.channelnewsasia.com/singapore/haze-vegetables-fruits-smaller-expensive-malaysia-indonesia-import-6481731",
+    "https://www.straitstimes.com/singapore/why-cant-singapores-anti-haze-law-get-indonesian-companies-to-stop-the-fires",
+    "https://www.channelnewsasia.com/singapore/haze-mask-collection-vending-machines-age-60-6481056",
+    "https://www.straitstimes.com/singapore/environment/singaporeans-60-and-above-can-collect-masks-from-oct-23-to-guard-against-haze-grace-fu",
+    "https://www.channelnewsasia.com/singapore/haze-psi-pm25-oct-22-6480596",
+    "https://www.straitstimes.com/singapore/haze-in-singapore-air-quality-improves-overnight-with-normal-pm2-5-readings-across-the-island",
     "https://www.straitstimes.com/singapore/environment/why-is-it-difficult-to-identify-companies-linked-to-fires-how-can-spores-haze-law-be-strengthened",
     "https://www.straitstimes.com/singapore/up-to-15-increase-in-respiratory-or-eye-related-vet-visits-in-singapore-during-haze",
     "https://www.straitstimes.com/singapore/housing/builders-reduce-workers-exposure-to-haze-take-steps-to-seek-time-extensions-for-construction-delays",
@@ -24,17 +32,9 @@
     "https://www.channelnewsasia.com/singapore/singapore-haze-firms-companies-laws-shanmugam-6470856",
     "https://www.straitstimes.com/singapore/singapore-appreciates-efforts-by-prabowo-and-administration-to-solve-haze-issue-shanmugam",
     "https://www.straitstimes.com/singapore/spore-to-use-every-legal-and-regulatory-lever-against-companies-linked-to-haze-shanmugam",
-    "https://www.straitstimes.com/singapore/nea-issues-notices-to-three-more-companies-in-indonesia-over-haze-role",
-    "https://www.straitstimes.com/singapore/environment/asia-pulp-paper-tied-to-haze-linked-suppliers-given-temporary-restrictions-by-spore-environment",
-    "https://www.channelnewsasia.com/singapore/nea-haze-notices-indonesia-companies-transboundary-haze-pollution-act-6471111",
-    "https://www.channelnewsasia.com/singapore/singapore-haze-psi-oct-19-6469736",
-    "https://www.straitstimes.com/singapore/haze-in-singapore-air-quality-improves-but-most-regions-remain-in-unhealthy-band",
-    "https://www.straitstimes.com/singapore/malaysias-firefly-cancels-seletar-subang-flights-for-10th-day-due-to-haze",
-    "https://www.straitstimes.com/singapore/psi-forecast-to-be-between-100-and-190-on-oct-19-says-nea",
-    "https://www.channelnewsasia.com/singapore/haze-western-region-daily-routines-psi-businesses-6469406",
-    "https://www.straitstimes.com/singapore/haze-in-singapore-runners-train-in-malls-families-head-for-indoor-playgrounds"
+    "https://www.straitstimes.com/singapore/nea-issues-notices-to-three-more-companies-in-indonesia-over-haze-role"
   ],
   "briefDate": "2026-10-22",
-  "outlookDate": "2026-10-21",
-  "hourTime": "2026-10-21T21:00:00+08:00"
+  "outlookDate": "2026-10-22",
+  "hourTime": "2026-10-22T22:00:00+08:00"
 }
