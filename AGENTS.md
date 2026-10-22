@@ -61,6 +61,7 @@ Then look at the result in a browser at phone width (390 px) and desktop width, 
 - Keys live only in `.env.local` (git-ignored, mode 600) and in Vercel env vars. `.env.example` lists them.
 - Never write a key or token into a tracked file, a commit or a chat reply.
 - Telegram alerts: GitHub's scheduler barely fires the cron, so `alerts.yml` is triggered by an external `workflow_dispatch` (cron-job.org).
+- GitHub's schedule can be unreliable, so the daily `history.yml` run can also be triggered from cron-job.org (`workflow_dispatch`), as for alerts.
 
 ## Where things are
 
@@ -69,4 +70,5 @@ Then look at the result in a browser at phone width (390 px) and desktop width, 
 - `src/lib/bands.ts` and `src/lib/advice.ts`: NEA bands, sub-indices and advice.
 - `src/lib/wind.ts` and `src/lib/replay.ts`: the 72-hour back-trajectory of the air ("where it came from"), fires near it and the province. `src/lib/replayData.ts` builds the replay on the server for `/api/replay` and the `/air-journey` share picture (`src/lib/journeyCard.tsx`). The same wind, run forward from today's strongest fires, gives "Smoke on the way" (`ahead`).
 - `src/lib/satellite.ts`: NASA GIBS image URLs and the projection onto the 1000×520 image of `SAT_BOX`. `src/lib/globe.ts`, `src/lib/sources/gibsTexture.ts` and `src/app/api/globe/` (`/api/globe/[layer]` and `/api/globe/[layer]/series`): the layers, the server-built carbon monoxide and smoke pictures (Web Mercator WebP) and each day's reading over Singapore. `src/components/SpaceView.tsx` is the card; `GlobeMap.tsx` (MapLibre, loaded lazily) and `src/lib/basemap.ts` (OpenFreeMap style, trimmed) are the map.
+- `scripts/history.ts` and `.github/workflows/history.yml`: one `data/history/<date>.json` per SGT day plus `index.json` (fires, wind, air quality, NEA) for the air globe's history, built daily at 01:30 SGT and backfilled by hand (`workflow_dispatch` inputs `from`, `to`, `firms_source`). `src/lib/history.ts` builds each day.
 - `next.config.ts`: CSP. Add any new image or connect host there (OpenFreeMap is a `connect-src`).

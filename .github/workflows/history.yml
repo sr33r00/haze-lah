@@ -1,0 +1,74 @@
+name: Air globe history
+
+on:
+  schedule:
+    - cron: "30 17 * * *" # 01:30 SGT: yesterday's file, once the SGT day is over
+  workflow_dispatch:
+    inputs:
+      from:
+        description: "First day to build, YYYY-MM-DD (SGT). Empty means the same as to."
+        required: false
+      to:
+        description: "Last day to build, YYYY-MM-DD (SGT, must be over). Empty means yesterday."
+        required: false
+      firms_source:
+        description: "Force one FIRMS product for every day, e.g. VIIRS_SNPP_SP. Empty means the script's default."
+        required: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: history
+  cancel-in-progress: false
+
+jobs:
+  history:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      # The script writes every day it can and exits non-zero if some failed. Keep its exit code, commit what was
+      # written, and fail the job at the end so the owner sees it.
+      - name: Build history
+        id: build
+        env:
+          FIRMS_MAP_KEY: ${{ secrets.FIRMS_MAP_KEY }}
+          DATA_GOV_SG_API_KEY: ${{ secrets.DATA_GOV_SG_API_KEY }}
+          FIRMS_SOURCE: ${{ inputs.firms_source }}
+          INPUT_FROM: ${{ inputs.from }}
+          INPUT_TO: ${{ inputs.to }}
+        run: |
+          if [ -z "$FIRMS_MAP_KEY" ]; then
+            echo "::error::FIRMS_MAP_KEY secret is empty, so the days would have no fires"
+            exit 1
+          fi
+          to="${INPUT_TO:-$(TZ=Asia/Singapore date -d yesterday +%F)}"
+          from="${INPUT_FROM:-$to}"
+          echo "range=$from..$to" >> "$GITHUB_OUTPUT"
+          code=0
+          npx tsx scripts/history.ts --from "$from" --to "$to" || code=$?
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+      - name: Commit
+        env:
+          RANGE: ${{ steps.build.outputs.range }}
+        run: |
+          git config user.name "haze-lah-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add data/history
+          git diff --cached --quiet || git commit -m "data: history $RANGE"
+          git pull --rebase --quiet && git push
+      - name: Purge the CDN copy of the index
+        run: curl -fsS https://purge.jsdelivr.net/gh/sr33r00/haze-lah@main/data/history/index.json || echo "::warning::jsDelivr purge failed"
+      - name: Fail if some days failed
+        if: steps.build.outputs.code != '0'
+        env:
+          CODE: ${{ steps.build.outputs.code }}
+        run: |
+          echo "::error::scripts/history.ts exited $CODE: see the failed days in the Build history log"
+          exit "$CODE"
