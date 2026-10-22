@@ -1,7 +1,8 @@
+import { windFrom } from "./context";
 import { fmtDayHour } from "./format";
 import type { Ahead, Fire, Journey, Replay, ReplayDay } from "./types";
 import { SG, sgDate } from "./util";
-import { backTrail, forwardTrail, type WindFrame } from "./wind";
+import { backTrail, forwardTrail, sample, type WindFrame } from "./wind";
 
 const DAYS = 5; // FIRMS keeps 5 days, so the replay goes back that far
 const ARRIVAL_SGT = 14; // trace the air that reached Singapore at 2pm each day
@@ -12,6 +13,8 @@ const START_MAX_KM = 400; // a trail's oldest point farther than this from every
 const AHEAD_H = 72; // how far forward smoke from today's fires is followed
 export const AHEAD_FIRES = 150; // strongest fires of the last 24 h that are followed
 const REACH_KM = 75; // smoke "reaches" Singapore when it comes this close
+const NEW_KM = 50; // a fire with none this close on an earlier day starts a new fire zone (each day keeps only its strongest fires, so closer is noise)
+const ZONE_KM = 30; // new fires this close together are one zone
 
 // Rough province and state centres; a fire belongs to the nearest. Good enough to name where most fires were.
 const AREAS: [string, number, number][] = [
@@ -37,6 +40,7 @@ const AREAS: [string, number, number][] = [
 /** Map colours for fires and for the air's path, shared by every view of the replay. */
 export const FIRE_COLOR = "#c2410c";
 export const TRAIL_COLOR = "#a855f7";
+export const NEW_FIRE_COLOR = "#22d3ee";
 
 /** The browser-side API paths that pages preload (`preload(url, { as: "fetch", crossOrigin: "anonymous" })`), so that the data is on its way before the code that uses it has loaded. */
 export const REPLAY_URL = "/api/replay";
@@ -128,6 +132,7 @@ function journeyOf(trail: [number, number][], arrival: number, from: string | nu
 /**
  * Smoke on the way: follows the wind forecast forward from the strongest fires of the last 24 h in Sumatra and Borneo
  * and notes when the smoke first comes within REACH_KM of Singapore. Null without fires or with too little forecast.
+ * When none reach, `path` is the strongest fire's forward trail, so the map still shows where the smoke goes.
  */
 function aheadOf(frames: WindFrame[], fires: (Fire & { where: string })[], now: number): Ahead | null {
   if (frames.at(-1)!.t < now + 48 * 3600_000) return null;
@@ -136,20 +141,36 @@ function aheadOf(frames: WindFrame[], fires: (Fire & { where: string })[], now: 
     .sort((a, b) => b.frp - a.frp)
     .slice(0, AHEAD_FIRES);
   if (!strongest.length) return null;
-  const reaching = strongest
-    .map((f) => {
-      const path = forwardTrail(frames, f.lat, f.lon, now, AHEAD_H);
-      return { f, path, h: path.findIndex((p) => km(p, SG.lat, SG.lon) < REACH_KM) };
-    })
-    .filter((r) => r.h >= 0)
-    .sort((a, b) => a.h - b.h);
+  const followed = strongest.map((f) => {
+    const path = forwardTrail(frames, f.lat, f.lon, now, AHEAD_H);
+    return { f, path, h: path.findIndex((p) => km(p, SG.lat, SG.lon) < REACH_KM) };
+  });
+  const reaching = followed.filter((r) => r.h >= 0).sort((a, b) => a.h - b.h);
   const base = { checked: strongest.length, fires: reaching.length };
-  if (!reaching.length) return { ...base, area: null, hours: null, at: null, path: [] };
+  if (!reaching.length) return { ...base, area: null, hours: null, at: null, path: followed[0].path };
   const mid = (reaching.length - 1) / 2;
   const median = (reaching[Math.floor(mid)].h + reaching[Math.ceil(mid)].h) / 2;
   const hours = Math.max(1, Math.round(median));
   const typical = reaching.reduce((a, b) => (Math.abs(b.h - median) < Math.abs(a.h - median) ? b : a));
   return { ...base, area: topArea(reaching.map((r) => r.f)), hours, at: new Date(now + hours * 3600_000).toISOString(), path: typical.path.slice(0, typical.h + 1) };
+}
+
+/** New fire zones: the newest day's fires with no fire within NEW_KM on any earlier day, one per ZONE_KM. Empty without earlier fires to compare with. */
+export function newFires(days: ReplayDay[]): [number, number][] {
+  const before = days.slice(0, -1).flatMap((d) => d.fires);
+  if (!before.length) return [];
+  const zones: [number, number][] = [];
+  for (const [lat, lon] of days.at(-1)?.fires ?? [])
+    if (!before.some((p) => km(p, lat, lon) < NEW_KM) && !zones.some((z) => km(z, lat, lon) < ZONE_KM)) zones.push([lat, lon]);
+  return zones;
+}
+
+/** Wind (m/s) at Singapore on the replay's grid as the compass point it blows from and its speed in km/h; null outside the grid. */
+export function windAtSg({ lats, lons }: Pick<Replay, "lats" | "lons">, { u, v }: ReplayDay["wind"]) {
+  const x = sample({ lats, lons, data: u }, SG.lat, SG.lon);
+  const y = sample({ lats, lons, data: v }, SG.lat, SG.lon);
+  if (x == null || y == null) return null;
+  return { from: windFrom((Math.atan2(-x, -y) * 180) / Math.PI), kmh: Math.round(Math.hypot(x, y) * 3.6) };
 }
 
 /** One line on where the day's air came from. */

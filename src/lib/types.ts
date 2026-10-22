@@ -120,7 +120,7 @@ export type Ahead = {
   area: string | null; // province or state with most of the fires that reach
   hours: number | null; // median hours to reach among those fires; null when none reach
   at: string | null; // ISO; now + hours
-  path: [number, number][]; // forward trail of the reaching fire closest to the median, from the fire towards Singapore
+  path: [number, number][]; // forward trail from the fire: of the reaching fire closest to the median (ends near Singapore), or, when none reach, of the strongest fire (72 h)
 };
 
 /** One day of the past-week replay; the last day is today, up to the latest 3-hour step. */
