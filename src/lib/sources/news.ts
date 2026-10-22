@@ -113,9 +113,9 @@ export function parseOutlet(xml: string, source: Outlet, now = Date.now()): News
 
 export async function fetchNews(): Promise<NewsItem[]> {
   const feeds = await Promise.allSettled([
-    getText(NEA_RSS, { revalidate: 900 }).then(parseNea),
-    getText(MSS_ATOM, { revalidate: 900 }).then(parseMss),
-    ...(Object.keys(OUTLETS) as Outlet[]).map((o) => getText(OUTLETS[o].feed, { revalidate: 900 }).then((x) => parseOutlet(x, o))),
+    getText(NEA_RSS).then(parseNea),
+    getText(MSS_ATOM).then(parseMss),
+    ...(Object.keys(OUTLETS) as Outlet[]).map((o) => getText(OUTLETS[o].feed).then((x) => parseOutlet(x, o))),
   ]);
   const failed = feeds.filter((f) => f.status === "rejected");
   if (failed.length === feeds.length) throw failed[0].reason;

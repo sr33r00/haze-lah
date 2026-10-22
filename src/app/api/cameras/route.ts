@@ -1,6 +1,6 @@
 import { fetchCameras } from "@/lib/sources/traffic";
 
-// Fetched by the page on load, not built into it: the photo links change every minute, but the pages are rebuilt only every 30 minutes.
+// Fetched by the page on load, not built into it: the photo links change every 5 minutes, but the pages are rebuilt only every 30 minutes.
 export const dynamic = "force-dynamic";
 
 export async function GET() {

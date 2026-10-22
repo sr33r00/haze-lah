@@ -25,10 +25,12 @@ export function hourKey(t: string | number | Date) {
   return d.toISOString();
 }
 
+/** `revalidate`: seconds to keep the answer in the data cache. Default 0 (not kept): fast sources are read only when the
+ * 30-minute page data is rebuilt, so keeping them too would only add cache writes. */
 type FetchInit = RequestInit & { revalidate?: number };
 
 async function getRes(url: string, init: FetchInit): Promise<Response> {
-  const { revalidate = 300, ...rest } = init;
+  const { revalidate = 0, ...rest } = init;
   const get = () =>
     fetch(url, {
       ...rest,

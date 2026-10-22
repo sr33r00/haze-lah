@@ -8,5 +8,5 @@
       "main": true
     }
   },
-  "ignoreCommand": "[ -n \"$VERCEL_GIT_PREVIOUS_SHA\" ] && git cat-file -e \"$VERCEL_GIT_PREVIOUS_SHA\" 2>/dev/null && git diff --quiet \"$VERCEL_GIT_PREVIOUS_SHA\" HEAD -- . ':(exclude)data' ':(exclude)scripts' ':(exclude).github' ':(exclude)*.md' ':(exclude)LICENSE' ':(exclude)NOTICE'"
+  "ignoreCommand": "sh scripts/vercel-ignore.sh"
 }

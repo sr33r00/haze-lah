@@ -87,7 +87,7 @@ export async function fetchPsiDaily(days = 7): Promise<DayPsi[]> {
   for (let k = 1 - days; k <= 0; k++) {
     const date = sgDate(k);
     try {
-      const j = await getJson<Resp>(`${BASE}/psi?date=${date}`, { headers: headers(), revalidate: k < 0 ? 86400 : 300 });
+      const j = await getJson<Resp>(`${BASE}/psi?date=${date}`, { headers: headers(), revalidate: k < 0 ? 86400 : 0 });
       let best: DayPsi | null = null;
       for (const it of j.data.items)
         for (const r of REGIONS) {

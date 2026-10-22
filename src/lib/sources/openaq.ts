@@ -38,7 +38,7 @@ export function pickLocations(json: { results?: Loc[] }, now = Date.now()): Loca
 export async function fetchCommunitySensors(): Promise<Sensor[]> {
   const key = process.env.OPENAQ_API_KEY;
   if (!key) return [];
-  const init = { revalidate: 900, headers: { "X-API-Key": key } };
+  const init = { headers: { "X-API-Key": key } };
   const locs = pickLocations(await getJson(`${API}/locations?bbox=${BBOX}&limit=100`, init));
   const latest = await Promise.allSettled(locs.map((l) => getJson<Latest>(`${API}/locations/${l.id}/latest`, init)));
   const out: Sensor[] = [];

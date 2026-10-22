@@ -16,7 +16,7 @@ function title(s: string) {
 }
 
 export async function fetchApims(maxKm = 700): Promise<Station[]> {
-  const j = await getJson<Resp>(URL, { revalidate: 600 });
+  const j = await getJson<Resp>(URL);
   if (j.error) throw new Error(`APIMS: ${j.error.message ?? "query failed"}`);
   const out: Station[] = [];
   for (const f of j.features ?? []) {
