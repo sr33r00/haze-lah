@@ -25,6 +25,9 @@ export const REGION_COAST = "/coast.png";
 /** The pictures are Web Mercator squares, as MapLibre places images: the latitude the square ends at, north and south. */
 export const MERC_LAT = 85.0511;
 
+/** The corners of such a square, NW, NE, SE, SW, for a MapLibre image source. */
+export const WORLD_CORNERS: [[number, number], [number, number], [number, number], [number, number]] = [[-180, MERC_LAT], [180, MERC_LAT], [180, -MERC_LAT], [-180, -MERC_LAT]];
+
 /** How far down a Web Mercator square of the world `lat` sits, from 0 (top) to 1. */
 export const mercY = (lat: number) => 0.5 - Math.log(Math.tan(Math.PI / 4 + (lat * Math.PI) / 360)) / (2 * Math.PI);
 
@@ -103,6 +106,20 @@ export function globeDates(now: number, before = 0): string[] {
   const newest = sgHour(now) >= 17 ? 0 : -1;
   return Array.from({ length: FRAMES + before }, (_, k) => sgDate(newest - FRAMES - before + 1 + k, new Date(now)));
 }
+
+/** NASA GIBS tiles in Web Mercator (EPSG:3857), the "best" product line. */
+export const GIBS_WMTS = "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best";
+
+/** The highest zoom of the smoke tiles (the tile matrix set below stops there). */
+export const SMOKE_TILE_ZOOM = 6;
+
+/**
+ * Tiles of NASA's smoke picture for `date` (YYYY-MM-DD), straight from GIBS, for days the server picture (`globePicture`) does not
+ * have. Layer id and tile matrix set from GIBS GetCapabilities, https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/1.0.0/WMTSCapabilities.xml
+ * (checked 2026-10-23): OMPS_NOAA20_NadirMapper_AerosolIndex_380 is the OMPS Nadir Mapper aerosol index at 380 nm (NOAA-20), daily
+ * from 2025-04-28, PNG, GoogleMapsCompatible_Level6. It is the same layer the server picture is built from, in NASA's own colours.
+ */
+export const smokeTiles = (date: string) => `${GIBS_WMTS}/OMPS_NOAA20_NadirMapper_AerosolIndex_380/default/${date}/GoogleMapsCompatible_Level${SMOKE_TILE_ZOOM}/{z}/{y}/{x}.png`;
 
 /** A week, in days. */
 export const WEEK = 7;

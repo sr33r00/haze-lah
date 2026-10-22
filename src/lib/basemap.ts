@@ -20,7 +20,8 @@ const FADE = 0.5; // zoom levels over which the outline gives way to the tiles
 
 const LAND = "#161b22";
 const WATER = "#0a1018";
-const FONT = ["Noto Sans Regular"];
+/** The font of every label drawn on the map (the one the glyph server has). */
+export const FONT = ["Noto Sans Regular"];
 const NAME = ["coalesce", ["get", "name_en"], ["get", "name"]];
 
 /** Full below SWITCH and gone FADE above it (the outline), or the reverse (the vector tiles' lines). */
