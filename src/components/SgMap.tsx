@@ -8,13 +8,12 @@ import { CircleMarker, MapContainer, Marker, TileLayer, Tooltip, useMap, useMapE
 import { LEVEL_COLOR, LEVEL_NAME, LEVEL_TEXT, REGIONS, REGION_POINT, nearestRegion, pm25Color, psiLevel, stationLevel, type Region } from "@/lib/bands";
 import { cap } from "@/lib/format";
 import type { Camera, NeaNow, NeaPm25History, Sensor, Station } from "@/lib/types";
-import { SG, haversineKm } from "@/lib/util";
+import { MAX_SENSOR_AGE_MS, SG, haversineKm } from "@/lib/util";
 
 const BOUNDS: L.LatLngBoundsExpression = [
   [1.205, 103.6],
   [1.52, 104.05],
 ];
-const MAX_SENSOR_AGE_MS = 3 * 3600_000;
 const SENSOR_KM = 3; // a community sensor this close is worth showing next to the regional reading
 
 type Spot = { lat: number; lon: number; mine: boolean };

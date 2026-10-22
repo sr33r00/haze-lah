@@ -1,5 +1,8 @@
 export const SG = { lat: 1.3521, lon: 103.8198 };
 
+/** A community sensor reading older than this (ms) is not shown. */
+export const MAX_SENSOR_AGE_MS = 3 * 3600_000;
+
 export function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number) {
   const R = 6371;
   const toRad = (d: number) => (d * Math.PI) / 180;

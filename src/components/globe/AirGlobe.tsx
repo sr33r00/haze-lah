@@ -1,10 +1,11 @@
 "use client";
 
-import { LngLatBounds, Map as MapLibre, setWorkerUrl, type CanvasSource, type ExpressionSpecification, type GeoJSONSource, type PaddingOptions } from "maplibre-gl";
+import { LngLatBounds, Map as MapLibre, Popup, setWorkerUrl, type CanvasSource, type ExpressionSpecification, type GeoJSONSource, type MapLayerMouseEvent, type PaddingOptions } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { SMOKE_TILE_ZOOM, WORLD_CORNERS, globeDates, globePicture, smokeTiles } from "@/lib/globe";
 import { FONT } from "@/lib/basemap";
+import { dotFeatures, type Dot } from "@/lib/readings";
 import { SG } from "@/lib/util";
 import type { WindView } from "@/lib/windParticles";
 import { globeView } from "@/components/globeWind";
@@ -24,6 +25,8 @@ type Props = {
   layer: LayerChoice;
   /** The date of the satellite picture shown when `layer` is "smoke". */
   satDate: string;
+  /** Real readings (and Indonesian model values) drawn as dots, with a popup on hover or tap. */
+  dots: Dot[];
   /** "default" is the tilted view of the region; "path" frames the air's path. */
   view: "default" | "path";
   /** Called once when the globe cannot run: no WebGL, a lost WebGL context, or a basemap that will not load. */
@@ -113,6 +116,57 @@ function addOverlays(m: MapLibre) {
   m.addLayer({ id: "sg-label", type: "symbol", source: "sg", layout: { ...text, "text-field": "Singapore", "text-size": 12, "text-offset": [0, -1.5], "text-anchor": "bottom", "text-allow-overlap": true }, paint: { "text-color": "#fff", "text-halo-color": "rgba(2,3,10,0.85)", "text-halo-width": 1.4 } });
 }
 
+/** The reading dots: measured ones filled with a light outline, model values hollow rings, and a larger invisible layer so a fingertip hits them. */
+function addReadings(m: MapLibre) {
+  m.addSource("readings", { type: "geojson", data: EMPTY });
+  m.addLayer({ id: "readings-hit", type: "circle", source: "readings", paint: { "circle-radius": 14, "circle-opacity": 0 } });
+  const model: ExpressionSpecification = ["==", ["get", "kind"], "model"];
+  m.addLayer({
+    id: "readings", type: "circle", source: "readings",
+    paint: {
+      "circle-radius": z(2, 3, 8, 7),
+      "circle-color": ["case", model, "rgba(0,0,0,0)", ["get", "color"]],
+      "circle-stroke-color": ["case", model, ["get", "color"], "rgba(235,242,255,0.9)"],
+      "circle-stroke-width": ["case", model, 1.8, 1],
+    },
+  });
+}
+
+/** One popup at a time, on a dot: hover on a desktop pointer, tap on a phone. A click elsewhere on the map closes it (Popup's closeOnClick). */
+function wireReadings(m: MapLibre): () => void {
+  let pop: Popup | undefined;
+  const show = (e: MapLayerMouseEvent) => {
+    const f = e.features?.[0];
+    if (!f) return;
+    pop?.remove();
+    const body = document.createElement("div");
+    const label = body.appendChild(document.createElement("div"));
+    label.textContent = String(f.properties.label);
+    const value = body.appendChild(document.createElement("div"));
+    value.textContent = String(f.properties.value);
+    value.style.fontWeight = "400";
+    pop = new Popup({ closeButton: false, closeOnClick: true, offset: 10, maxWidth: "none", className: "sg-pop" })
+      .setLngLat((f.geometry as GeoJSON.Point).coordinates as [number, number])
+      .setDOMContent(body)
+      .addTo(m);
+  };
+  const hide = () => pop?.remove();
+  const on = (type: "mouseenter" | "mouseleave" | "click", fn: (e: MapLayerMouseEvent) => void) => m.on(type, "readings-hit", fn);
+  const hover = matchMedia("(hover: hover)").matches;
+  const pointer = () => (m.getCanvas().style.cursor = "pointer");
+  const arrow = () => (m.getCanvas().style.cursor = "");
+  on("mouseenter", (e) => {
+    pointer();
+    if (hover) show(e);
+  });
+  on("mouseleave", () => {
+    arrow();
+    if (hover) hide();
+  });
+  on("click", show);
+  return hide;
+}
+
 /** The satellite picture of `date`: the server's picture for the last few days, else NASA's tiles. Not drawn when `date` is null. */
 function setSatellite(m: MapLibre, date: string | null) {
   if (m.getLayer("sat")) m.removeLayer("sat");
@@ -142,11 +196,12 @@ function pathCamera(m: MapLibre, trail: GlobeDay["trail"], w: number) {
  * The air globe: NASA night lights and relief, a pollutant's CAMS field or NASA's smoke picture, fires, wind and the air's path,
  * for the day it is given. Meant to fill its parent; the parent decides the size. Client only: load it through AirGlobeLoader.
  */
-export default function AirGlobe({ day, layer, satDate, view, onFail }: Props) {
+export default function AirGlobe({ day, layer, satDate, dots, view, onFail }: Props) {
   const box = useRef<HTMLDivElement>(null);
   const map = useRef<MapLibre>(undefined);
   const field = useRef<HTMLCanvasElement>(undefined);
   const intro = useRef(true);
+  const closePopup = useRef<() => void>(undefined);
   const failRef = useRef(onFail);
   const [ready, setReady] = useState(false);
   const [windView, setWindView] = useState<WindView>();
@@ -196,6 +251,8 @@ export default function AirGlobe({ day, layer, satDate, view, onFail }: Props) {
       });
       m.on("load", () => {
         addOverlays(m);
+        addReadings(m);
+        closePopup.current = wireReadings(m);
         // The wind's canvas goes in a layer of its own, a little fainter and faded out towards the globe's edge and the card.
         const veil = document.createElement("div");
         veil.style.cssText = "position:absolute;inset:0;pointer-events:none;opacity:0.62;mask-image:linear-gradient(to bottom,transparent 8%,#000 28%,#000 62%,transparent 92%)";
@@ -221,6 +278,14 @@ export default function AirGlobe({ day, layer, satDate, view, onFail }: Props) {
     if (!ready || !m) return;
     for (const id of ["fires", "older", "fresh", "trail", "hours", "ahead"] as const) (m.getSource(id) as GeoJSONSource).setData(geo[id]);
   }, [ready, geo]);
+
+  // The reading dots.
+  useEffect(() => {
+    const m = map.current;
+    if (!ready || !m) return;
+    closePopup.current?.(); // a popup on a dot that may be gone
+    (m.getSource("readings") as GeoJSONSource).setData(dotFeatures(dots));
+  }, [ready, dots]);
 
   const { lats, lons } = day.grid;
   const wind = day.wind;
