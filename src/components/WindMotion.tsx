@@ -37,7 +37,7 @@ export default function WindMotionButton({ motion, onToggle, className }: { moti
     <button
       onClick={onToggle}
       aria-pressed={motion}
-      className={`flex min-h-[36px] items-center gap-1.5 rounded-full bg-surface px-3 text-[13px] font-semibold shadow hover:bg-line ${className}`}
+      className={`flex min-h-[44px] items-center gap-1.5 rounded-full bg-surface px-3 text-[13px] font-semibold shadow hover:bg-line ${className}`}
     >
       <Wind size={15} aria-hidden />
       {motion ? "Still wind" : "Animate wind"}

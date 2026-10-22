@@ -1,6 +1,6 @@
 import { windFrom } from "./context";
 import { fmtDayHour } from "./format";
-import type { Ahead, Fire, Journey, Replay, ReplayDay } from "./types";
+import type { Ahead, Fire, Journey, Replay, ReplayDay, SmokeGrid } from "./types";
 import { SG, sgDate } from "./util";
 import { backTrail, forwardTrail, sample, type WindFrame } from "./wind";
 
@@ -11,7 +11,7 @@ const NEAR_KM = 50;
 const MAP_FIRES = 400;
 const START_MAX_KM = 400; // a trail's oldest point farther than this from every area centre is not "near" any
 const AHEAD_H = 72; // how far forward smoke from today's fires is followed
-export const AHEAD_FIRES = 150; // strongest fires of the last 24 h that are followed
+const AHEAD_FIRES = 150; // strongest fires of the last 24 h that are followed
 const REACH_KM = 75; // smoke "reaches" Singapore when it comes this close
 const NEW_KM = 50; // a fire with none this close on an earlier day starts a new fire zone (each day keeps only its strongest fires, so closer is noise)
 const ZONE_KM = 30; // new fires this close together are one zone
@@ -46,27 +46,34 @@ export const NEW_FIRE_COLOR = "#22d3ee";
 export const REPLAY_URL = "/api/replay";
 export const SMOKE_URL = "/api/smoke";
 
-const REPLAY_TTL = 300_000; // the browser's cache lifetime of the answer; a longer-lived page asks again
-let replay: { at: number; promise: Promise<Replay> } | undefined;
+const SHARED_TTL = 300_000; // the browser's cache lifetime of an answer; a longer-lived page asks again
+const shared = new Map<string, { at: number; promise: Promise<unknown> }>();
 
 /**
- * The replay from /api/replay (cached by the CDN), in the browser. Every caller shares one request, in flight or done, for
- * REPLAY_TTL; after a failure the next call asks again. Rejects when it is unavailable.
+ * The JSON at one of the API paths above, in the browser (the CDN caches it). Every caller shares one request, in flight or done,
+ * for SHARED_TTL; after a failure the next call asks again. Rejects when it is unavailable.
  */
-export function fetchReplay(): Promise<Replay> {
-  if (replay && Date.now() - replay.at < REPLAY_TTL) return replay.promise;
+function fetchShared<T>(url: string): Promise<T> {
+  const old = shared.get(url);
+  if (old && Date.now() - old.at < SHARED_TTL) return old.promise as Promise<T>;
   const mine = {
     at: Date.now(),
-    promise: fetch(REPLAY_URL)
-      .then((r) => (r.ok ? (r.json() as Promise<Replay>) : Promise.reject()))
+    promise: fetch(url)
+      .then((r) => (r.ok ? (r.json() as Promise<T>) : Promise.reject()))
       .catch((e) => {
-        if (replay === mine) replay = undefined;
+        if (shared.get(url) === mine) shared.delete(url);
         throw e;
       }),
   };
-  replay = mine;
-  return mine.promise;
+  shared.set(url, mine);
+  return mine.promise as Promise<T>;
 }
+
+/** The replay from /api/replay, in the browser. */
+export const fetchReplay = () => fetchShared<Replay>(REPLAY_URL);
+
+/** The smoke forecast grid from /api/smoke, in the browser. */
+export const fetchSmoke = () => fetchShared<SmokeGrid>(SMOKE_URL);
 
 const COMPASS = ["north", "north-east", "east", "south-east", "south", "south-west", "west", "north-west"];
 
@@ -90,7 +97,7 @@ function topArea(fires: { lat: number; lon: number }[]) {
 }
 
 /** Compass point the air came from, or null if it barely moved. */
-function fromDirection(trail: [number, number][]) {
+export function fromDirection(trail: [number, number][]) {
   const [lat, lon] = trail.at(-1)!;
   if (km([SG.lat, SG.lon], lat, lon) < 150) return null;
   const deg = (Math.atan2(lon - SG.lon, lat - SG.lat) * 180) / Math.PI;
@@ -173,15 +180,32 @@ export function windAtSg({ lats, lons }: Pick<Replay, "lats" | "lons">, { u, v }
   return { from: windFrom((Math.atan2(-x, -y) * 180) / Math.PI), kmh: Math.round(Math.hypot(x, y) * 3.6) };
 }
 
-/** One line on where the day's air came from. */
-export function trailCaption(d: ReplayDay) {
-  if (!d.from) return "Light winds: the air stayed around Singapore.";
-  const via = d.area && d.near > 0 ? ` via ${d.area}, past ${d.near.toLocaleString("en-SG")} fires` : "";
-  return `Air came from the ${d.from}${via}.`;
+/** One line on where the day's air came from; `future` for a forecast day, which has no fires to name. */
+export function trailCaption(d: Pick<ReplayDay, "from" | "area" | "near">, future = false) {
+  const verb = future ? ["should stay", "should come"] : ["stayed", "came"];
+  if (!d.from) return `Light winds: the air ${verb[0]} around Singapore.`;
+  const via = !future && d.area && d.near > 0 ? ` via ${d.area}, past ${d.near.toLocaleString("en-SG")} fires` : "";
+  return `Air ${verb[1]} from the ${d.from}${via}.`;
 }
 
+/** The "Smoke on the way" sentence in parts, or null when no smoke from today's fires reaches Singapore. */
+export function aheadParts({ fires, checked, area, hours, at }: Ahead) {
+  if (!(fires > 0 && hours != null && at != null)) return null;
+  return {
+    reach: `Smoke from ${fires} of today's ${checked} ${checked < AHEAD_FIRES ? "" : "strongest "}fires should reach Singapore in about ${hoursText(hours)}.`,
+    source: area ? `Most of it comes from ${area}.` : null,
+    expected: `Expected around ${fmtDayHour(at)}.`,
+  };
+}
+
+/** "3 new fire zones". */
+export const newZonesText = (n: number) => `${n.toLocaleString("en-SG")} new fire ${n === 1 ? "zone" : "zones"}`;
+
+/** Wind at Singapore as a phrase: "Wind from the south-west, 12 km/h". */
+export const windText = ({ from, kmh }: NonNullable<ReturnType<typeof windAtSg>>) => `Wind from the ${from}, ${kmh} km/h`;
+
 /** "1 hour" or "38 hours". */
-export const hoursText = (h: number) => `${h} ${h === 1 ? "hour" : "hours"}`;
+const hoursText = (h: number) => `${h} ${h === 1 ? "hour" : "hours"}`;
 
 /** The journey in short phrases, shared by the page and the picture. Null when the air stayed near Singapore. */
 export function journeyText(d: ReplayDay) {

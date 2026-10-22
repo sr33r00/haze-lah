@@ -29,17 +29,11 @@ export const fmtDate = (date: string) =>
 export const fmtFullDate = (date: string) =>
   new Intl.DateTimeFormat("en-SG", { timeZone: TZ, day: "numeric", month: "short", year: "numeric" }).format(new Date(`${date}T12:00:00+08:00`));
 
+/** "Oct" for an SGT date (YYYY-MM-DD). */
+export const fmtMonth = (date: string) => new Intl.DateTimeFormat("en-SG", { timeZone: TZ, month: "short" }).format(new Date(`${date}T12:00:00+08:00`));
+
 /** "Sat 17 Oct" for an SGT date (YYYY-MM-DD): `fmtDate` without the comma. */
 export const fmtDateShort = (date: string) => fmtDate(date).replace(",", "");
-
-/** "18–20 Oct" for a run of SGT dates (YYYY-MM-DD), or "20 Oct" for one. */
-export function fmtRange(from: string, to: string) {
-  const f = new Intl.DateTimeFormat("en-SG", { timeZone: TZ, day: "numeric", month: "short" });
-  const [a, b] = [from, to].map((d) => f.formatToParts(new Date(`${d}T12:00:00+08:00`)));
-  const part = (p: Intl.DateTimeFormatPart[], type: string) => p.find((x) => x.type === type)!.value;
-  if (from === to) return `${part(b, "day")} ${part(b, "month")}`;
-  return part(a, "month") === part(b, "month") ? `${part(a, "day")}–${part(b, "day")} ${part(b, "month")}` : `${part(a, "day")} ${part(a, "month")}–${part(b, "day")} ${part(b, "month")}`;
-}
 
 export const fmtDay = (date: string, i: number) => (i === 0 ? "Today" : i === 1 ? "Tmrw" : fmtWeekday(date));
 

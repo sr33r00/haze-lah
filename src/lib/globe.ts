@@ -1,4 +1,4 @@
-import { SG, sgDate, sgHour } from "./util";
+import { sgDate, sgHour } from "./util";
 
 // The globe of NASA pollution data: carbon monoxide and smoke pictures drawn by /api/globe/[layer] from NASA GIBS,
 // and each day's reading over Singapore from /api/globe/[layer]/series. Pure config, shared by the server and the browser.
@@ -12,18 +12,8 @@ type Rgb = [number, number, number];
  */
 type Ramp = { unit: string; range: [number, number]; ends: [string, string]; stops: [t: number, rgb: Rgb][]; soft?: number };
 
-/** The area the flat poster shows, behind the globe, centred on Singapore: [south, west, north, east]. */
-export const REGION = [SG.lat - 20, SG.lon - 30, SG.lat + 20, SG.lon + 30] as const;
-
-/**
- * The coastlines of `REGION` for the poster, a transparent PNG (white with a soft dark edge) in Web Mercator, 1500×1021. It never
- * changes, so it ships with the site; made from NASA GIBS: https://gibs.earthdata.nasa.gov/wms/epsg3857/best/wms.cgi?SERVICE=WMS&REQUEST=GetMap&VERSION=1.3.0&CRS=EPSG:3857&BBOX=8217582.546,-2113525.382,14896751.994,2433912.613&WIDTH=1500&HEIGHT=1021&FORMAT=image/png&TRANSPARENT=true&LAYERS=Coastlines_15m
- * (BBOX is REGION in metres), its alpha recoloured and blurred under itself, saved as a palette PNG.
- */
-export const REGION_COAST = "/coast.png";
-
 /** The pictures are Web Mercator squares, as MapLibre places images: the latitude the square ends at, north and south. */
-export const MERC_LAT = 85.0511;
+const MERC_LAT = 85.0511;
 
 /** The corners of such a square, NW, NE, SE, SW, for a MapLibre image source. */
 export const WORLD_CORNERS: [[number, number], [number, number], [number, number], [number, number]] = [[-180, MERC_LAT], [180, MERC_LAT], [180, -MERC_LAT], [-180, -MERC_LAT]];
@@ -31,17 +21,11 @@ export const WORLD_CORNERS: [[number, number], [number, number], [number, number
 /** How far down a Web Mercator square of the world `lat` sits, from 0 (top) to 1. */
 export const mercY = (lat: number) => 0.5 - Math.log(Math.tan(Math.PI / 4 + (lat * Math.PI) / 360)) / (2 * Math.PI);
 
-/** The satellites' daytime pass, local time: Aqua (AIRS) crosses the equator at 1:30 pm, and so do the NOAA-20 and NOAA-21 (OMPS). https://aqua.nasa.gov/content/about-aqua */
-export const PASS_TIME = "1:30 pm";
-
-/** How much of the map shows through the data. */
-export const DATA_OPACITY = 0.75;
-
 /** The box over Singapore, in degrees each way, whose mean is the reading of a day. */
 export const READ_BOX = 1;
 
 /** One frame per day, the last week up to the newest. */
-export const FRAMES = 8;
+const FRAMES = 8;
 
 /** How a reading is written, to `digits` decimals; a reading under `floor` is "clear". */
 type Read = { prefix: string; suffix: string; digits: number; floor?: number };
@@ -96,8 +80,6 @@ export const GLOBE_LAYERS: Record<GlobeLayer, Layer> = {
 /** The layers, the default first. */
 export const LAYERS = Object.keys(GLOBE_LAYERS) as GlobeLayer[];
 
-export const GLOBE_CREDIT = "NASA GIBS: AIRS and OMPS · Map: OpenFreeMap, OpenStreetMap";
-
 /**
  * The date of each frame, oldest first, and `before` more days ahead of them. The satellites pass over around 1:30pm
  * and NASA publishes about three hours later, so today's pass is used from 5pm SGT.
@@ -126,9 +108,6 @@ export const WEEK = 7;
 
 /** Whether `date` (YYYY-MM-DD, SGT) is older than 2 days, so that NASA adds no more passes to it. */
 export const isSettled = (date: string) => date < sgDate(-2);
-
-/** The date a week before `date` (YYYY-MM-DD, SGT). */
-export const weekBefore = (date: string) => sgDate(-WEEK, new Date(`${date}T12:00:00+08:00`));
 
 /** The days a layer's frame for `date` averages, oldest first. */
 export function globeDays(layer: GlobeLayer, date: string): string[] {
@@ -162,12 +141,3 @@ export const rampCss = ({ stops }: Ramp) => `linear-gradient(to right, ${stops.m
 
 /** Is `value` too faint to count, so that the layer draws nothing there? */
 export const isClear = (layer: GlobeLayer, value: number) => value < (GLOBE_LAYERS[layer].read.floor ?? -Infinity);
-
-/** A reading as text: "238 ppbv", "AI 3.1" or "clear". `rough` rounds coarsely and says "about", for a value read back from a picture, whose colours stop at the top of the ramp. */
-export function fmtReading(layer: GlobeLayer, value: number, rough = false) {
-  const { read, ramp } = GLOBE_LAYERS[layer];
-  if (isClear(layer, value)) return "clear";
-  const unit = (rough ? 5 : 1) / 10 ** read.digits;
-  const text = rough && value >= ramp.range[1] ? `over ${ramp.range[1]}` : `${rough ? "about " : ""}${(Math.round(value / unit) * unit).toFixed(read.digits)}`;
-  return `${read.prefix}${text}${read.suffix}`;
-}

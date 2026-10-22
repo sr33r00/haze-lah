@@ -1,7 +1,7 @@
-import { REGIONS, REGION_POINT, psiLevel } from "@/lib/bands";
+import { REGIONS, REGION_POINT, psiLevel, type Region } from "@/lib/bands";
 import { cap } from "@/lib/format";
 import { POLLUTANTS, bandOf, colorOf, type Pollutant, type PollutantId } from "@/lib/pollutants";
-import type { HazeData } from "@/lib/types";
+import type { HazeData, Station } from "@/lib/types";
 import { MAX_SENSOR_AGE_MS } from "@/lib/util";
 
 /** A real (or, for Indonesian cities, modelled) reading drawn as a dot on the globe. */
@@ -17,6 +17,24 @@ export type Dot = {
   kind: "measured" | "model";
 };
 
+/** What the dots need of the page's data: small enough to send to the browser (the stations without their extras, only the newest NEA hour). */
+export type DotData = {
+  nea: HazeData["nea"];
+  history: { regions: Record<Region, { value: number }[]> } | null;
+  stations: Pick<Station, "name" | "country" | "lat" | "lon" | "pm25" | "api">[];
+  sensors: HazeData["sensors"];
+};
+
+/** `data` cut down to `DotData`. */
+export function dotData({ nea, history, stations, sensors }: HazeData): DotData {
+  return {
+    nea,
+    history: history && { regions: Object.fromEntries(REGIONS.map((r) => [r, history.regions[r].slice(-1)])) as unknown as Record<Region, { value: number }[]> },
+    stations: stations.map(({ name, country, lat, lon, pm25, api }) => ({ name, country, lat, lon, pm25, api })),
+    sensors,
+  };
+}
+
 const pollutant = (id: PollutantId) => POLLUTANTS.find((p) => p.id === id)!;
 const PM25 = pollutant("pm25");
 
@@ -26,7 +44,7 @@ const psiBand = (psi: number) => Math.min(psiLevel(psi), 3) as 0 | 1 | 2 | 3;
 const pm25Dot = (p: Pick<Dot, "lat" | "lon" | "label" | "kind">, v: number): Dot => ({ ...p, value: `${Math.round(v)} ${PM25.unit} ${PM25.label}`, band: bandOf(PM25, v) });
 
 /** NEA region dots: the chosen pollutant (1-hour PM2.5, a PSI sub-index, or the NO2 1-hour maximum). */
-function neaDots(data: HazeData, p: Pollutant): Dot[] {
+function neaDots(data: DotData, p: Pollutant): Dot[] {
   const { nea, history } = data;
   const out: Dot[] = [];
   for (const r of REGIONS) {
@@ -38,7 +56,7 @@ function neaDots(data: HazeData, p: Pollutant): Dot[] {
       const v = nea?.no2_1h_max[r];
       if (v != null && Number.isFinite(v)) out.push({ ...at, value: `${Math.round(v)} ${p.unit} ${p.label}`, band: bandOf(p, v) });
     } else {
-      const v = nea?.sub[p.id as keyof NonNullable<HazeData["nea"]>["sub"]]?.[r];
+      const v = nea?.sub[p.id as keyof NonNullable<DotData["nea"]>["sub"]]?.[r];
       if (v != null && Number.isFinite(v)) out.push({ ...at, value: `PSI sub-index ${Math.round(v)} (${p.label})`, band: psiBand(v) });
     }
   }
@@ -50,7 +68,7 @@ function neaDots(data: HazeData, p: Pollutant): Dot[] {
  * (or the station's API when it has no PM2.5); Indonesian cities as model values. Only for today; dust, smoke and off show none.
  * `now` is for tests.
  */
-export function readingDots(data: HazeData, layer: PollutantId | "smoke" | "off", isToday: boolean, now = Date.now()): Dot[] {
+export function readingDots(data: DotData, layer: PollutantId | "smoke" | "off", isToday: boolean, now = Date.now()): Dot[] {
   if (!isToday || layer === "off" || layer === "smoke" || layer === "dust") return [];
   const out = neaDots(data, pollutant(layer));
   for (const s of data.stations) {

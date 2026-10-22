@@ -31,7 +31,7 @@ Canonical site: ${SITE_URL}
 ## Pages
 - [Now](${SITE_URL}/): the verdict for your region and group, current PSI and PM2.5, practical tips
 - [Forecast](${SITE_URL}/forecast): next 48 hours of PM2.5 and a 5-day PSI outlook, with measured accuracy
-- [Map](${SITE_URL}/map): smoke forecast, satellite-detected fires, a zoomable map and globe of NASA satellite data (carbon monoxide, smoke), air-quality stations and wind
+- [Map](${SITE_URL}/map): a full-screen globe with a timeline from 1 August to the forecast: PM2.5, PM10, carbon monoxide, nitrogen dioxide, sulphur dioxide, ozone and dust from the Copernicus model, NASA satellite smoke, satellite-detected fires, wind, where the air came from, and air-quality readings (?view=path frames the air's path)
 - [Photos](${SITE_URL}/photos): live LTA camera photos and webcams
 - [News](${SITE_URL}/news): NEA haze updates, CNA and Straits Times haze headlines, and a timeline of changes
 - [Guide](${SITE_URL}/guide): short answers on masks, exercise, air purifiers, schools, work and health, each with NEA, MOH, MOE or MOM sources

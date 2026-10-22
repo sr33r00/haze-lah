@@ -22,8 +22,8 @@ export const RELEASE = {
     },
     {
       title: "Wind on the globe",
-      text: "The From space globe now shows the wind and the air's path for each day. Press play to see them change.",
-      href: "/map#space",
+      text: "The map is now a globe. It shows the wind, the fires and the air's path for each day, from 1 August to the forecast. Press play to see them change.",
+      href: "/map",
     },
     {
       title: "AQICN number",

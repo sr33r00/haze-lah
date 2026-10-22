@@ -187,7 +187,7 @@ function pathCamera(m: MapLibre, trail: GlobeDay["trail"], w: number) {
   if (trail.length < 2) return null;
   const narrow = w < NARROW;
   const bounds = trail.reduce((b, [lat, lon]) => b.extend([lon, lat]), new LngLatBounds([SG.lon, SG.lat], [SG.lon, SG.lat]));
-  const padding: PaddingOptions = { top: 90, left: 40, right: 40, bottom: narrow ? 300 : 110 };
+  const padding: PaddingOptions = { top: 90, left: 40, right: 40, bottom: narrow ? 300 : 280 }; // the card and timeline cover the bottom: about 280 px on a phone, the timeline panel on a laptop
   const cam = m.cameraForBounds(bounds, { padding, maxZoom: 6 });
   return cam && { center: cam.center, zoom: cam.zoom, pitch: narrow ? 15 : 25, padding };
 }

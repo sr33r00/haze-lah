@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { REGIONS, REGION_POINT, type Region } from "@/lib/bands";
-import { bandColor, dotFeatures, readingDots } from "@/lib/readings";
+import { bandColor, dotData, dotFeatures, readingDots } from "@/lib/readings";
 import type { HazeData, Sensor, Station } from "@/lib/types";
 
 const NOW = Date.parse("2026-10-23T06:00:00Z");
@@ -106,4 +106,17 @@ test("dot features carry the band colour; no band is grey", () => {
   assert.equal(f.features[0].properties!.color, bandColor(0));
   assert.notEqual(bandColor(0), bandColor(3));
   assert.equal(bandColor(null), "rgb(150,150,150)");
+});
+
+test("dotData keeps only the newest NEA hour and the stations' reading fields", () => {
+  const hist = (v: number[]) => v.map((value, i) => ({ time: `t${i}`, value }));
+  const regions = { north: hist([1, 2]), south: hist([3]), east: hist([4]), west: hist([5, 6, 7]), central: hist([8]) };
+  const out = dotData({
+    nea: null,
+    history: { regions, island: [] },
+    stations: [{ id: "x", name: "S", state: "Johor", country: "MY", lat: 1, lon: 2, api: 5, pm25: 9, time: null, distanceKm: 30 }],
+    sensors: [],
+  } as unknown as Parameters<typeof dotData>[0]);
+  assert.deepEqual(out.history?.regions.west, [{ time: "t2", value: 7 }]);
+  assert.deepEqual(out.stations, [{ name: "S", country: "MY", lat: 1, lon: 2, api: 5, pm25: 9 }]);
 });

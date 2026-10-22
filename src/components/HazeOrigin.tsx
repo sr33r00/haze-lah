@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { fmtWeekday } from "@/lib/format";
-import { FIRE_COLOR, NEW_FIRE_COLOR, TRAIL_COLOR, fetchReplay, newFires, trailCaption, windAtSg } from "@/lib/replay";
+import { FIRE_COLOR, NEW_FIRE_COLOR, TRAIL_COLOR, fetchReplay, newFires, newZonesText, trailCaption, windAtSg, windText } from "@/lib/replay";
 import { RELIEF, SAT_BOX, onImage } from "@/lib/satellite";
 import type { Replay } from "@/lib/types";
 import { sgDate } from "@/lib/util";
@@ -136,7 +136,7 @@ export default function HazeOrigin({ className }: { className?: string }) {
                 </span>
               ))}
               <SgPin />
-              {here && <span className="sg-label bottom-2 left-2">{`Wind from the ${here.from}, ${here.kmh} km/h`}</span>}
+              {here && <span className="sg-label bottom-2 left-2">{windText(here)}</span>}
             </>
           )}
         </div>
@@ -148,7 +148,7 @@ export default function HazeOrigin({ className }: { className?: string }) {
                   {fresh.length > 0 && (
                     <span className="flex items-center gap-1.5">
                       <span aria-hidden className="size-3 rounded-full border-[1.5px]" style={{ borderColor: NEW_FIRE_COLOR }} />
-                      {fresh.length.toLocaleString("en-SG")} new fire {fresh.length === 1 ? "zone" : "zones"} today
+                      {newZonesText(fresh.length)} today
                     </span>
                   )}
                   {ahead && (
@@ -162,7 +162,7 @@ export default function HazeOrigin({ className }: { className?: string }) {
               {reduced && <WindMotionButton motion={motion} onToggle={toggle} className="mb-3" />}
               {day.journey ? <AirJourney day={day} /> : <p className="text-[15px] font-bold text-fg">{trailCaption(day)}</p>}
               <p className="mt-3">Traced back 3 days along the wind about 1.5 km up. Fires near the path are a likely, not certain, source.</p>
-              <Link href="/map" className="mt-1 inline-block py-1 text-[14px] font-semibold text-accent">
+              <Link href="/map?view=path" className="mt-1 inline-block py-1 text-[14px] font-semibold text-accent">
                 See it on the map
               </Link>
               {day.ahead && <SmokeAhead ahead={day.ahead} />}
