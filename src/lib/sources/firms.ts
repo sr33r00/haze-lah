@@ -38,7 +38,7 @@ export async function fetchFirePoints(): Promise<(Fire & { where: Area })[] | nu
 /**
  * Fires of the UTC days `from` to `to` (YYYY-MM-DD, inclusive) for the history backfill, 5 days per request, not cached.
  * The product is the live one (`FIRMS_SOURCE`, default VIIRS_SNPP_NRT). NRT keeps only recent months: a request it answers
- * with no fires (the region always has some) is asked again of the standard-processing product, `_SP`, and `log` says so.
+ * with an empty table (the region always has some fires) is asked again of the standard-processing product, `_SP`, and `log` says so. Any failed request throws instead of falling back, so the history never mixes products by accident.
  */
 export async function fetchFiresRange(key: string, from: string, to: string, log: (m: string) => void = console.log): Promise<(Fire & { where: Area })[]> {
   const nrt = process.env.FIRMS_SOURCE || "VIIRS_SNPP_NRT";
@@ -47,10 +47,11 @@ export async function fetchFiresRange(key: string, from: string, to: string, log
   for (let day = Date.parse(from); day <= Date.parse(to); day += SPAN * 86400_000) {
     const start = new Date(day).toISOString().slice(0, 10);
     const days = Math.min(SPAN, Math.round((Date.parse(to) - day) / 86400_000) + 1);
-    let rows = await fetchRows(firmsUrl(key, nrt, days, start), 60_000).catch(() => [] as Row[]);
+    // A failed request (timeout, 429, 5xx, an invalid key) throws and fails the chunk: only a table that parsed and was empty means "NRT no longer has this date".
+    let rows = await fetchRows(firmsUrl(key, nrt, days, start), 60_000);
     if (!rows.length && sp !== nrt) {
       rows = await fetchRows(firmsUrl(key, sp, days, start), 60_000);
-      log(`FIRMS: ${nrt} had no fires for ${start} (${days} days); used ${sp}${rows.length ? "" : ", which has none either"}`);
+      log(`FIRMS: ${nrt} returned an empty table for ${start} (${days} days); used ${sp}${rows.length ? "" : ", which has none either"}`);
     }
     out.push(...rows);
   }

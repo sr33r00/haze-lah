@@ -97,7 +97,7 @@ export function buildDay(input: {
   }
   const wind = aq.times.map((time) => {
     const t = Date.parse(time);
-    if (Math.abs(nearestFrame(frames, t).t - t) > 1.5 * 3600_000) throw new Error(`History ${date}: no wind frame near ${time}`);
+    if (!frames.length || Math.abs(nearestFrame(frames, t).t - t) > 1.5 * 3600_000) throw new Error(`History ${date}: no wind frame near ${time}`);
     return windNear(frames, t);
   });
   const day: HistoryDay = {
@@ -108,7 +108,7 @@ export function buildDay(input: {
     lats: aq.lats.map(r2),
     lons: aq.lons.map(r2),
     wind: { u: wind.map((w) => w.u), v: wind.map((w) => w.v) },
-    gases: Object.fromEntries(Object.entries(aq.values).map(([id, frames]) => [id, frames.map((f) => f.map(Math.round))])),
+    gases: Object.fromEntries(Object.entries(aq.values).map(([id, grid]) => [id, grid.map((f) => f.map(Math.round))])),
     trail: dayTrail(frames, date).trail,
     nea,
   };

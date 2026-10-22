@@ -197,8 +197,11 @@ export function journeyText(d: ReplayDay) {
   };
 }
 
-/** The frame nearest `t`. */
-export const nearestFrame = (frames: WindFrame[], t: number) => frames.reduce((a, b) => (Math.abs(b.t - t) < Math.abs(a.t - t) ? b : a));
+/** The frame nearest `t`; throws without frames. */
+export function nearestFrame(frames: WindFrame[], t: number) {
+  if (!frames.length) throw new Error("no wind frame");
+  return frames.reduce((a, b) => (Math.abs(b.t - t) < Math.abs(a.t - t) ? b : a));
+}
 
 /** Wind of the frame nearest `t`, rounded for the page. */
 export function windNear(frames: WindFrame[], t: number) {

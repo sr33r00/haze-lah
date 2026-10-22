@@ -91,7 +91,7 @@ test("buildDay has 8 frames of wind and gases on the 364-point grid, rounded", (
   assert.equal(day.wind.u.length, 8);
   assert.equal(day.wind.u[0].length, 364);
   assert.equal(day.wind.v[7].length, 364);
-  assert.ok(day.wind.u.flat().every((x) => Math.round(x * 10) === x * 10 || Math.abs(Math.round(x * 10) / 10 - x) < 1e-9));
+  assert.ok(day.wind.u.flat().every((x) => Math.abs(Math.round(x * 10) / 10 - x) < 1e-9));
   assert.deepEqual(Object.keys(day.gases).sort(), ["co", "dust", "no2", "o3", "pm10", "pm25", "so2"]);
   assert.ok(Object.values(day.gases).every((g) => g!.length === 8 && g!.every((f) => f.length === 364 && f.every(Number.isInteger))));
   assert.deepEqual(day.nea, nea);
@@ -103,6 +103,10 @@ test("buildDay traces the 72 h trail back from Singapore, upwind of it", () => {
   // Wind blows towards the east, so the air came from the west, until the trail leaves the grid (at 95 E).
   assert.ok(trail.length > 40);
   assert.ok(trail.at(-1)![1] < 97);
+});
+
+test("buildDay with no wind frames throws the no-wind-frame error", () => {
+  assert.throws(() => buildDay({ date: DATE, fires: [], frames: [], aq: aq(), nea }), /no wind frame/);
 });
 
 test("buildDay refuses wind frames that do not reach the day", () => {
