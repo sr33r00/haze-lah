@@ -30,23 +30,27 @@ export function fieldCorners({ lats, lons }: Grid): [[number, number], [number, 
   return [[w, n], [e, n], [e, s], [w, s]];
 }
 
-/** RGBA pixels of one time step of the grid, rows in Web Mercator as the map places them: smooth, transparent where the air is clean. */
-export function fieldPixels(grid: Grid, data: number[], pollutant: PollutantId) {
+/**
+ * RGBA pixels of one time step of the grid: smooth, transparent where the air is clean. By default the rows are in Web Mercator as
+ * the map places them and the field fades out at the grid's edge. With `flat` (pixels per degree) it is a plain latitude and longitude
+ * picture that runs to the edge, for an image of the grid's own box.
+ */
+export function fieldPixels(grid: Grid, data: number[], pollutant: PollutantId, flat?: number) {
   const p = POLLUTANTS.find((q) => q.id === pollutant)!;
   const { lats, lons } = grid;
   const [s, n, w, e] = [lats[0], lats[lats.length - 1], lons[0], lons[lons.length - 1]];
-  const width = Math.round((e - w) * PX_PER_DEG);
+  const width = Math.round((e - w) * (flat ?? PX_PER_DEG));
   const yN = mercY(n);
   const yS = mercY(s);
-  const height = Math.round((width * (yS - yN)) / ((e - w) / 360));
+  const height = flat ? Math.round((n - s) * flat) : Math.round((width * (yS - yN)) / ((e - w) / 360));
   const pixels = new Uint8ClampedArray(width * height * 4);
   for (let py = 0; py < height; py++) {
     const m = yN + ((py + 0.5) / height) * (yS - yN); // Web Mercator y, 0..1
-    const lat = (Math.atan(Math.sinh((0.5 - m) * 2 * Math.PI)) * 180) / Math.PI;
+    const lat = flat ? n - ((py + 0.5) / height) * (n - s) : (Math.atan(Math.sinh((0.5 - m) * 2 * Math.PI)) * 180) / Math.PI;
     for (let px = 0; px < width; px++) {
       const lon = w + ((px + 0.5) / width) * (e - w);
       const edge = Math.min(lat - s, n - lat, lon - w, e - lon);
-      const fade = smoother(Math.min(1, Math.max(0, edge / FEATHER)));
+      const fade = flat ? 1 : smoother(Math.min(1, Math.max(0, edge / FEATHER)));
       const [r, g, b, a] = colorOf(p, sampleGrid(grid, data, lat, lon));
       pixels.set([r, g, b, a * fade * 255], (py * width + px) * 4);
     }
@@ -54,9 +58,9 @@ export function fieldPixels(grid: Grid, data: number[], pollutant: PollutantId) 
   return { width, height, pixels };
 }
 
-/** Draws one time step of the grid on `canvas` (made if none is given), sized to fit: for a MapLibre canvas source placed at `fieldCorners`. */
-export function drawField(grid: Grid, data: number[], pollutant: PollutantId, canvas = document.createElement("canvas")): HTMLCanvasElement {
-  const { width, height, pixels } = fieldPixels(grid, data, pollutant);
+/** Draws one time step of the grid on `canvas` (made if none is given), sized to fit: for a MapLibre canvas source placed at `fieldCorners`, or with `flat` (see `fieldPixels`) for a plain picture of the grid's box. */
+export function drawField(grid: Grid, data: number[], pollutant: PollutantId, canvas = document.createElement("canvas"), flat?: number): HTMLCanvasElement {
+  const { width, height, pixels } = fieldPixels(grid, data, pollutant, flat);
   canvas.width = width;
   canvas.height = height;
   canvas.getContext("2d")!.putImageData(new ImageData(pixels, width, height), 0, 0);

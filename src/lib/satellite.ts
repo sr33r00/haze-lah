@@ -34,6 +34,9 @@ export const onImage = (lat: number, lon: number, box: Box = SAT_BOX) => ({
   y: ((box[2] - lat) / (box[2] - box[0])) * 100,
 });
 
+/** The point at `x` and `y` per cent from the left and top of an image of `box`: the inverse of `onImage`. */
+export const atImage = (x: number, y: number, box: Box = SAT_BOX): [lat: number, lon: number] => [box[2] - (y / 100) * (box[2] - box[0]), box[1] + (x / 100) * (box[3] - box[1])];
+
 /** Where Singapore sits on the images of `SAT_BOX`. */
 export const SG_ON_IMAGE = onImage(SG.lat, SG.lon);
 

@@ -45,6 +45,9 @@ export const POLLUTANTS: Pollutant[] = [
   { id: "dust", label: "Dust", unit: "µg/m³", camsVar: "dust", bands: null, source: "No health limits; plain low to high scale, 0 to 500 µg/m³ (Open-Meteo CAMS dust)" },
 ];
 
+/** PM2.5, the pollutant the Now page's smoke map shows. */
+export const PM25 = POLLUTANTS[0];
+
 /** Top of the dust ramp, µg/m³. */
 const DUST_TOP = 500;
 

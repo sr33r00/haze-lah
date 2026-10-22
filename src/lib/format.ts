@@ -25,6 +25,10 @@ export const fmtDayHour = (t: string | number) => `${fmtWeekday(sgDate(0, new Da
 export const fmtDate = (date: string) =>
   new Intl.DateTimeFormat("en-SG", { timeZone: TZ, weekday: "short", day: "numeric", month: "short" }).format(new Date(`${date}T12:00:00+08:00`));
 
+/** "Saturday 17 October, 2pm" for a moment in time, in Singapore: the full wording for a screen reader. */
+export const fmtLongWhen = (t: string | number) =>
+  `${new Intl.DateTimeFormat("en-SG", { timeZone: TZ, weekday: "long", day: "numeric", month: "long" }).format(new Date(t))}, ${fmtHour(t)}`;
+
 /** "17 Oct 2026" for an SGT date (YYYY-MM-DD). */
 export const fmtFullDate = (date: string) =>
   new Intl.DateTimeFormat("en-SG", { timeZone: TZ, day: "numeric", month: "short", year: "numeric" }).format(new Date(`${date}T12:00:00+08:00`));
