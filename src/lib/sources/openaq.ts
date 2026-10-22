@@ -1,10 +1,9 @@
 import type { Sensor } from "../types";
-import { getJson, num } from "../util";
+import { MAX_SENSOR_AGE_MS, getJson, num } from "../util";
 
 // OpenAQ v3 (https://explore.openaq.org/register). Singapore bounding box: lon/lat min, lon/lat max.
 const API = "https://api.openaq.org/v3";
 const BBOX = "103.6,1.15,104.1,1.48";
-const MAX_AGE_MS = 3 * 3600_000;
 
 type Loc = {
   id?: number;
@@ -29,7 +28,7 @@ export function pickLocations(json: { results?: Loc[] }, now = Date.now()): Loca
     const lon = num(l.coordinates?.longitude);
     const t = Date.parse(l.datetimeLast?.utc ?? "");
     if (l.id == null || !name || sensorId == null || lat == null || lon == null) continue;
-    if (l.isMobile || l.isMonitor || /NASA|Calib/i.test(name) || !(now - t <= MAX_AGE_MS)) continue;
+    if (l.isMobile || l.isMonitor || /NASA|Calib/i.test(name) || !(now - t <= MAX_SENSOR_AGE_MS)) continue;
     out.push({ id: l.id, name, lat, lon, sensorId });
   }
   return out;
