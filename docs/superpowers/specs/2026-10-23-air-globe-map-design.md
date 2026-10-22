@@ -88,7 +88,12 @@ What we already fetch (see `src/lib/sources/`):
 
 ## What happens to today's /map
 
-The current `/map` sections (Leaflet smoke map, hotspot chart, "From space" card, Neighbours list) are replaced by the globe: the timeline bars replace the hotspot chart, the measured dots replace the Neighbours list, and the globe replaces both maps. **My call, to confirm with the owner.** Links into `/map` from other pages (for example "See it on the map" on Now) must land on the globe at the same subject.
+The globe replaces `/map` outright (**owner confirmed**). The owner also asked that the smoke map and other relevant things go to the map on Now:
+
+- **Now's "Where today's air came from" map becomes the one smoke map on Now** (proposed, to confirm): it keeps its NASA satellite base, purple path, fires, wind, day marks and new zones, and gains the Smoke map's PM2.5 veil (the globe's NEA-band smoke palette), its time slider (past 5 days to next 3) and tap-to-read. One map, not two.
+- **Neighbours** (Malaysian readings near Singapore) moves to Now under that map.
+- **The hotspot chart** is not kept separately: the globe's timeline bars carry it.
+- The Leaflet Smoke map component and the "From space" card are then removed; nothing else uses them (the builder checks with grep). Links into `/map` from other pages (for example "See it on the map" on Now) must land on the globe at the same subject.
 
 ## Already built (context, not part of this work)
 
