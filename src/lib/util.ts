@@ -27,16 +27,16 @@ export function hourKey(t: string | number | Date) {
 
 /** `revalidate`: seconds to keep the answer in the data cache. Default 0 (not kept): fast sources are read only when the
  * 30-minute page data is rebuilt, so keeping them too would only add cache writes. */
-type FetchInit = RequestInit & { revalidate?: number };
+type FetchInit = RequestInit & { revalidate?: number; /** ms before giving up on one try; default 15000 */ timeout?: number };
 
 async function getRes(url: string, init: FetchInit): Promise<Response> {
-  const { revalidate = 0, ...rest } = init;
+  const { revalidate = 0, timeout = 15_000, ...rest } = init;
   const get = () =>
     fetch(url, {
       ...rest,
       headers: { "User-Agent": "haze-lah (open-source haze tracker)", ...(rest.headers || {}) },
       next: { revalidate },
-      signal: AbortSignal.timeout(15_000),
+      signal: AbortSignal.timeout(timeout),
     });
   // One retry when the connection itself fails (a timeout or reset); HTTP errors are handled below.
   let res = await get().catch(async () => {

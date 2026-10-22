@@ -197,11 +197,20 @@ export function journeyText(d: ReplayDay) {
   };
 }
 
+/** The frame nearest `t`. */
+export const nearestFrame = (frames: WindFrame[], t: number) => frames.reduce((a, b) => (Math.abs(b.t - t) < Math.abs(a.t - t) ? b : a));
+
 /** Wind of the frame nearest `t`, rounded for the page. */
-function windNear(frames: WindFrame[], t: number) {
-  const f = frames.reduce((a, b) => (Math.abs(b.t - t) < Math.abs(a.t - t) ? b : a));
+export function windNear(frames: WindFrame[], t: number) {
+  const f = nearestFrame(frames, t);
   const r = (xs: number[]) => xs.map((x) => Math.round(x * 10) / 10);
   return { u: r(f.u.data), v: r(f.v.data) };
+}
+
+/** The air that reached Singapore at ARRIVAL_SGT on SGT `date` (not after `latest`, ms): when, and its WINDOW_H-hour back-trail. */
+export function dayTrail(frames: WindFrame[], date: string, latest = Infinity) {
+  const arrival = Math.min(Date.parse(`${date}T${String(ARRIVAL_SGT).padStart(2, "0")}:00:00+08:00`), latest);
+  return { arrival, trail: backTrail(frames, SG.lat, SG.lon, arrival, WINDOW_H) };
 }
 
 /** The past few days: each day's fires and where the air reaching Singapore came from. */
@@ -210,8 +219,7 @@ export function buildReplay(frames: WindFrame[], fires: (Fire & { where: string 
   const days: ReplayDay[] = [];
   for (let k = DAYS - 1; k >= 0; k--) {
     const date = sgDate(-k, new Date(now));
-    const arrival = Math.min(Date.parse(`${date}T${String(ARRIVAL_SGT).padStart(2, "0")}:00:00+08:00`), latest);
-    const trail = backTrail(frames, SG.lat, SG.lon, arrival, WINDOW_H);
+    const { arrival, trail } = dayTrail(frames, date, latest);
     const from = fromDirection(trail);
     const today = fires.filter((f) => sgDate(0, new Date(f.time)) === date);
     days.push({

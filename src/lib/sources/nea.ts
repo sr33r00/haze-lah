@@ -78,6 +78,17 @@ export async function fetchNeaPm25History(): Promise<NeaPm25History> {
   return { regions, island };
 }
 
+/** The highest 24-hr PSI of any region in a day's items, or null without readings. */
+function psiPeak(items: Item[], date: string): DayPsi | null {
+  let best: DayPsi | null = null;
+  for (const it of items)
+    for (const r of REGIONS) {
+      const v = num(it.readings.psi_twenty_four_hourly?.[r]);
+      if (v != null && (!best || v > best.max)) best = { date, max: v, region: r };
+    }
+  return best;
+}
+
 /**
  * Highest 24-hr PSI of each of the last `days` SGT days. Fetched one at a time: data.gov.sg allows
  * 6 anonymous calls per 10 s. Past days never change, so they are cached for a day.
@@ -88,12 +99,7 @@ export async function fetchPsiDaily(days = 7): Promise<DayPsi[]> {
     const date = sgDate(k);
     try {
       const j = await getJson<Resp>(`${BASE}/psi?date=${date}`, { headers: headers(), revalidate: k < 0 ? 86400 : 0 });
-      let best: DayPsi | null = null;
-      for (const it of j.data.items)
-        for (const r of REGIONS) {
-          const v = num(it.readings.psi_twenty_four_hourly?.[r]);
-          if (v != null && (!best || v > best.max)) best = { date, max: v, region: r };
-        }
+      const best = psiPeak(j.data.items, date);
       if (best) out.push(best);
     } catch (e) {
       console.error(`[haze] PSI ${date}:`, e);
@@ -101,4 +107,17 @@ export async function fetchPsiDaily(days = 7): Promise<DayPsi[]> {
   }
   if (!out.length) throw new Error("NEA PSI history: no days");
   return out;
+}
+
+/**
+ * Singapore's highest 24-hr PSI and highest 1-hour PM2.5 (any region) on an SGT day, from the dated feeds; null for a figure
+ * the feed has no readings for. Two requests, one after the other (data.gov.sg allows 6 anonymous calls per 10 s). Throws when
+ * a request fails, so a day is never saved with figures that were only missing from a failed call.
+ */
+export async function fetchNeaDay(date: string): Promise<{ psiMax: number | null; pm25Max: number | null }> {
+  const psi = await getJson<Resp>(`${BASE}/psi?date=${date}`, { headers: headers(), revalidate: 86400 });
+  const pm25 = await getJson<Resp>(`${BASE}/pm25?date=${date}`, { headers: headers(), revalidate: 86400 });
+  const hourly = pm25.data.items.flatMap((it) => REGIONS.map((r) => num(it.readings.pm25_one_hourly?.[r])));
+  const readings = hourly.filter((v): v is number => v != null);
+  return { psiMax: psiPeak(psi.data.items, date)?.max ?? null, pm25Max: readings.length ? Math.max(...readings) : null };
 }

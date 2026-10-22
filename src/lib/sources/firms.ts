@@ -1,56 +1,28 @@
 import { unstable_cache } from "next/cache";
 import type { Fire, FireSummary } from "../types";
+import { parseFirmsCsv, rowToFire, type Area, type Row } from "./firmsCsv";
 
 // NASA FIRMS VIIRS active fires. Needs a free MAP_KEY: https://firms.modaps.eosdis.nasa.gov/api/map_key/
 const BBOX = "95,-6.5,120,7.5"; // west,south,east,north: Sumatra, Peninsula, Borneo
 
-type Area = "sumatra" | "borneo" | "peninsula";
-
-export function classify(lat: number, lon: number): Area | null {
-  if (lon >= 108.5 && lon <= 119.5 && lat >= -4.5 && lat <= 7.5) return "borneo";
-  const peninsula = lon > 99.6 && lon < 105 && lat < 7 && lat > 4.5 - 0.854 * (lon - 99.5);
-  if (peninsula) return "peninsula";
-  if (lon >= 95 && lon <= 106.5 && lat >= -6.2 && lat <= 6) return "sumatra";
-  return null;
-}
-
 const SPAN = 5; // days requested (the area API allows 1 to 5); the map and counts use the last `days`
-const AREAS: Area[] = ["sumatra", "borneo", "peninsula"];
-/** Compact fire: lat, lon, frp, epoch ms, index in AREAS, confidence. */
-type Row = [number, number, number, number, number, string];
+/** The area-API address for `days` UTC days (1 to 5): the latest ones, or those from `from` (YYYY-MM-DD) on. */
+const firmsUrl = (key: string, source: string, days: number, from?: string) =>
+  `https://firms.modaps.eosdis.nasa.gov/api/area/csv/${key}/${source}/${BBOX}/${days}${from ? `/${from}` : ""}`;
+
+/** Fetches one area-API table (uncached) as compact rows. */
+async function fetchRows(url: string, timeoutMs = 20_000): Promise<Row[]> {
+  const res = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(timeoutMs) });
+  if (!res.ok) throw new Error(`FIRMS ${res.status}`);
+  return parseFirmsCsv(await res.text());
+}
 
 /**
  * The 5-day CSV is over 2 MB, above Next's fetch cache limit, so it is fetched uncached and only the parsed rows,
  * a fraction of the size, are cached.
  */
 const cachedRows = unstable_cache(
-  async (key: string, source: string): Promise<Row[]> => {
-    const url = `https://firms.modaps.eosdis.nasa.gov/api/area/csv/${key}/${source}/${BBOX}/${SPAN}`;
-    const res = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(20_000) });
-    if (!res.ok) throw new Error(`FIRMS ${res.status}`);
-    const lines = (await res.text()).trim().split("\n");
-    const head = lines[0].split(",");
-    const iLat = head.indexOf("latitude");
-    const iLon = head.indexOf("longitude");
-    const iFrp = head.indexOf("frp");
-    const iConf = head.indexOf("confidence");
-    const iDate = head.indexOf("acq_date");
-    const iTime = head.indexOf("acq_time");
-    if (iLat < 0 || iLon < 0) throw new Error(`FIRMS: unexpected response`);
-    const rows: Row[] = [];
-    for (const line of lines.slice(1)) {
-      const c = line.split(",");
-      const conf = c[iConf] ?? "";
-      if (conf === "l" || conf === "low") continue;
-      const lat = parseFloat(c[iLat]);
-      const lon = parseFloat(c[iLon]);
-      const where = classify(lat, lon);
-      if (!where) continue;
-      const t = (c[iTime] ?? "0000").padStart(4, "0");
-      rows.push([lat, lon, parseFloat(c[iFrp]) || 0, Date.parse(`${c[iDate]}T${t.slice(0, 2)}:${t.slice(2)}:00Z`), AREAS.indexOf(where), conf]);
-    }
-    return rows;
-  },
+  (key: string, source: string): Promise<Row[]> => fetchRows(firmsUrl(key, source, SPAN)),
   ["firms-rows"],
   { revalidate: 1800 },
 );
@@ -60,7 +32,29 @@ export async function fetchFirePoints(): Promise<(Fire & { where: Area })[] | nu
   const key = process.env.FIRMS_MAP_KEY;
   if (!key) return null;
   const rows = await cachedRows(key, process.env.FIRMS_SOURCE || "VIIRS_SNPP_NRT");
-  return rows.map(([lat, lon, frp, t, a, confidence]) => ({ lat, lon, frp, confidence, where: AREAS[a], time: new Date(t).toISOString().slice(0, 19) + "Z" }));
+  return rows.map(rowToFire);
+}
+
+/**
+ * Fires of the UTC days `from` to `to` (YYYY-MM-DD, inclusive) for the history backfill, 5 days per request, not cached.
+ * The product is the live one (`FIRMS_SOURCE`, default VIIRS_SNPP_NRT). NRT keeps only recent months: a request it answers
+ * with no fires (the region always has some) is asked again of the standard-processing product, `_SP`, and `log` says so.
+ */
+export async function fetchFiresRange(key: string, from: string, to: string, log: (m: string) => void = console.log): Promise<(Fire & { where: Area })[]> {
+  const nrt = process.env.FIRMS_SOURCE || "VIIRS_SNPP_NRT";
+  const sp = nrt.replace(/_NRT$/, "_SP");
+  const out: Row[] = [];
+  for (let day = Date.parse(from); day <= Date.parse(to); day += SPAN * 86400_000) {
+    const start = new Date(day).toISOString().slice(0, 10);
+    const days = Math.min(SPAN, Math.round((Date.parse(to) - day) / 86400_000) + 1);
+    let rows = await fetchRows(firmsUrl(key, nrt, days, start), 60_000).catch(() => [] as Row[]);
+    if (!rows.length && sp !== nrt) {
+      rows = await fetchRows(firmsUrl(key, sp, days, start), 60_000);
+      log(`FIRMS: ${nrt} had no fires for ${start} (${days} days); used ${sp}${rows.length ? "" : ", which has none either"}`);
+    }
+    out.push(...rows);
+  }
+  return out.map(rowToFire);
 }
 
 export async function fetchFires(days = 2): Promise<FireSummary> {
