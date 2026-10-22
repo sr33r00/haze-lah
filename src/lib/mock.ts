@@ -174,5 +174,8 @@ export function mockGrid(): SmokeGrid {
   );
   // A steady south-westerly (towards the north-east) with a gentle swirl, in m/s.
   const wind = (f: (la: number, lo: number) => number) => times.map(() => lats.flatMap((la) => lons.map((lo) => Math.round(f(la, lo) * 10) / 10)));
-  return { lats, lons, times, values, wind: { u: wind((la) => 4 + 2 * Math.sin(la / 3)), v: wind((la, lo) => 3 + 2 * Math.cos(lo / 4)) } };
+  // Gases follow the PM2.5 plume at plausible strengths (µg/m³): the sums are small next to each limit in POLLUTANTS.
+  const scaled = (k: number, base: number) => values.map((f) => f.map((v) => Math.round(v * k + base)));
+  const gases = { pm10: scaled(1.3, 12), co: scaled(9, 120), no2: scaled(0.1, 6), so2: scaled(0.15, 3), o3: scaled(0.2, 45), dust: scaled(0.1, 4) };
+  return { lats, lons, times, values, gases, wind: { u: wind((la) => 4 + 2 * Math.sin(la / 3)), v: wind((la, lo) => 3 + 2 * Math.cos(lo / 4)) } };
 }

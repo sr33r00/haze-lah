@@ -1,10 +1,13 @@
 import type { HourPoint, SmokeGrid, Station, WeatherHour } from "../types";
 import { SG, getJson, haversineKm } from "../util";
 import type { WindFrame } from "../wind";
+import { POLLUTANTS } from "../pollutants";
 
 // Open-Meteo: ECMWF weather and Copernicus CAMS air-quality forecasts (CC BY 4.0).
 
 type AQ = { hourly: { time: string[]; pm2_5: (number | null)[] } };
+/** One grid point of a multi-variable CAMS answer: `time` plus one array per requested variable (absent when the model lacks it). */
+type AQPoint = { hourly: { time: string[] } & { [camsVar: string]: (number | null)[] | string[] | undefined } };
 type GridWind = { hourly: { time: string[]; wind_speed_850hPa: (number | null)[]; wind_direction_850hPa: (number | null)[] } };
 type WX = {
   hourly: {
@@ -124,12 +127,33 @@ export async function fetchWindFrames(): Promise<WindFrame[]> {
   });
 }
 
-/** Regional CAMS PM2.5 forecast on a 1° grid, sampled every 3 h for the next 72 h. */
+/**
+ * One variable on the grid at the hourly indexes `idx`: [frame][lat*lons+lon], rounded to integers. A missing cell is 0, the same
+ * as in the PM2.5 `values`, so the grid never holds null or NaN. Null when the variable is null (or absent) everywhere.
+ */
+export function gridFrames(aq: AQPoint[], idx: number[], v: string): number[][] | null {
+  const col = aq.map((loc) => loc.hourly[v] as (number | null)[] | undefined);
+  if (!idx.some((i) => col.some((c) => c?.[i] != null))) return null;
+  return idx.map((i) => col.map((c) => Math.round(c?.[i] ?? 0)));
+}
+
+/** Every CAMS gas (not PM2.5) that has data, keyed by pollutant id. */
+export function gasFrames(aq: AQPoint[], idx: number[]): SmokeGrid["gases"] {
+  const gases: SmokeGrid["gases"] = {};
+  for (const p of POLLUTANTS) {
+    if (p.id === "pm25") continue;
+    const f = gridFrames(aq, idx, p.camsVar);
+    if (f) gases[p.id] = f;
+  }
+  return gases;
+}
+
+/** Regional CAMS forecast (PM2.5 and the gases) on a 1° grid, sampled every 3 h for the next 72 h. */
 export async function fetchSmokeGrid(): Promise<SmokeGrid> {
   const { lats, lons, where } = gridQuery();
   // The air-quality API has no wind, so the same points are asked of the weather API (same level as the wind dial).
   const [j, w] = await Promise.all([
-    getJson<AQ[]>(`https://air-quality-api.open-meteo.com/v1/air-quality?${where}&hourly=pm2_5&domains=cams_global&timezone=GMT&forecast_days=4`, {
+    getJson<AQPoint[]>(`https://air-quality-api.open-meteo.com/v1/air-quality?${where}&hourly=${POLLUTANTS.map((p) => p.camsVar).join(",")}&domains=cams_global&timezone=GMT&forecast_days=4`, {
       revalidate: 10800,
     }),
     fetchGridWind(where).catch(() => null), // smoke is still useful without wind
@@ -155,7 +179,8 @@ export async function fetchSmokeGrid(): Promise<SmokeGrid> {
     lats,
     lons,
     times: idx.map(({ t }) => new Date(t).toISOString()),
-    values: idx.map(({ i }) => j.map((loc) => Math.round(loc.hourly.pm2_5[i] ?? 0))),
+    values: gridFrames(j, idx.map(({ i }) => i), "pm2_5") ?? idx.map(() => j.map(() => 0)),
+    gases: gasFrames(j, idx.map(({ i }) => i)),
     // No wind rather than zero wind, so a failed request never looks like calm air.
     wind: w
       ? { u: idx.map(({ t }) => comp(t, 0)), v: idx.map(({ t }) => comp(t, 1)) }

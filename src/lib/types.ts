@@ -1,4 +1,5 @@
 import type { Region } from "./bands";
+import type { PollutantId } from "./pollutants";
 
 export type RegionValues = Record<Region, number>;
 
@@ -96,12 +97,15 @@ export type DayOutlook = {
 /**
  * CAMS PM2.5 on a 1° grid over the region, every 3 hours, with the 850 hPa wind on the same grid.
  * Index is [time][lat*lons+lon]; wind is in m/s, u towards the east and v towards the north.
+ * `values` is PM2.5; `gases` holds the other CAMS pollutants in the same shape, all µg/m³ and whole numbers. A cell the model
+ * did not give is 0 (as in `values`), never null or NaN, and a gas with no data anywhere has no key.
  */
 export type SmokeGrid = {
   lats: number[];
   lons: number[];
   times: string[];
   values: number[][];
+  gases: Partial<Record<Exclude<PollutantId, "pm25">, number[][]>>;
   wind: { u: number[][]; v: number[][] } | null; // null when the wind request failed
 };
 
