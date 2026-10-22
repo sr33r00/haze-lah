@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight, MapPin, Webcam } from "lucide-react";
 import { cap, fmtTime } from "@/lib/format";
 import { nearestRegion } from "@/lib/bands";
 import { OPEN_DATA_LICENCE, mapLink } from "@/lib/links";
+import { useCameras } from "./useCameras";
 import type { Camera, Webcam as WindyCam } from "@/lib/types";
 
 /** One photo in the viewer, from either source. `width` caps the display size (Windy's images must not be stretched). */
@@ -29,7 +30,9 @@ const THUMB = "block aspect-video w-full rounded-lg ring-2 ring-offset-2 ring-of
 const ARROW = "absolute top-1/2 flex size-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm";
 
 /** LTA road cameras and Windy webcams in one viewer: a large photo and a strip to pick from. `?cam=<id>` opens one. */
-export default function GroundViews({ cameras }: { cameras: Camera[] }) {
+export default function GroundViews() {
+  const loaded = useCameras();
+  const cameras = loaded ?? [];
   const [webcams, setWebcams] = useState<WindyCam[]>([]);
   const [i, setI] = useState(0);
   const views = [...cameras.map(fromCamera), ...webcams.map(fromWebcam)];
@@ -39,11 +42,15 @@ export default function GroundViews({ cameras }: { cameras: Camera[] }) {
       .then((r) => (r.ok ? r.json() : []))
       .then(setWebcams)
       .catch(() => {});
-    const id = new URLSearchParams(location.search).get("cam");
-    const at = cameras.findIndex((c) => c.id === id);
-    if (at >= 0) setI(at);
-  }, [cameras]);
+  }, []);
 
+  useEffect(() => {
+    const id = new URLSearchParams(location.search).get("cam");
+    const at = loaded?.findIndex((c) => c.id === id) ?? -1;
+    if (at >= 0) setI(at);
+  }, [loaded]);
+
+  if (!loaded) return <div className="mx-4 aspect-video animate-pulse rounded-2xl bg-line" />;
   if (!views.length) return <p className="px-4 text-[15px] text-muted">Camera photos are unavailable right now.</p>;
   const v = views[Math.min(i, views.length - 1)];
   const go = (d: number) => setI((n) => (n + d + views.length) % views.length);

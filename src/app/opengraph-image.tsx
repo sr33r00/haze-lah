@@ -4,7 +4,7 @@ import { LEVEL_COLOR, LEVEL_NAME } from "@/lib/bands";
 import { getHazeData } from "@/lib/data";
 import { islandSummary } from "@/lib/situation";
 
-export const revalidate = 300;
+export const revalidate = 1800;
 export const alt = "Haze Lah: live Singapore haze";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";

@@ -3,7 +3,7 @@ import { getHazeData } from "@/lib/data";
 import { SITE_URL } from "@/lib/links";
 import { islandSummary } from "@/lib/situation";
 
-export const revalidate = 300;
+export const revalidate = 1800;
 
 const fmt = (v: number | undefined) => (v == null || isNaN(v) ? "n/a" : String(Math.round(v)));
 

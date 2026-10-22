@@ -3,7 +3,7 @@ import GlanceView from "@/components/GlanceView";
 import { getHazeData } from "@/lib/data";
 
 export const metadata: Metadata = { title: "Glance", robots: { index: false, follow: true }, alternates: { canonical: "/" } };
-export const revalidate = 300;
+export const revalidate = 1800;
 
 export default async function Glance() {
   return <GlanceView data={await getHazeData()} />;

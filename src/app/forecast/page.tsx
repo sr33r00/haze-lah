@@ -9,7 +9,7 @@ export const metadata = pageMeta(
   "Hour-by-hour PM2.5 for the next 48 hours and a 5-day PSI outlook for Singapore, calibrated against live NEA readings, with measured accuracy.",
   "/forecast",
 );
-export const revalidate = 300;
+export const revalidate = 1800;
 
 export default async function Forecast() {
   const [data, accuracy] = await Promise.all([getHazeData(), fetchAccuracy()]);

@@ -2,7 +2,7 @@ name: Telegram alerts
 
 on:
   schedule:
-    # Hourly at :10: NEA publishes the last hour's reading at about :30 to :45 and the site picks it up within about 20 minutes.
+    # Hourly at :10: NEA publishes the last hour's reading at about :30 to :45 and the site picks it up within about 35 minutes (it rebuilds its data every 30 minutes).
     - cron: "10 * * * *"
   workflow_dispatch:
     inputs:

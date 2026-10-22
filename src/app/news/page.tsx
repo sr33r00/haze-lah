@@ -9,7 +9,7 @@ export const metadata = pageMeta(
   "Latest NEA haze advisories and news, plus a timeline of changes in Singapore PM2.5 levels and regional fire hotspots.",
   "/news",
 );
-export const revalidate = 300;
+export const revalidate = 1800;
 
 export default async function News() {
   const data = await getHazeData();

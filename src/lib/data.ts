@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import { FORECAST_METHOD, buildForecast, dailyOutlook } from "./forecast";
 import { mockInputs } from "./mock";
 import { fetchApims } from "./sources/apims";
@@ -6,8 +7,7 @@ import { fetchNews } from "./sources/news";
 import { fetchNeaNow, fetchNeaPm25History, fetchPsiDaily } from "./sources/nea";
 import { fetchCamsSingapore, fetchUpwindModel, fetchWeather } from "./sources/openmeteo";
 import { fetchCommunitySensors } from "./sources/openaq";
-import { fetchCameras } from "./sources/traffic";
-import type { Camera, DayPsi, FireSummary, HazeData, HourPoint, NeaNow, NewsItem, NeaPm25History, Sensor, Station, WeatherHour } from "./types";
+import type { DayPsi, FireSummary, HazeData, HourPoint, NeaNow, NewsItem, NeaPm25History, Sensor, Station, WeatherHour } from "./types";
 
 /** Raw inputs from every source; any of them may be missing. */
 export type Inputs = {
@@ -17,7 +17,6 @@ export type Inputs = {
   weather: WeatherHour[];
   stations: Station[];
   sensors: Sensor[];
-  cameras: Camera[];
   fires: FireSummary;
   news: NewsItem[];
   psiDaily: DayPsi[];
@@ -36,7 +35,7 @@ function settled<T>(r: PromiseSettledResult<T>, label: string, errors: string[])
 
 async function fetchInputs(): Promise<Inputs> {
   const errors: string[] = [];
-  const [now, hist, apims, upwind, fires, cams, weather, news, psiDaily, sensors, cameras] = await Promise.allSettled([
+  const [now, hist, apims, upwind, fires, cams, weather, news, psiDaily, sensors] = await Promise.allSettled([
     fetchNeaNow(),
     fetchNeaPm25History(),
     fetchApims(),
@@ -47,7 +46,6 @@ async function fetchInputs(): Promise<Inputs> {
     fetchNews(),
     fetchPsiDaily(),
     fetchCommunitySensors(),
-    fetchCameras(),
   ]);
   return {
     nea: settled(now, "NEA PSI", errors),
@@ -56,7 +54,6 @@ async function fetchInputs(): Promise<Inputs> {
     weather: settled(weather, "Weather", errors) ?? [],
     stations: [...(settled(apims, "Malaysia APIMS", errors) ?? []), ...(settled(upwind, "Upwind model", errors) ?? [])],
     sensors: settled(sensors, "Community sensors", errors) ?? [],
-    cameras: settled(cameras, "Traffic cameras", errors) ?? [],
     fires: settled(fires, "NASA FIRMS", errors) ?? NO_FIRES,
     news: settled(news, "News", errors) ?? [],
     psiDaily: settled(psiDaily, "NEA PSI history", errors) ?? [],
@@ -64,8 +61,7 @@ async function fetchInputs(): Promise<Inputs> {
   };
 }
 
-export async function getHazeData(): Promise<HazeData> {
-  const mock = process.env.HAZE_MOCK === "1";
+async function buildHazeData(mock: boolean): Promise<HazeData> {
   const { cams, ...inp } = mock ? mockInputs() : await fetchInputs();
   const fc = inp.history ? buildForecast(inp.history.island, cams) : null;
   if (!fc && inp.history) inp.errors.push("Forecast");
@@ -81,4 +77,23 @@ export async function getHazeData(): Promise<HazeData> {
       days: fc && inp.history ? dailyOutlook(inp.history.island, fc.points, inp.weather) : [],
     },
   };
+}
+
+/** Pages and the API share one build, kept for 30 minutes so a page render costs no source calls or forecast work. */
+const cachedHazeData = unstable_cache(
+  async () => {
+    const data = await buildHazeData(false);
+    // Without NEA there is nothing worth keeping for 30 minutes: throwing stops the cache storing it.
+    if (!data.nea || !data.history) throw new Error("NEA data missing");
+    return data;
+  },
+  ["haze-data"],
+  { revalidate: 1800 },
+);
+
+/** All the data behind the pages; `generatedAt` is when it was built. Mock mode (HAZE_MOCK=1) is never cached. */
+export async function getHazeData(): Promise<HazeData> {
+  if (process.env.HAZE_MOCK === "1") return buildHazeData(true);
+  // When NEA is down, serve the partial build now and try the cache again on the next request.
+  return cachedHazeData().catch(() => buildHazeData(false));
 }

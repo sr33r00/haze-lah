@@ -147,7 +147,6 @@ export type HazeData = {
   history: NeaPm25History | null;
   stations: Station[];
   sensors: Sensor[];
-  cameras: Camera[];
   fires: FireSummary;
   news: NewsItem[];
   psiDaily: DayPsi[];

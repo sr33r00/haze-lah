@@ -10,7 +10,7 @@ export const metadata = pageMeta(
   "Short answers to common Singapore haze questions on N95 masks, exercise, air purifiers, schools, work and health, each with official NEA, MOH, MOE and MOM sources.",
   "/guide",
 );
-export const revalidate = 300;
+export const revalidate = 1800;
 
 export default async function Guide() {
   const data = await getHazeData();

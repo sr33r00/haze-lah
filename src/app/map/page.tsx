@@ -11,7 +11,7 @@ export const metadata = pageMeta(
   "Map of the smoke forecast, satellite-detected fires in Sumatra and Borneo, a zoomable map of NASA satellite data on smoke and carbon monoxide, air-quality stations and wind direction around Singapore.",
   "/map",
 );
-export const revalidate = 300;
+export const revalidate = 1800;
 
 export default async function MapPage() {
   const data = await getHazeData();

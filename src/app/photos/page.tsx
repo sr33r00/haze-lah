@@ -9,14 +9,14 @@ export const metadata = pageMeta(
   "See the haze on the ground: live LTA traffic camera photos and webcams around Singapore.",
   "/photos",
 );
-export const revalidate = 300;
+export const revalidate = 1800;
 
 export default async function Photos() {
   const data = await getHazeData();
   return (
     <AppShell data={data} title="Photos">
       <Section id="ground" title="On the ground">
-        <GroundViews cameras={data.cameras} />
+        <GroundViews />
       </Section>
     </AppShell>
   );
