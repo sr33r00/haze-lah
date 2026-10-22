@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState, type KeyboardEvent, type MouseEvent } from "react";
 import { fmtDateShort, fmtHour, fmtLongWhen, fmtWeekday } from "@/lib/format";
-import { latestFireDay } from "@/lib/history";
-import { originSteps } from "@/lib/originSteps";
+import type { HistoryDay } from "@/lib/history";
+import { loadDay } from "@/lib/historyClient";
+import { fireDayAt, frameAt, originSteps } from "@/lib/originSteps";
 import { PM25, bandNames, bandOf, rampCss } from "@/lib/pollutants";
 import { WIND_NOTE } from "@/lib/links";
 import { FIRE_COLOR, NEW_FIRE_COLOR, TRAIL_COLOR, fetchReplay, fetchSmoke, newFires, newZonesText, trailCaption, windAtSg, windText } from "@/lib/replay";
@@ -16,6 +17,7 @@ import { windOf, type WindView } from "@/lib/windParticles";
 import AirJourney from "./AirJourney";
 import { drawField } from "./globe/fieldImage";
 import InfoNote from "./InfoNote";
+import RampBar from "./RampBar";
 import SgPin from "./SgPin";
 import SmokeAhead from "./SmokeAhead";
 import { Section } from "./ui";
@@ -30,7 +32,7 @@ const at = ([lat, lon]: [number, number]) => {
 };
 
 const MARK_H = 24; // the trail is marked at every 24 h back
-const VEIL_PX = 24; // pixels per degree of the PM2.5 picture: 600 by 312 over SAT_BOX, which CSS stretches to the card
+const VEIL_PX = 20; // pixels per degree of the PM2.5 picture: 500 by 260 over SAT_BOX, which CSS stretches to the card
 const KEY_STEP = 0.5; // degrees an arrow key moves the reading spot
 
 /** The relief image as the wind animation sees it: a flat picture of `SAT_BOX` that never moves, so only a resize needs telling. */
@@ -71,6 +73,8 @@ export default function HazeOrigin({ className }: { className?: string }) {
   const [figure, setFigure] = useState<HTMLElement | null>(null);
   const [frame, setFrame] = useState<number | null>(null); // the slider's step; null is "now"
   const [spot, setSpot] = useState<[number, number] | null>(null); // where the map was tapped
+  const [focused, setFocused] = useState(false); // the map has the keyboard
+  const [history, setHistory] = useState<Record<string, HistoryDay | null>>({}); // the days the slider has been on: their file, or null where there is none
   const { reduced, motion, toggle } = useWindMotion();
 
   useEffect(() => {
@@ -102,7 +106,30 @@ export default function HazeOrigin({ className }: { className?: string }) {
   const step = steps[pos];
   const day = replay && step ? replay.days[step.day] : null;
   const future = step?.kind === "ahead";
-  const values = smoke && step?.frame != null ? smoke.values[step.frame] : null; // the PM2.5 of the step, null where the model has none
+  const date = step?.kind === "past" ? day?.date : undefined;
+
+  // A past day's PM2.5 is from its history file (CAMS at 3-hour steps, from jsDelivr).
+  useEffect(() => {
+    if (date && !(date in history)) loadDay(date).then((d) => setHistory((h) => ({ ...h, [date]: d })));
+  }, [date, history]);
+
+  // The PM2.5 of the step and the grid it is on; null where there is none (no file, or no frame near the day's air).
+  const model = useMemo(() => {
+    if (!step || !day) return null;
+    if (step.kind !== "past") return smoke && step.frame != null ? { grid: smoke, values: smoke.values[step.frame] } : null;
+    const h = history[day.date];
+    const f = h ? frameAt(h, day.arrival) : null;
+    const values = f != null ? h?.gases.pm25?.[f] : undefined;
+    return h && values ? { grid: h, values } : null;
+  }, [step, day, smoke, history]);
+  // The veil is placed by the grid's own corners, so any box lines up with the relief.
+  const box = useMemo(() => {
+    if (!model) return null;
+    const { lats, lons } = model.grid;
+    const nw = onImage(lats[lats.length - 1], lons[0]);
+    const se = onImage(lats[0], lons[lons.length - 1]);
+    return { left: `${nw.x}%`, top: `${nw.y}%`, width: `${se.x - nw.x}%`, height: `${se.y - nw.y}%` };
+  }, [model]);
 
   // The wind of the step: the replay day's, or on a forecast step the forecast's.
   const winds = useMemo(() => {
@@ -111,18 +138,25 @@ export default function HazeOrigin({ className }: { className?: string }) {
     return smoke?.wind && step.frame != null ? { lats: smoke.lats, lons: smoke.lons, u: smoke.wind.u[step.frame], v: smoke.wind.v[step.frame] } : null;
   }, [replay, smoke, day, step, future]);
 
-  // Today's fires for a forecast step, dimmed: the newest day with enough of them, as the globe does (the first hours of a day have few).
-  const fires = (future && replay ? (latestFireDay(replay.days) ?? day)?.fires : day?.fires) ?? [];
+  // The fires of the step: a past day's own; for now and the forecast the newest day with enough of them, as the globe does (the first
+  // hours of a day have few). The forecast draws them dimmed.
+  const fireAt = replay && step ? fireDayAt(replay.days, step.day, step.kind === "past") : 0;
+  const fireDay = replay?.days[fireAt];
+  const fires = fireDay?.fires ?? [];
 
   const view = useMemo(() => (layer ? imageView(layer) : undefined), [layer]);
   const wind = useMemo(() => (winds ? windOf(winds.lats, winds.lons, winds.u, winds.v) : undefined), [winds]);
   useWindParticles(view, wind, motion, "#fff");
 
+  // Drawn once per frame at most, so that dragging the slider stays smooth.
   useEffect(() => {
     if (!veil) return;
-    if (smoke && values) drawField(smoke, values, "pm25", veil, VEIL_PX);
-    else veil.getContext("2d")?.clearRect(0, 0, veil.width, veil.height);
-  }, [veil, smoke, values]);
+    const id = requestAnimationFrame(() => {
+      if (model) drawField(model.grid, model.values, "pm25", veil, VEIL_PX);
+      else veil.getContext("2d")?.clearRect(0, 0, veil.width, veil.height);
+    });
+    return () => cancelAnimationFrame(id);
+  }, [veil, model]);
 
   if (failed) return null;
 
@@ -137,15 +171,17 @@ export default function HazeOrigin({ className }: { className?: string }) {
     e.preventDefault();
     tap((spot?.[0] ?? SG.lat) + d[0] * KEY_STEP, (spot?.[1] ?? SG.lon) + d[1] * KEY_STEP);
   };
-  const here = smoke && values && spot ? sample({ lats: smoke.lats, lons: smoke.lons, data: values }, spot[0], spot[1]) : null;
+  const here = model && spot ? sample({ lats: model.grid.lats, lons: model.grid.lons, data: model.values }, spot[0], spot[1]) : null;
   const names = bandNames(PM25);
   const reading = here != null ? `${Math.round(here).toLocaleString("en-SG")} ${PM25.unit}, ${names[bandOf(PM25, here)]}` : null;
   const prompt = reading
     ? `PM2.5 at this spot: about ${reading}`
-    : step?.frame != null
-      ? "Tap the map to read the smoke level at a spot."
-      : step?.kind !== "now"
-        ? "No PM2.5 model for this day"
+    : model
+      ? `Tap the map to read the smoke level at a spot.${focused ? " Arrow keys move the spot." : ""}`
+      : step?.kind === "past"
+        ? date && date in history
+          ? "No PM2.5 model for this day"
+          : "Loading the PM2.5 for this day…"
         : smokeFailed
           ? "The PM2.5 model is unavailable right now."
           : "Loading the PM2.5 model…";
@@ -154,7 +190,8 @@ export default function HazeOrigin({ className }: { className?: string }) {
   const path = day?.trail.length && !future ? [...day.trail].reverse().map((p) => at(p).join(",")).join(" ") : "";
 
   const ahead = day?.ahead && day.ahead.path.length > 1 && step?.kind !== "past" ? day.ahead.path.map((p) => at(p).join(",")).join(" ") : "";
-  const fresh = replay && step && !future ? newFires(replay.days.slice(0, step.day + 1)) : [];
+  const fresh = replay && step && !future ? newFires(replay.days.slice(0, fireAt + 1)) : [];
+  const fireNote = fireDay && step && (future || fireAt !== step.day) ? fmtDateShort(fireDay.date) : null; // which day the fires are from, when it is not plain
   const sgWind = winds ? windAtSg(winds, winds) : null;
   // A dot and the weekday at every 24 h back along the trail.
   const marks = [];
@@ -170,6 +207,8 @@ export default function HazeOrigin({ className }: { className?: string }) {
         <div
           onClick={onTap}
           onKeyDown={onKey}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
           role="group"
           tabIndex={0}
           aria-label="Smoke map. Tap to read the smoke level at a spot, or use the arrow keys."
@@ -180,7 +219,7 @@ export default function HazeOrigin({ className }: { className?: string }) {
               {/* eslint-disable-next-line @next/next/no-img-element -- NASA serves a sized image; no optimisation needed */}
               <img src={RELIEF} alt="Relief map of Sumatra, Singapore and Borneo" width={W} height={H} className="absolute inset-0 h-full w-full" />
               {/* The PM2.5 veil: between the relief and the wind, so the wind, path and fires stay clear of it */}
-              <canvas ref={setVeil} aria-hidden className={`absolute inset-0 h-full w-full ${values ? "" : "invisible"}`} />
+              <canvas ref={setVeil} aria-hidden className={`absolute ${model ? "" : "invisible"}`} style={box ?? undefined} />
               <div ref={setLayer} aria-hidden className="absolute inset-0" />
               <svg viewBox={`0 0 ${W} ${H}`} className="absolute inset-0 h-full w-full" aria-hidden>
                 {fires.map((p, i) => {
@@ -241,58 +280,57 @@ export default function HazeOrigin({ className }: { className?: string }) {
           )}
         </div>
 
-        {day && step && (
-          <div className="mt-3">
-            <div className="flex items-baseline justify-between gap-3 text-[13px]">
-              <span className="tabular font-bold">
-                {fmtDateShort(sgDate(0, new Date(step.t)))}, {fmtHour(step.t)}
-              </span>
-              <span className="flex items-center gap-3 text-muted">
-                {when}
-                {pos !== nowAt && (
-                  <button onClick={() => setFrame(null)} className="-my-3 min-h-[44px] font-semibold text-accent">
-                    Back to now
-                  </button>
-                )}
-              </span>
-            </div>
-            <input
-              type="range"
-              className="slider block h-11 w-full"
-              min={0}
-              max={steps.length - 1}
-              value={pos}
-              onChange={(e) => setFrame(Number(e.target.value))}
-              aria-label="Time: earlier days, now and the forecast"
-              aria-valuetext={fmtLongWhen(step.t)}
-              disabled={steps.length < 2}
-            />
-            <p aria-live="polite" className="mt-1 text-[14px] font-semibold">
-              {prompt}
-              {reading && <span className="font-normal text-muted"> (model)</span>}
-            </p>
-            <div className="mt-2">
-              <div className="h-2.5 rounded-full border border-line bg-line" style={{ backgroundImage: rampCss(PM25) }} role="img" aria-label={`PM2.5 colour scale: ${names.join(", ")}`} />
-              <div aria-hidden className="mt-1 grid grid-cols-4 text-center text-[11px] font-semibold text-muted">
-                {names.map((n) => (
-                  <span key={n}>{n}</span>
-                ))}
+        <div className="mt-3 min-h-[8.5rem]">
+          {day && step && (
+            <>
+              <div className="flex items-baseline justify-between gap-3 text-[13px]">
+                <span className="tabular font-bold">
+                  {fmtDateShort(sgDate(0, new Date(step.t)))}, {fmtHour(step.t)}
+                </span>
+                <span className="flex items-center gap-3 text-muted">
+                  {when}
+                  {pos !== nowAt && (
+                    <button onClick={() => setFrame(null)} className="-my-3 min-h-[44px] font-semibold text-accent">
+                      Back to now
+                    </button>
+                  )}
+                </span>
               </div>
-            </div>
-          </div>
-        )}
+              <input
+                type="range"
+                className="slider block h-11 w-full"
+                min={0}
+                max={smoke ? steps.length - 1 : nowAt + 24}
+                value={pos}
+                onChange={(e) => setFrame(Math.min(Number(e.target.value), steps.length - 1))}
+                aria-label="Time: earlier days, now and the forecast"
+                aria-valuetext={fmtLongWhen(step.t)}
+                disabled={steps.length < 2}
+              />
+              <p aria-live="polite" className="mt-1 text-[14px] font-semibold">
+                {prompt}
+                {reading && <span className="font-normal text-muted"> (model)</span>}
+              </p>
+              <div className="mt-2">
+                <RampBar background={rampCss(PM25)} names={names} bar="border-line bg-line" text="text-muted" label={`PM2.5 colour scale: ${names.join(", ")}`} />
+              </div>
+            </>
+          )}
+        </div>
 
         <figcaption className="mt-3 min-h-[18rem] text-[13px] text-muted">
           {day && step && (
             <>
-              {(fresh.length > 0 || ahead) && (
+              {(fresh.length > 0 || ahead || fireNote) && (
                 <p className="mb-3 flex flex-wrap gap-x-4 gap-y-1 text-[12px]">
                   {fresh.length > 0 && (
                     <span className="flex items-center gap-1.5">
                       <span aria-hidden className="size-3 rounded-full border-[1.5px]" style={{ borderColor: NEW_FIRE_COLOR }} />
-                      {newZonesText(fresh.length)} {step.kind === "past" ? "that day" : "today"}
+                      {newZonesText(fresh.length)}
+                      {fireAt === step.day ? (step.kind === "past" ? " that day" : " today") : ""}
                     </span>
                   )}
+                  {fireNote && <span>Fires of {fireNote}</span>}
                   {ahead && (
                     <span className="flex items-center gap-1.5">
                       <span aria-hidden className="w-4 border-t-[3px] border-dashed" style={{ borderColor: FIRE_COLOR }} />
@@ -302,19 +340,24 @@ export default function HazeOrigin({ className }: { className?: string }) {
                 </p>
               )}
               {reduced && <WindMotionButton motion={motion} onToggle={toggle} className="mb-3" />}
-              {day.journey && step.kind !== "past" ? <AirJourney day={day} /> : <p className="text-[15px] font-bold text-fg">{trailCaption(day)}</p>}
+              {day.journey ? <AirJourney day={day} shareable={step.kind !== "past"} /> : <p className="text-[15px] font-bold text-fg">{trailCaption(day)}</p>}
               <p className="mt-3">Traced back 3 days along the wind about 1.5 km up. Fires near the path are a likely, not certain, source.</p>
               <Link href="/map?view=path" className="mt-1 inline-block py-1 text-[14px] font-semibold text-accent">
                 See it on the map
               </Link>
-              {day.ahead && step.kind !== "past" && <SmokeAhead ahead={day.ahead} />}
               <div className="mt-3">
                 <InfoNote>
                   <p>
-                    Shading is the Copernicus (CAMS) PM2.5 forecast, coloured by NEA&apos;s 1-hour bands. The model starts at the present, so earlier days have none. {WIND_NOTE}
+                    Shading is the Copernicus (CAMS) PM2.5 forecast, coloured by NEA&apos;s 1-hour bands. Earlier days are the same model&apos;s past values. {WIND_NOTE}
                   </p>
                 </InfoNote>
               </div>
+              {replay?.days.at(-1)?.ahead && (
+                // Today's smoke on the way: on a past day its space is kept, so the page below does not jump.
+                <div className={step.kind === "past" ? "invisible" : ""} aria-hidden={step.kind === "past"}>
+                  <SmokeAhead ahead={replay.days.at(-1)!.ahead!} />
+                </div>
+              )}
             </>
           )}
         </figcaption>

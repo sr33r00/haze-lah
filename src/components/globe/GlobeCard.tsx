@@ -7,6 +7,7 @@ import { OPEN_DATA_LICENCE, WIND_NOTE } from "@/lib/links";
 import { POLLUTANTS, bandNames, rampCss } from "@/lib/pollutants";
 import type { Dot } from "@/lib/readings";
 import type { GlobeDay, LayerChoice } from "./frame";
+import RampBar from "../RampBar";
 import { INK } from "./globeStyle";
 
 type Props = {
@@ -63,12 +64,7 @@ function Legend({ layer, expanded }: { layer: LayerChoice; expanded: boolean }) 
   return (
     <div className="mt-2">
       <p className={`text-[11px] leading-4 text-white/65 ${expanded ? "" : "hidden"} ${EXTRAS}`}>{title}</p>
-      <div className="mt-1 h-2.5 rounded-full border border-white/20 bg-black/50" style={{ backgroundImage: p ? rampCss(p) : satelliteRampCss(ramp) }} />
-      <div className={`mt-1 text-[11px] font-semibold leading-4 text-white/85 ${names.length === 4 ? "grid grid-cols-4 text-center" : "flex justify-between"}`}>
-        {names.map((n) => (
-          <span key={n}>{n}</span>
-        ))}
-      </div>
+      <RampBar background={p ? rampCss(p) : satelliteRampCss(ramp)} names={names} bar="border-white/20 bg-black/50" text="text-white/85" />
       {limits && (
         <div className={`relative h-4 text-[11px] leading-4 text-white/65 tabular ${expanded ? "block" : "hidden"} ${EXTRAS}`}>
           {limits.map((v, i) => (

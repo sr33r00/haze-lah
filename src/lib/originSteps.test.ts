@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { frameAt, originSteps } from "@/lib/originSteps";
+import { fireDayAt, frameAt, originSteps } from "@/lib/originSteps";
 import type { Replay, SmokeGrid } from "@/lib/types";
 
 const day = (arrival: string) => ({ arrival }) as Replay["days"][number];
@@ -21,9 +21,18 @@ test("the steps are the earlier replay days, then now and the grid's steps; the 
   assert.deepEqual(steps.map((s) => s.frame), [null, null, 0, 1, 2]);
 });
 
-test("a past day gets a frame when the grid has one", () => {
+test("a past step has no frame of the live grid, even where its times would match", () => {
   const old = { times: ["2026-10-21T05:00:00Z", "2026-10-21T08:00:00Z"] } as SmokeGrid;
-  assert.equal(originSteps(replay, old)[1].frame, 0);
+  assert.equal(originSteps(replay, old)[1].frame, null);
+});
+
+test("fireDayAt falls back to the newest day with 20 fires for now, never for a past step", () => {
+  const fires = (n: number) => ({ fires: Array.from({ length: n }) });
+  const days = [fires(400), fires(30), fires(0)]; // the newest day has had no fire pass yet
+  assert.equal(fireDayAt(days, 2, false), 1);
+  assert.equal(fireDayAt(days, 1, false), 1);
+  assert.equal(fireDayAt(days, 2, true), 2);
+  assert.equal(fireDayAt([fires(3)], 0, false), 0); // nothing better: its own
 });
 
 test("without the grid there is just now", () => {

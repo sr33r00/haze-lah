@@ -71,8 +71,8 @@ function ShareJourney({ text, onShared }: { text: string; onShared: () => void }
   );
 }
 
-/** The air's journey as a travel ticket: where it left, where it arrived and the fires it passed. Null on calm days, when the air stayed near Singapore. */
-export default function AirJourney({ day }: { day: ReplayDay }) {
+/** The air's journey as a travel ticket: where it left, where it arrived and the fires it passed. Null on calm days, when the air stayed near Singapore. Only today's can be shared as a picture (`shareable`). */
+export default function AirJourney({ day, shareable = true }: { day: ReplayDay; shareable?: boolean }) {
   const [shared, setShared] = useState(false);
   const t = journeyText(day);
   if (!t) return null;
@@ -93,12 +93,12 @@ export default function AirJourney({ day }: { day: ReplayDay }) {
         <span aria-hidden className="absolute -left-2 -top-2 size-4 rounded-full border border-line bg-bg" />
         <span aria-hidden className="absolute -right-2 -top-2 size-4 rounded-full border border-line bg-bg" />
       </div>
-      <div className="flex items-center justify-between gap-3 px-4 py-2">
+      <div className="flex min-h-[3.75rem] items-center justify-between gap-3 px-4 py-2">
         <p className="flex items-center gap-2 text-[15px] font-bold">
           {day.near > 0 && <span aria-hidden className="size-2.5 shrink-0 rounded-full" style={{ background: FIRE_COLOR }} />}
           {t.fires}
         </p>
-        <ShareJourney text={`Today's air travelled ${t.trip} to reach Singapore.`} onShared={() => setShared(true)} />
+        {shareable && <ShareJourney text={`Today's air travelled ${t.trip} to reach Singapore.`} onShared={() => setShared(true)} />}
       </div>
       <p aria-live="polite" className={`px-4 text-[13px] leading-snug text-muted ${shared ? "pb-3" : ""}`}>
         {shared && (
