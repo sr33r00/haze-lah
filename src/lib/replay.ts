@@ -5,7 +5,7 @@ import { SG, sgDate } from "./util";
 import { backTrail, forwardTrail, sample, type WindFrame } from "./wind";
 
 const DAYS = 5; // FIRMS keeps 5 days, so the replay goes back that far
-const ARRIVAL_SGT = 14; // trace the air that reached Singapore at 2pm each day
+export const ARRIVAL_SGT = 14; // trace the air that reached Singapore at 2pm each day
 const WINDOW_H = 72; // how far back the trail goes, and which fires count as "passed"
 const NEAR_KM = 50;
 const MAP_FIRES = 400;
