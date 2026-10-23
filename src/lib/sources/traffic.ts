@@ -3,11 +3,12 @@ import type { Camera } from "../types";
 import { getJson } from "../util";
 
 // LTA traffic camera photos (Singapore Open Data Licence). With LTA_DATAMALL_KEY set they come from DataMall (about
-// 90 cameras); otherwise from data.gov.sg's open feed (8 cameras). Either way the browser only ever sees our own
-// /api/camera/{id}: the key stays on the server, DataMall is never linked to directly, and its image links expire.
+// 90 cameras); otherwise from data.gov.sg's open feed (8 cameras). DataMall photos pass through our own /api/camera/{id}:
+// the key stays on the server, DataMall is never linked to directly, and its image links expire. data.gov.sg's links are
+// public and stay valid, so the browser loads those directly and no function carries the photo bytes.
 
-/** A camera as the upstream feed describes it, with the upstream image URL (server side only). */
-type Shot = { id: string; lat: number; lon: number; url: string; time: string };
+/** A camera as the upstream feed describes it, with the upstream image URL. `open` marks a public link that is safe to give to the browser. */
+type Shot = { id: string; lat: number; lon: number; url: string; time: string; open: boolean };
 
 type GovResp = { items: { timestamp: string; cameras: { camera_id: string; timestamp: string; image: string; location: { latitude: number; longitude: number } }[] }[] };
 type MallResp = { value: { CameraID: string; Latitude: number; Longitude: number; ImageLink: string }[] };
@@ -36,12 +37,12 @@ async function fromDataMall(key: string): Promise<Shot[]> {
     revalidate: 0,
   });
   const time = new Date().toISOString(); // DataMall gives no capture time; its photos are at most a few minutes old
-  return j.value.map((c) => ({ id: String(c.CameraID), lat: Number(c.Latitude), lon: Number(c.Longitude), url: c.ImageLink, time }));
+  return j.value.map((c) => ({ id: String(c.CameraID), lat: Number(c.Latitude), lon: Number(c.Longitude), url: c.ImageLink, time, open: false }));
 }
 
 async function fromDataGov(): Promise<Shot[]> {
   const j = await getJson<GovResp>("https://api.data.gov.sg/v1/transport/traffic-images", { revalidate: 0 });
-  return (j.items[0]?.cameras ?? []).map((c) => ({ id: c.camera_id, lat: c.location.latitude, lon: c.location.longitude, url: c.image, time: c.timestamp }));
+  return (j.items[0]?.cameras ?? []).map((c) => ({ id: c.camera_id, lat: c.location.latitude, lon: c.location.longitude, url: c.image, time: c.timestamp, open: true }));
 }
 
 let list: { at: number; shots: Promise<Shot[]> } | undefined;
@@ -58,7 +59,12 @@ function fetchShots(): Promise<Shot[]> {
   return shots;
 }
 
-/** Cameras for the page. `image` points at our proxy; its `v` names the 5-minute step, so the CDN can keep each photo for the step. */
+/** Where the browser loads a photo: the public link itself, or our proxy, whose `v` names the 5-minute step so the CDN can keep each photo for the step. */
+function imageUrl(c: Shot): string {
+  return c.open ? c.url : `/api/camera/${encodeURIComponent(c.id)}?v=${(Date.parse(c.time) / PHOTO_STEP) | 0}`;
+}
+
+/** Cameras for the page. */
 export async function fetchCameras(): Promise<Camera[]> {
   return (await fetchShots()).map((c) => ({
     id: c.id,
@@ -66,7 +72,7 @@ export async function fetchCameras(): Promise<Camera[]> {
     region: nearestRegion(c.lat, c.lon),
     lat: c.lat,
     lon: c.lon,
-    image: `/api/camera/${encodeURIComponent(c.id)}?v=${(Date.parse(c.time) / PHOTO_STEP) | 0}`,
+    image: imageUrl(c),
     time: c.time,
   }));
 }

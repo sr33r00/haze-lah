@@ -1,6 +1,6 @@
 import { fetchCameraPhoto } from "@/lib/sources/traffic";
 
-// Photos pass through here so the browser never loads LTA's links directly. Each URL names a 5-minute step (`v`), and
+// DataMall photos pass through here, so the browser never loads DataMall's links directly (data.gov.sg photos are loaded straight from data.gov.sg). Each URL names a 5-minute step (`v`), and
 // the CDN keeps it for that step, so however many people look, this runs about once per camera per step per CDN region.
 export const dynamic = "force-dynamic";
 

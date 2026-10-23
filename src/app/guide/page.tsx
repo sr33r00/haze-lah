@@ -2,7 +2,6 @@ import { pageMeta } from "@/lib/seo";
 import AppShell from "@/components/AppShell";
 import GuideView from "@/components/GuideView";
 import JsonLd from "@/components/JsonLd";
-import { getHazeData } from "@/lib/data";
 import { GUIDE, answerText } from "@/lib/guide";
 
 export const metadata = pageMeta(
@@ -10,13 +9,11 @@ export const metadata = pageMeta(
   "Short answers to common Singapore haze questions on N95 masks, exercise, air purifiers, schools, work and health, each with official NEA, MOH, MOE and MOM sources.",
   "/guide",
 );
-export const revalidate = 1800;
-
-export default async function Guide() {
-  const data = await getHazeData();
+// Fully static, built once per deploy: the guide shows no live readings, so the shell gets no data (no "updated" label).
+export default function Guide() {
   const items = GUIDE.flatMap((s) => s.items);
   return (
-    <AppShell data={data} title="Guide">
+    <AppShell title="Guide">
       <GuideView />
       <JsonLd
         data={{

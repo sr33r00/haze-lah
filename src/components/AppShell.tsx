@@ -12,8 +12,9 @@ import ShareButton from "./ShareButton";
 import ThemeToggle from "./ThemeToggle";
 import WhatsNew from "./WhatsNew";
 
-/** Shared chrome of every tab: header, optional page title, bottom tabs. */
-export default function AppShell({ data, title, children }: { data: HazeData; title?: string; children: React.ReactNode }) {
+/** Shared chrome of every tab: header, optional page title, bottom tabs. Without `data` (a fully static page) it shows no "updated" label, no New dot and no demo banner. */
+export default function AppShell({ data, title, children }: { data?: HazeData; title?: string; children: React.ReactNode }) {
+  const newest = data ? newestTime(data) : null;
   return (
     <div className="pb-24 lg:pb-0">
       <WhatsNew />
@@ -29,12 +30,14 @@ export default function AppShell({ data, title, children }: { data: HazeData; ti
             <Logo size={32} />
             <span className="min-w-0">
               <span className="block text-[17px] font-extrabold leading-5 tracking-tight">Haze Lah</span>
-              <span className="block truncate text-[12px] leading-4 text-muted">
-                <Freshness generatedAt={data.generatedAt} />
-              </span>
+              {data && (
+                <span className="block truncate text-[12px] leading-4 text-muted">
+                  <Freshness generatedAt={data.generatedAt} />
+                </span>
+              )}
             </span>
           </Link>
-          <TopNav newest={newestTime(data)} />
+          <TopNav newest={newest} />
           <div className="flex shrink-0 items-center gap-1.5 min-[400px]:gap-2">
             {ALERTS_URL && <AlertsButton href={ALERTS_URL} />}
             <Link
@@ -61,12 +64,12 @@ export default function AppShell({ data, title, children }: { data: HazeData; ti
         </div>
       </header>
       <main id="main" className="mx-auto max-w-lg lg:max-w-6xl 2xl:max-w-[1400px] min-[1920px]:max-w-[1600px] [&>h1+section]:mt-4">
-        {data.mock && <p className="mx-4 mb-3 rounded-xl bg-[var(--lv2)]/15 px-3 py-2 text-[13px]">Demo data. These are not real readings.</p>}
+        {data?.mock && <p className="mx-4 mb-3 rounded-xl bg-[var(--lv2)]/15 px-3 py-2 text-[13px]">Demo data. These are not real readings.</p>}
         {title && <h1 className="px-4 pt-1 text-[28px] lg:pt-4 text-balance font-extrabold leading-tight tracking-tight">{title}</h1>}
         {children}
       </main>
       <InstallPrompt />
-      <BottomNav newest={newestTime(data)} />
+      <BottomNav newest={newest} />
     </div>
   );
 }
