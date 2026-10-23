@@ -12,6 +12,11 @@
   --lv2: #8f6a06;
   --lv3: #b4511c;
   --lv4: #9e2b35;
+  /* The support dialog's coffee look: latte cream in light, dark roast in dark. */
+  --coffee: #f4ead9;
+  --coffee-fg: #3b2618;
+  --coffee-muted: #7b5a43;
+  --coffee-line: #e2cfb6;
   color-scheme: light dark;
 }
 
@@ -33,6 +38,10 @@
   --lv2: #e8bd45;
   --lv3: #f08c55;
   --lv4: #f07a84;
+  --coffee: #22160e;
+  --coffee-fg: #f2e4d0;
+  --coffee-muted: #c3a68b;
+  --coffee-line: #3b2919;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -48,6 +57,10 @@
     --lv2: #e8bd45;
     --lv3: #f08c55;
     --lv4: #f07a84;
+    --coffee: #22160e;
+    --coffee-fg: #f2e4d0;
+    --coffee-muted: #c3a68b;
+    --coffee-line: #3b2919;
   }
 }
 
@@ -58,6 +71,10 @@
   --color-muted: var(--muted);
   --color-line: var(--line);
   --color-accent: var(--accent);
+  --color-coffee: var(--coffee);
+  --color-coffee-fg: var(--coffee-fg);
+  --color-coffee-muted: var(--coffee-muted);
+  --color-coffee-line: var(--coffee-line);
   --font-sans: "Atkinson Hyperlegible Next Variable", ui-sans-serif, system-ui, sans-serif;
 }
 

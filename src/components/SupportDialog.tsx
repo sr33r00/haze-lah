@@ -52,33 +52,36 @@ export default function SupportDialog({ variant = "button", className = "" }: { 
         ref={dialog}
         aria-labelledby={titleId}
         onClick={(e) => e.target === e.currentTarget && close()}
-        className="fixed inset-0 m-auto h-fit max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-[440px] animate-rise overflow-y-auto overscroll-contain rounded-[28px] border border-line bg-surface p-0 text-fg backdrop:bg-black/50"
+        className="fixed inset-0 m-auto h-fit max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-[440px] animate-rise overflow-y-auto overscroll-contain rounded-[28px] border border-coffee-line bg-coffee p-0 text-coffee-fg backdrop:bg-black/50"
       >
         <div className="px-5 pb-5 pt-6">
           <button
             type="button"
             onClick={close}
             aria-label="Close"
-            className="absolute right-2 top-2 flex size-11 items-center justify-center rounded-full transition-colors hover:bg-line"
+            className="absolute right-2 top-2 flex size-11 items-center justify-center rounded-full transition-colors hover:bg-coffee-line"
           >
             <X size={20} aria-hidden />
           </button>
+          <span aria-hidden className="mb-3 flex size-12 items-center justify-center rounded-full bg-[#6f4e37] text-white shadow-[0_2px_8px_rgba(59,38,24,0.35)]">
+            <Coffee size={24} />
+          </span>
           <h2 id={titleId} tabIndex={-1} autoFocus className="pr-9 text-[22px] font-extrabold leading-tight tracking-tight">
             Be part of Haze Lah
           </h2>
-          <p className="mt-1 text-[14px] leading-snug text-muted">Your coffee pays for the servers and new features. You&apos;re part of the reason Haze Lah exists.</p>
+          <p className="mt-1 text-[14px] leading-snug text-coffee-muted">Your coffee pays for the servers and new features. You&apos;re part of the reason Haze Lah exists.</p>
           {/* Ko-fi's panel is light, so it sits on white in the dark theme too. */}
           <iframe
             src={opened ? SUPPORT_EMBED_URL : undefined}
             title={SUPPORT_ICON_LABEL}
             allow="payment"
-            className="mt-4 block h-[min(640px,70dvh)] w-full rounded-2xl border-0 bg-white"
+            className="mt-4 block h-[min(640px,70dvh)] w-full rounded-2xl border-0 bg-white ring-1 ring-coffee-line"
           />
           <a
             href={SUPPORT_URL}
             target="_blank"
             rel="noreferrer"
-            className="mt-2 flex min-h-11 items-center justify-center text-[13px] font-semibold text-accent underline"
+            className="mt-2 flex min-h-11 items-center justify-center text-[13px] font-semibold text-coffee-muted underline"
           >
             Open Ko-fi in a new tab
           </a>
