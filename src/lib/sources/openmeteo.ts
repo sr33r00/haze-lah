@@ -1,5 +1,5 @@
 import type { HourPoint, SmokeGrid, Station, WeatherHour } from "../types";
-import { SG, getJson, haversineKm } from "../util";
+import { SG, getJson, haversineKm, sgtTime } from "../util";
 import type { WindFrame } from "../wind";
 import { POLLUTANTS, type PollutantId } from "../pollutants";
 
@@ -186,7 +186,7 @@ export function gasFrames(aq: AQPoint[], idx: number[]): SmokeGrid["gases"] {
  * pollutant that has data (PM2.5 too), in the shape of a history day. Throws when the answer lacks any of the 8 hours.
  */
 export function dayAQ(aq: AQPoint[], lats: number[], lons: number[], date: string) {
-  const start = Date.parse(`${date}T00:00:00+08:00`);
+  const start = sgtTime(date);
   const hours = aq[0].hourly.time.map((t) => Date.parse(z(t)));
   const idx = Array.from({ length: 8 }, (_, k) => hours.indexOf(start + k * 3 * 3600_000));
   if (idx.includes(-1)) throw new Error(`Open-Meteo air quality does not cover ${date} (SGT)`);
@@ -229,7 +229,7 @@ export async function fetchSmokeGrid(): Promise<SmokeGrid> {
     lats,
     lons,
     times: idx.map(({ t }) => new Date(t).toISOString()),
-    values: gridFrames(j, idx.map(({ i }) => i), "pm2_5") ?? idx.map(() => j.map(() => 0)),
+    values: gridFrames(j, idx.map(({ i }) => i), "pm2_5") ?? [], // no PM2.5 at all is no model, never a grid of zeros that reads as clean air
     gases: gasFrames(j, idx.map(({ i }) => i)),
     // No wind rather than zero wind, so a failed request never looks like calm air.
     wind: w

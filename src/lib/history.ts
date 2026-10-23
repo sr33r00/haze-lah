@@ -1,40 +1,10 @@
+import type { HistoryDay, HistoryIndex } from "./historyTypes";
 import type { PollutantId } from "./pollutants";
 import { dayTrail, nearestFrame, windNear } from "./replay";
 import { classify } from "./sources/firmsCsv";
 import type { Fire } from "./types";
+import { sgtTime } from "./util";
 import type { WindFrame } from "./wind";
-
-/**
- * Yearly peak 24-hr PSI (highest region) from NEA's historical 24-hr PSI, hourly from April 2014:
- * data.gov.sg dataset d_b4cf557f8750260d229c49fd768e11ed. Computed from the dataset; 2026 is excluded
- * because the current episode is in it.
- */
-const PSI_YEAR_PEAKS: Record<number, number> = {
-  2014: 125,
-  2015: 322,
-  2016: 143,
-  2017: 143,
-  2018: 91,
-  2019: 154,
-  2020: 84,
-  2021: 124,
-  2022: 75,
-  2023: 123,
-  2024: 77,
-  2025: 114,
-};
-
-export const HISTORY_URL = "https://data.gov.sg/datasets/d_b4cf557f8750260d229c49fd768e11ed/view";
-
-/** How rare a peak 24-hr PSI is against NEA's yearly peaks; null when it is not above Moderate. */
-export function sinceWhen(peak: number): string | null {
-  if (peak <= 100) return null;
-  const year = Object.keys(PSI_YEAR_PEAKS)
-    .map(Number)
-    .sort((a, b) => b - a)
-    .find((y) => PSI_YEAR_PEAKS[y] >= peak);
-  return year ? `Highest since ${year} (peak ${PSI_YEAR_PEAKS[year]})` : "Highest since NEA's open records began in 2014";
-}
 
 // Day files of the air globe's timeline: data/history/<date>.json, one per Singapore day, written by scripts/history.ts.
 
@@ -42,33 +12,6 @@ export function sinceWhen(peak: number): string | null {
 const DAY_FIRES = 1500;
 /** Size a day file is kept under (bytes of JSON): the grids take about 80 KB, so on a day with very many fires the weakest are left out. */
 const DAY_BYTES = 100_000;
-
-/**
- * One SGT day (00:00 to 24:00 SGT, which is 16:00 UTC the day before to 16:00 UTC), as frames 3 hours apart at 00, 03, ... 21 SGT.
- * Grids are row-major by latitude, [frame][lat * lons.length + lon], on the 1° regional grid (`lats`, `lons`).
- */
-export type HistoryDay = {
-  date: string;
-  /** The strongest fires acquired in the day (up to 1500, fewer if the file would pass 100 KB), strongest first: lat, lon (2 decimals), FRP in MW (integer). */
-  fires: [lat: number, lon: number, frp: number][];
-  /** All fires of the day by area, not just those listed. */
-  totals: Record<"sumatra" | "borneo" | "peninsula", number>;
-  /** ISO times (UTC) of the frames. */
-  times: string[];
-  lats: number[];
-  lons: number[];
-  /** 850 hPa wind in m/s to 1 decimal: u towards the east, v towards the north. */
-  wind: { u: number[][]; v: number[][] };
-  /** CAMS surface concentrations in µg/m³ (integers) for each pollutant that has data. */
-  gases: Partial<Record<PollutantId, number[][]>>;
-  /** The air that reached Singapore at 2 pm SGT, 72 hours of back-trail, one point an hour, newest first. */
-  trail: [number, number][];
-  /** NEA's highest 24-hr PSI and highest 1-hour PM2.5 of the day; null when NEA has none. */
-  nea: { psiMax: number | null; pm25Max: number | null };
-};
-
-/** What the timeline bars need: per day the fires (Sumatra and Borneo, as the live replay counts) and Singapore's highest PSI. */
-export type HistoryIndex = { updated: string; days: { date: string; fires: number; psiMax: number | null }[] };
 
 const r2 = (x: number) => Math.round(x * 100) / 100;
 
@@ -85,7 +28,7 @@ export function buildDay(input: {
   nea: HistoryDay["nea"];
 }): HistoryDay {
   const { date, frames, aq, nea } = input;
-  const start = Date.parse(`${date}T00:00:00+08:00`);
+  const start = sgtTime(date);
   const totals = { sumatra: 0, borneo: 0, peninsula: 0 };
   const inDay: Fire[] = [];
   for (const f of input.fires) {
@@ -123,14 +66,19 @@ export function buildDay(input: {
   return day;
 }
 
+/**
+ * Throws when a day has no fires at all in Sumatra, Borneo and the peninsula. The region always has some, so a total of 0 is a
+ * FIRMS gap, not a clean day, and a day file is never rewritten by the daily job. Returns `day`.
+ */
+export function assertFires(day: HistoryDay): HistoryDay {
+  const { sumatra, borneo, peninsula } = day.totals;
+  if (sumatra + borneo + peninsula === 0) throw new Error(`History ${day.date}: no fires in the three areas, which means FIRMS has no data for the day yet. Not saved.`);
+  return day;
+}
+
 /** The index with `day` added, replacing the entry of the same date; dates stay sorted. `updated` is `now`. */
 export function addToIndex(index: HistoryIndex, day: HistoryDay, now = new Date()): HistoryIndex {
   const entry = { date: day.date, fires: day.totals.sumatra + day.totals.borneo, psiMax: day.nea.psiMax };
   const days = [...index.days.filter((d) => d.date !== day.date), entry].sort((a, b) => (a.date < b.date ? -1 : 1));
   return { updated: now.toISOString(), days };
-}
-
-/** The newest day (the list is oldest first) with at least `min` fires: a day with only a few is a partial or a failed pass, not a picture of the fires. */
-export function latestFireDay<T extends { fires: unknown[] }>(days: T[], min = 20): T | undefined {
-  return days.findLast((d) => d.fires.length >= min);
 }

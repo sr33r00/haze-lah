@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import type { HistoryIndex } from "@/lib/history";
+import type { HistoryIndex } from "@/lib/historyTypes";
 import { buildBars, eventMarks, moveDay, moveStep, nearestStep, playNext, psiByDate, selectAt, stepsOf, type Bar } from "@/lib/timeline";
 import type { DayPsi, Replay, ReplayDay, SmokeGrid } from "@/lib/types";
 
@@ -40,17 +40,22 @@ test("bars run from the first history date to the last forecast date with no dup
   assert.deepEqual(bars.map((b) => b.kind), ["past", "past", "past", "today", "forecast", "forecast", "forecast"]);
 });
 
-test("live replay overrides history for the same date", () => {
-  const bars = buildBars(idx([["2026-10-21", 200, null], ["2026-10-22", 300, null]]), replayOf([["2026-10-22", 310]]), SMOKE, TODAY);
+test("history overrides the live replay for a date the index lists; the live replay fills the others", () => {
+  // The live replay's oldest day is partial (FIRMS's window), so its 20 must not replace the index's complete 300.
+  const bars = buildBars(idx([["2026-10-21", 200, null], ["2026-10-22", 300, null]]), replayOf([["2026-10-22", 20], [TODAY, 400]]), SMOKE, TODAY);
   assert.deepEqual(bars[0], { date: "2026-10-21", kind: "past", fires: 200, source: "history" });
-  assert.deepEqual(bars[1], { date: "2026-10-22", kind: "past", fires: 310, source: "live" });
+  assert.deepEqual(bars[1], { date: "2026-10-22", kind: "past", fires: 300, source: "history" });
+  assert.deepEqual(bars[2], { date: TODAY, kind: "today", fires: 400, source: "live" });
 });
 
-test("the today bar takes fires from the live replay day, else from history", () => {
-  const live = buildBars(idx([[TODAY, 5, null]]), replayOf([[TODAY, 400]]), SMOKE, TODAY).find((b) => b.kind === "today");
-  assert.deepEqual(live, { date: TODAY, kind: "today", fires: 400, source: "live" });
-  const hist = buildBars(idx([[TODAY, 5, null]]), replayOf([]), SMOKE, TODAY).find((b) => b.kind === "today");
-  assert.deepEqual(hist, { date: TODAY, kind: "today", fires: 5, source: "history" });
+test("a date only the live replay has (the newest days before the daily job) is live", () => {
+  const bars = buildBars(idx([["2026-10-20", 100, null]]), replayOf([["2026-10-22", 310], [TODAY, 400]]), SMOKE, TODAY);
+  assert.deepEqual(bars.slice(0, 4).map((b) => [b.date, b.fires, b.source]), [
+    ["2026-10-20", 100, "history"],
+    ["2026-10-21", null, "none"],
+    ["2026-10-22", 310, "live"],
+    [TODAY, 400, "live"],
+  ]);
 });
 
 test("a missing middle day is source none", () => {

@@ -61,3 +61,18 @@ test("a 7-day range is asked in requests of 5 and 2 days from the right dates", 
   await fetchFiresRange("KEY", "2026-07-31", "2026-08-06", () => {});
   assert.deepEqual(urls.map(path), ["VIIRS_SNPP_NRT/95,-6.5,120,7.5/5/2026-07-31", "VIIRS_SNPP_NRT/95,-6.5,120,7.5/2/2026-08-05"]);
 });
+
+test("a window that both products return empty throws, so no day is saved without fires", async () => {
+  stub(() => HEAD);
+  const log: string[] = [];
+  await assert.rejects(fetchFiresRange("KEY", "2026-08-01", "2026-08-03", (m) => log.push(m)), /no fires for 2026-08-01.*VIIRS_SNPP_NRT or VIIRS_SNPP_SP/);
+  assert.deepEqual(urls.map(path), ["VIIRS_SNPP_NRT/95,-6.5,120,7.5/3/2026-08-01", "VIIRS_SNPP_SP/95,-6.5,120,7.5/3/2026-08-01"]);
+  assert.deepEqual(log, []);
+});
+
+test("an empty table from a forced product (no pair to fall back to) throws", async () => {
+  process.env.FIRMS_SOURCE = "VIIRS_SNPP_SP";
+  stub(() => HEAD);
+  await assert.rejects(fetchFiresRange("KEY", "2026-08-01", "2026-08-01", () => {}), /no fires for 2026-08-01.*VIIRS_SNPP_SP/);
+  assert.equal(urls.length, 1);
+});

@@ -1,4 +1,4 @@
-import { latestFireDay } from "./history";
+import { latestFireDay } from "./historyTypes";
 import type { Replay, SmokeGrid } from "./types";
 
 /**

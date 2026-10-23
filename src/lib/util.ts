@@ -21,6 +21,12 @@ export function sgDate(days = 0, from = new Date()) {
   return t.toISOString().slice(0, 10);
 }
 
+/** The SGT date `n` days after the SGT date `date` (YYYY-MM-DD; `n` may be negative). */
+export const shiftDate = (date: string, n: number) => sgDate(n, new Date(`${date}T12:00:00+08:00`));
+
+/** The moment (ms) of `hour` o'clock SGT on the SGT date `date`. */
+export const sgtTime = (date: string, hour = 0) => Date.parse(`${date}T${String(hour).padStart(2, "0")}:00:00+08:00`);
+
 /** Normalise any timestamp to an ISO string truncated to the hour, in UTC. */
 export function hourKey(t: string | number | Date) {
   const d = new Date(t);

@@ -104,6 +104,7 @@ export type SmokeGrid = {
   lats: number[];
   lons: number[];
   times: string[];
+  /** PM2.5 per time step; empty when the model gave none at all (an outage), which must not read as clean air. */
   values: number[][];
   gases: Partial<Record<Exclude<PollutantId, "pm25">, number[][]>>;
   wind: { u: number[][]; v: number[][] } | null; // null when the wind request failed

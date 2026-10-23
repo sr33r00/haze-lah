@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import type { LeadScore } from "@/lib/accuracy";
-import { HISTORY_URL, sinceWhen } from "@/lib/history";
+import { HISTORY_URL, sinceWhen } from "@/lib/psiRecords";
 import type { DayOutlook, DayPsi, ForecastPoint, NeaPm25History } from "@/lib/types";
 import Chart from "./Chart";
 import Outlook from "./Outlook";

@@ -46,11 +46,31 @@ test("loadDay memoises (fetch called once for two calls)", async () => {
   assert.equal(f.calls.length, 1);
 });
 
-test("loadDay returns null for a missing day, and tries again on the next call", async () => {
+test("a 404 (a gap day) is remembered as null: one request however often it is asked", async () => {
   const f = fake({ [historyUrl("2026-01-02")]: { status: 404 } });
   assert.equal(await loadDay("2026-01-02", f.fn), null);
   assert.equal(await loadDay("2026-01-02", f.fn), null);
-  assert.equal(f.calls.length, 2);
+  assert.equal(f.calls.length, 1);
+});
+
+test("a 5xx or 429 is not remembered: the next call asks again", async () => {
+  for (const [date, status] of [["2026-01-06", 503], ["2026-01-07", 429]] as const) {
+    const f = fake({ [historyUrl(date)]: { status } });
+    assert.equal(await loadDay(date, f.fn), null);
+    assert.equal(await loadDay(date, f.fn), null);
+    assert.equal(f.calls.length, 2, `status ${status}`);
+  }
+});
+
+test("a body that is not JSON is not remembered", async () => {
+  let calls = 0;
+  const fn = (async () => {
+    calls++;
+    return { ok: true, status: 200, json: async () => Promise.reject(new SyntaxError("bad")) } as unknown as Response;
+  }) as unknown as typeof fetch;
+  assert.equal(await loadDay("2026-01-08", fn), null);
+  assert.equal(await loadDay("2026-01-08", fn), null);
+  assert.equal(calls, 2);
 });
 
 test("a failed fetch is not remembered: a later call can succeed", async () => {
@@ -65,9 +85,11 @@ test("a failed fetch is not remembered: a later call can succeed", async () => {
   assert.deepEqual(await loadDay("2026-01-05", fn), body);
 });
 
-test("loadDay returns null when the file is for another date", async () => {
+test("loadDay returns null when the file is for another date, and asks again next time", async () => {
   const f = fake({ [historyUrl("2026-01-03")]: { body: { date: "2026-01-04" } } });
   assert.equal(await loadDay("2026-01-03", f.fn), null);
+  assert.equal(await loadDay("2026-01-03", f.fn), null);
+  assert.equal(f.calls.length, 2);
 });
 
 test("prefetchAround loads the next two dates and never throws", async () => {

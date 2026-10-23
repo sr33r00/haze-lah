@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       from:
-        description: "First day to build, YYYY-MM-DD (SGT). Empty means the same as to."
+        description: "First day to build, YYYY-MM-DD (SGT). Empty means the same as to. Backfill in chunks of about 2 weeks, one run at a time (GitHub keeps only one pending run), at most about 3 chunks an hour (Open-Meteo limits)."
         required: false
       to:
         description: "Last day to build, YYYY-MM-DD (SGT, must be over). Empty means yesterday."
@@ -63,8 +63,21 @@ jobs:
           git add data/history
           git diff --cached --quiet || git commit -m "data: history $RANGE"
           git pull --rebase --quiet && git push
-      - name: Purge the CDN copy of the index
-        run: curl -fsS https://purge.jsdelivr.net/gh/sr33r00/haze-lah@main/data/history/index.json || echo "::warning::jsDelivr purge failed"
+      # The index changes daily, and a day file that is built again (or was first asked for before jsDelivr saw the branch) would stay stale.
+      - name: Purge the CDN copy of the index and of each day built
+        env:
+          RANGE: ${{ steps.build.outputs.range }}
+        run: |
+          names=(index)
+          from="${RANGE%%..*}"
+          to="${RANGE##*..}"
+          re='^[0-9]{4}-[0-9]{2}-[0-9]{2}$'
+          if [[ $from =~ $re && $to =~ $re ]]; then
+            for ((t = $(date -ud "$from" +%s); t <= $(date -ud "$to" +%s); t += 86400)); do names+=("$(date -ud "@$t" +%F)"); done
+          fi
+          for n in "${names[@]}"; do
+            curl -fsS "https://purge.jsdelivr.net/gh/sr33r00/haze-lah@main/data/history/$n.json" > /dev/null || echo "::warning::jsDelivr purge failed for $n"
+          done
       - name: Fail if some days failed
         if: steps.build.outputs.code != '0'
         env:

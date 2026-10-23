@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { addToIndex, buildDay, latestFireDay, type HistoryDay, type HistoryIndex } from "@/lib/history";
+import { addToIndex, assertFires, buildDay } from "@/lib/history";
+import { latestFireDay, type HistoryDay, type HistoryIndex } from "@/lib/historyTypes";
 import type { Fire } from "@/lib/types";
 import { SG } from "@/lib/util";
 import type { WindFrame } from "@/lib/wind";
@@ -145,4 +146,10 @@ test("latestFireDay skips a day with 3 fires", () => {
   assert.equal(latestFireDay(days)?.date, "b");
   assert.equal(latestFireDay(days, 1)?.date, "c");
   assert.equal(latestFireDay([{ fires: [] }]), undefined);
+});
+
+test("assertFires passes a day with fires in any area and throws on a total of 0", () => {
+  const day = (totals: HistoryDay["totals"]) => ({ date: DATE, totals }) as HistoryDay;
+  assert.equal(assertFires(day({ sumatra: 0, borneo: 0, peninsula: 3 })).date, DATE);
+  assert.throws(() => assertFires(day({ sumatra: 0, borneo: 0, peninsula: 0 })), /2026-08-05: no fires in the three areas/);
 });

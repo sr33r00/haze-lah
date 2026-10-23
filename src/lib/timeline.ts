@@ -1,7 +1,7 @@
-import type { HistoryIndex } from "./history";
+import type { HistoryIndex } from "./historyTypes";
 import { ARRIVAL_SGT } from "./replay";
 import type { DayPsi, Replay, SmokeGrid } from "./types";
-import { sgDate, sgHour } from "./util";
+import { sgDate, sgHour, shiftDate, sgtTime } from "./util";
 
 /** One day of the globe's timeline. `source` says where its fires came from: the live replay, the history index, or neither (a gap). */
 export type Bar = { date: string; kind: "past" | "today" | "forecast"; fires: number | null; source: "history" | "live" | "none" };
@@ -17,25 +17,25 @@ const MARKS = [
 
 const SGT_STEPS = [0, 3, 6, 9, 12, 15, 18, 21];
 
-/** The SGT date `n` days after `date`. */
-const addDays = (date: string, n: number) => sgDate(n, new Date(`${date}T12:00:00+08:00`));
 /** The ISO UTC time of `hour` o'clock SGT on SGT `date`. */
-const sgtIso = (date: string, hour: number) => new Date(`${date}T${String(hour).padStart(2, "0")}:00:00+08:00`).toISOString();
+const sgtIso = (date: string, hour: number) => new Date(sgtTime(date, hour)).toISOString();
 
 /**
  * The timeline's days, oldest first: from the first date known (history or replay) to today, then the forecast dates in `smoke.times`.
- * A live replay day overrides the index for its date; a date between the first known one and today with neither is a gap
- * (`source: "none"`). Nothing is filled before the first known date. Pure.
+ * A date the index lists takes its fires from the index: its day file is complete and final, while the live replay's oldest day
+ * has lost its night pass to FIRMS's window. The live replay fills the dates the index does not have yet (today, and the days
+ * before the daily job has run); a date between the first known one and today with neither is a gap (`source: "none"`).
+ * Nothing is filled before the first known date. Pure.
  */
 export function buildBars(index: HistoryIndex | null, replay: Replay, smoke: SmokeGrid, today: string): Bar[] {
   const hist = new Map((index?.days ?? []).map((d) => [d.date, d.fires]));
   const live = new Map(replay.days.map((d) => [d.date, d.total]));
   const known = [...hist.keys(), ...live.keys()].filter((d) => d <= today).sort();
   const bars: Bar[] = [];
-  for (let date = known[0] ?? today; date <= today; date = addDays(date, 1)) {
+  for (let date = known[0] ?? today; date <= today; date = shiftDate(date, 1)) {
     const kind = date === today ? "today" : "past";
-    if (live.has(date)) bars.push({ date, kind, fires: live.get(date)!, source: "live" });
-    else if (hist.has(date)) bars.push({ date, kind, fires: hist.get(date)!, source: "history" });
+    if (hist.has(date)) bars.push({ date, kind, fires: hist.get(date)!, source: "history" });
+    else if (live.has(date)) bars.push({ date, kind, fires: live.get(date)!, source: "live" });
     else bars.push({ date, kind, fires: null, source: "none" });
   }
   const ahead = [...new Set(smoke.times.map((t) => sgDate(0, new Date(t))))].filter((d) => d > today).sort();
@@ -95,7 +95,7 @@ export function nearestStep(steps: string[], t: number): number {
 }
 
 /** The selection on `bar` at the step nearest `hour` o'clock SGT. */
-export const selectAt = (bar: Bar, steps: string[], hour: number): Sel => ({ date: bar.date, step: nearestStep(steps, Date.parse(`${bar.date}T${String(hour).padStart(2, "0")}:00:00+08:00`)) });
+export const selectAt = (bar: Bar, steps: string[], hour: number): Sel => ({ date: bar.date, step: nearestStep(steps, sgtTime(bar.date, hour)) });
 
 /** The SGT hour of the selected step. */
 const hourOf = (steps: string[], sel: Sel) => sgHour(steps[sel.step] ?? steps[0]);

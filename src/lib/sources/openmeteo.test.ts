@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { dayAQ, gridFrames, gasFrames } from "@/lib/sources/openmeteo";
+import { dayAQ, fetchSmokeGrid, gridFrames, gasFrames } from "@/lib/sources/openmeteo";
 
 // Two grid points, six hourly steps; the frames used are every third hour (indexes 0 and 3).
 const time = ["2026-10-23T00:00", "2026-10-23T01:00", "2026-10-23T02:00", "2026-10-23T03:00", "2026-10-23T04:00", "2026-10-23T05:00"];
@@ -41,4 +41,21 @@ test("dayAQ takes the 8 three-hourly frames of an SGT day and keeps PM2.5", () =
 test("dayAQ throws when the answer does not cover the SGT day", () => {
   const points = [{ hourly: { time: ["2026-10-20T00:00", "2026-10-20T01:00"], pm2_5: [1, 2] } }];
   assert.throws(() => dayAQ(points, [0], [100], "2026-10-20"), /cover/);
+});
+
+test("a PM2.5 outage gives no PM2.5 frames, not a grid of zeros that reads as clean air; the gases still come", async () => {
+  const start = Math.floor(Date.now() / 3600_000) * 3600_000;
+  const hours = Array.from({ length: 96 }, (_, h) => new Date(start + h * 3600_000).toISOString().slice(0, 16));
+  const body = [{ hourly: { time: hours, pm2_5: hours.map(() => null), ozone: hours.map(() => 80) } }];
+  const real = globalThis.fetch;
+  globalThis.fetch = (async (url: string) => (String(url).includes("air-quality") ? new Response(JSON.stringify(body)) : new Response("", { status: 500 }))) as typeof fetch;
+  try {
+    const grid = await fetchSmokeGrid();
+    assert.deepEqual(grid.values, []);
+    assert.ok(grid.times.length > 0);
+    assert.equal(grid.gases.o3?.length, grid.times.length);
+    assert.equal(grid.wind, null);
+  } finally {
+    globalThis.fetch = real;
+  }
 });

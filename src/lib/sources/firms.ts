@@ -38,7 +38,10 @@ export async function fetchFirePoints(): Promise<(Fire & { where: Area })[] | nu
 /**
  * Fires of the UTC days `from` to `to` (YYYY-MM-DD, inclusive) for the history backfill, 5 days per request, not cached.
  * The product is the live one (`FIRMS_SOURCE`, default VIIRS_SNPP_NRT). NRT keeps only recent months: a request it answers
- * with an empty table (the region always has some fires) is asked again of the standard-processing product, `_SP`, and `log` says so. Any failed request throws instead of falling back, so the history never mixes products by accident.
+ * with an empty table (the region always has some fires) is asked again of the standard-processing product, `_SP`, and `log` says so.
+ * A window still empty after that throws (a FIRMS outage or a date neither product holds yet): a day file is never rewritten by the
+ * daily job, so a false "no fires" must not be saved. Any failed request throws instead of falling back, so the history never mixes
+ * products by accident.
  */
 export async function fetchFiresRange(key: string, from: string, to: string, log: (m: string) => void = console.log): Promise<(Fire & { where: Area })[]> {
   const nrt = process.env.FIRMS_SOURCE || "VIIRS_SNPP_NRT";
@@ -51,8 +54,9 @@ export async function fetchFiresRange(key: string, from: string, to: string, log
     let rows = await fetchRows(firmsUrl(key, nrt, days, start), 60_000);
     if (!rows.length && sp !== nrt) {
       rows = await fetchRows(firmsUrl(key, sp, days, start), 60_000);
-      log(`FIRMS: ${nrt} returned an empty table for ${start} (${days} days); used ${sp}${rows.length ? "" : ", which has none either"}`);
+      if (rows.length) log(`FIRMS: ${nrt} returned an empty table for ${start} (${days} days); used ${sp}`);
     }
+    if (!rows.length) throw new Error(`FIRMS returned no fires for ${start} (${days} days) from ${sp !== nrt ? `${nrt} or ${sp}` : nrt}: the data is not there yet, or FIRMS is down`);
     out.push(...rows);
   }
   return out.map(rowToFire);
