@@ -14,7 +14,6 @@ import HazeOrigin from "./HazeOrigin";
 import HazeOutlook from "./HazeOutlook";
 import Hero from "./Hero";
 import LiveViews from "./LiveViews";
-import Neighbours from "./Neighbours";
 import PlanDay from "./PlanDay";
 import RegionChips from "./RegionChips";
 import SupportCard from "./SupportCard";
@@ -92,13 +91,9 @@ export default function NowView({ history, nea, hourly, days, sensors, stations 
           </Section>
         )}
 
-        <HazeOrigin className="order-10" />
+        <HazeOrigin className="order-10" nea={nea} history={history} stations={stations} sensors={sensors} />
 
-        <Section className="order-11" title="Neighbours">
-          <Neighbours stations={stations} />
-        </Section>
-
-        <SupportCard className="order-12 mt-10" />
+        <SupportCard className="order-11 mt-10" />
       </div>
     </div>
   );

@@ -13,12 +13,11 @@ The site is independent and is not an official NEA service. For official advisor
 - **Plan your day:** the next 24 hours by advice level and the cleanest 3-hour window.
 - **Next 48 hours:** measured PM2.5, the forecast with its likely range, and the uncorrected model for comparison.
 - **Next 5 days:** morning, afternoon and evening outlook, the likely peak, the chance PM2.5 rises above 55 µg/m³, and the expected 24-hour PSI.
-- **Smoke map and haze origin:** one map of Southeast Asia on the Now page. It shows the PM2.5 forecast as a smoke veil, today's fires, the wind and the path of today's air, with a slider from the past days to the next 72 hours. Tap a spot for its value. A card traces where today's air came from, past which fires.
+- **Smoke map and haze origin:** one zoomable map of Southeast Asia on the Now page. It shows the PM2.5 forecast as a smoke veil, today's fires, the wind, the path of today's air and dots for the live readings (NEA, Malaysian stations, community sensors), with a slider from the past days to the next 72 hours. Tap a spot for its value. A card traces where today's air came from, past which fires.
 - **Air globe:** a full-screen globe (`/map`) that you can zoom and turn. A timeline plays every day from 1 August to the forecast. Layers: PM2.5, PM10, carbon monoxide, nitrogen dioxide, sulphur dioxide, ozone and dust from the Copernicus model, and NASA's satellite smoke. Over them: fires (with the new fire zones), wind, the path of the air, and dots for measured readings (NEA, Malaysian stations, community sensors) and modelled Indonesian cities. Past days come from daily files saved in the repository (`data/history/`).
 - **Last 7 days:** each day's peak 24-hour PSI, compared with NEA records since 2014.
 - **News:** NEA haze updates, the official weather outlook and changes in the live readings, with times.
 - **What is in the air:** every pollutant behind the PSI for your region.
-- **Neighbours:** live Malaysian stations and modelled conditions in upwind Indonesian cities.
 - **Alerts:** an optional Telegram channel posts when the 24-hour PSI band changes or NEA issues a haze update.
 - **Measured accuracy:** every forecast is saved when it is made and scored against what NEA later measured.
 

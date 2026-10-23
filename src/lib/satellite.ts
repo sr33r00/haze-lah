@@ -1,4 +1,3 @@
-import { SG } from "./util";
 
 // NASA GIBS satellite images (public domain). Pure URL building: the browser loads the images straight from NASA.
 
@@ -33,12 +32,6 @@ export const onImage = (lat: number, lon: number, box: Box = SAT_BOX) => ({
   x: ((lon - box[1]) / (box[3] - box[1])) * 100,
   y: ((box[2] - lat) / (box[2] - box[0])) * 100,
 });
-
-/** The point at `x` and `y` per cent from the left and top of an image of `box`: the inverse of `onImage`. */
-export const atImage = (x: number, y: number, box: Box = SAT_BOX): [lat: number, lon: number] => [box[2] - (y / 100) * (box[2] - box[0]), box[1] + (x / 100) * (box[3] - box[1])];
-
-/** Where Singapore sits on the images of `SAT_BOX`. */
-export const SG_ON_IMAGE = onImage(SG.lat, SG.lon);
 
 /**
  * Relief map of `SAT_BOX` with coastlines, 1000×520. It never changes, so it ships with the site instead of costing a

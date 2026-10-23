@@ -186,7 +186,7 @@ export function windAtSg({ lats, lons }: Pick<Replay, "lats" | "lons">, { u, v }
 export function trailCaption(d: Pick<ReplayDay, "from" | "area" | "near">, future = false) {
   const verb = future ? ["should stay", "should come"] : ["stayed", "came"];
   if (!d.from) return `Light winds: the air ${verb[0]} around Singapore.`;
-  const via = !future && d.area && d.near > 0 ? ` via ${d.area}, past ${d.near.toLocaleString("en-SG")} fires` : "";
+  const via = !future && d.area && d.near > 0 ? ` via ${d.area}, past ${d.near.toLocaleString("en-SG")} ${d.near === 1 ? "fire" : "fires"}` : "";
   return `Air ${verb[1]} from the ${d.from}${via}.`;
 }
 

@@ -27,6 +27,7 @@ test("windAtSg turns u=-5,v=5 m/s into a southeast wind of 25 km/h", () => {
 test("trailCaption: past and forecast wording; a forecast day has no fires to name", () => {
   const d = { from: "southeast", area: "Riau", near: 1200 };
   assert.equal(trailCaption(d), "Air came from the southeast via Riau, past 1,200 fires.");
+  assert.equal(trailCaption({ ...d, near: 1 }), "Air came from the southeast via Riau, past 1 fire.");
   assert.equal(trailCaption(d, true), "Air should come from the southeast.");
   assert.equal(trailCaption({ from: null, area: null, near: 0 }), "Light winds: the air stayed around Singapore.");
   assert.equal(trailCaption({ from: null, area: null, near: 0 }, true), "Light winds: the air should stay around Singapore.");
