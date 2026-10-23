@@ -15,6 +15,16 @@ export const INK = {
   ahead: "#fbbf77",
 };
 
+/** The base pictures' URL scheme: `gibs://` followed by the https address of a GIBS tile, loaded by `gibsTiles.ts` (kept apart, so that this file, which the card reads for its colours, does not pull in MapLibre). */
+export const GIBS_SCHEME = "gibs";
+/** The finest level of NASA's base pictures. */
+export const BASE_MAX_ZOOM = 8;
+/** NASA's two base pictures as tile addresses: Blue Marble relief and the Black Marble night lights of 2016. */
+export const BASE_TILES = {
+  day: `${GIBS_WMTS}/BlueMarble_ShadedRelief_Bathymetry/default/GoogleMapsCompatible_Level8/{z}/{y}/{x}.jpeg`,
+  night: `${GIBS_WMTS}/VIIRS_Black_Marble/default/2016-01-01/GoogleMapsCompatible_Level8/{z}/{y}/{x}.png`,
+};
+
 const KEEP = new Set(["boundary_country_z5-", "boundary_state", "o_coast", "o_border", "water_edge"]);
 
 /** The OpenFreeMap style cut to its coast and border lines (names are drawn by the globe itself, a few at a time), on top of NASA's night and day pictures: a quiet, dark globe. */
@@ -32,12 +42,12 @@ export async function globeStyle(): Promise<StyleSpecification> {
     }
     return l;
   });
-  const raster = (id: string, path: string, ext: string, paint: object): [object, LayerSpecification] => [
-    { type: "raster", tiles: [`${GIBS_WMTS}/${path}/{z}/{y}/{x}.${ext}`], tileSize: 256, maxzoom: 8, attribution: "NASA GIBS" },
+  const raster = (id: keyof typeof BASE_TILES, paint: object): [object, LayerSpecification] => [
+    { type: "raster", tiles: [`${GIBS_SCHEME}://${BASE_TILES[id]}`], tileSize: 256, maxzoom: BASE_MAX_ZOOM, attribution: "NASA GIBS" },
     { id, type: "raster", source: id, paint: { "raster-fade-duration": 0, ...paint } } as LayerSpecification,
   ];
-  const [dayS, dayL] = raster("day", "BlueMarble_ShadedRelief_Bathymetry/default/GoogleMapsCompatible_Level8", "jpeg", { "raster-brightness-max": 0.4, "raster-saturation": -0.45, "raster-contrast": 0.1 });
-  const [nightS, nightL] = raster("night", "VIIRS_Black_Marble/default/2016-01-01/GoogleMapsCompatible_Level8", "png", { "raster-opacity": 0.88, "raster-brightness-max": 1, "raster-saturation": -0.2 });
+  const [dayS, dayL] = raster("day", { "raster-brightness-max": 0.4, "raster-saturation": -0.45, "raster-contrast": 0.1 });
+  const [nightS, nightL] = raster("night", { "raster-opacity": 0.88, "raster-brightness-max": 1, "raster-saturation": -0.2 });
   return {
     ...stock,
     projection: { type: "globe" },

@@ -1,6 +1,6 @@
 "use client";
 
-import { LngLatBounds, Map as MapLibre, Popup, setWorkerUrl, type CanvasSource, type ExpressionSpecification, type GeoJSONSource, type MapLayerMouseEvent, type PaddingOptions } from "maplibre-gl";
+import { LngLat, LngLatBounds, type LngLatLike, Map as MapLibre, Popup, setWorkerUrl, type CanvasSource, type ExpressionSpecification, type GeoJSONSource, type MapLayerMouseEvent, type PaddingOptions } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { SMOKE_TILE_ZOOM, WORLD_CORNERS, globeDates, globePicture, smokeTiles } from "@/lib/globe";
@@ -9,16 +9,20 @@ import { dotFeatures, type Dot } from "@/lib/readings";
 import { SG, sgDate } from "@/lib/util";
 import type { WindView } from "@/lib/windParticles";
 import { globeView } from "@/components/globeWind";
+import { useStored } from "@/components/usePrefs";
 import { useWindParticles } from "@/components/useWindParticles";
 import WindMotionButton, { useWindMotion } from "@/components/WindMotion";
 import { GLOBE_PX_PER_DEG, drawField, fieldCorners } from "./fieldImage";
 import { flowOf, frameGeo, type GlobeDay, type LayerChoice } from "./frame";
-import { INK, globeStyle } from "./globeStyle";
+import { fly, flightLegs, easeOut, startPose, tilesAround, type Landing } from "./flight";
+import { registerGibsScheme, prefetchTiles } from "./gibsTiles";
+import { BASE_MAX_ZOOM, BASE_TILES, INK, globeStyle } from "./globeStyle";
 import { SMOKE_SCHEME, registerSmokeScheme } from "./smokeTiles";
 
 // MapLibre's worker is a file of its own; the bundler puts it among the static files and this is its address.
 setWorkerUrl(new URL("maplibre-gl/dist/maplibre-gl-worker.mjs", import.meta.url).href);
 registerSmokeScheme();
+registerGibsScheme();
 
 type Props = {
   day: GlobeDay;
@@ -38,20 +42,22 @@ const SPAN_X = 29; // degrees across the screen's width
 const SPAN_Y = 20;
 /** Under this width (px) the screen is a phone: closer in, less tilt, room kept for the card at the bottom. */
 const NARROW = 700;
+type Padding = Required<PaddingOptions>;
+type Camera = { zoom: number; pitch: number; center: LngLatLike; padding: Padding };
 /** Where the default camera ends up: tipped so that the globe's edge and its atmosphere show. */
-function homeCamera(w: number, h: number) {
+function homeCamera(w: number, h: number): Camera {
   const narrow = w < NARROW;
   const fit = Math.log2(Math.min(w / SPAN_X, h / SPAN_Y) * (360 / 512));
-  return { zoom: fit + (narrow ? 0.4 : -0.3), pitch: narrow ? 40 : 48, center: CENTER, padding: { top: 0, left: 0, right: 0, bottom: narrow ? 90 : 0 } as PaddingOptions };
+  return { zoom: fit + (narrow ? 0.4 : -0.3), pitch: narrow ? 40 : 48, center: CENTER, padding: { top: 0, left: 0, right: 0, bottom: narrow ? 90 : 0 } };
 }
-/**
- * The zoom the globe opens at: a little out from `to`, but on the same level of NASA's tiles (MapLibre rounds a raster's zoom, and
- * its 256 px tiles sit one level above the map's), so the intro tilts and settles without fetching two levels of tiles it then drops.
- */
-const introZoom = (to: number) => Math.max(to - 0.6, Math.round(to + 1) - 1.49);
-const INTRO_MS = 2800;
 const MOVE_MS = 1400;
-const ease = (t: number) => 1 - (1 - t) ** 3;
+/** The least the viewer can zoom out to; the fly-in starts further out than that. */
+const MIN_ZOOM = 1.2;
+const FAR_MIN_ZOOM = 0.8;
+/** The wind is the busiest layer: it fades in once the camera has stopped rushing. */
+const WIND_OPACITY = "0.92";
+/** How long the fly-in waits for the far view to draw before starting anyway, on a slow network. */
+const DRAWN_MS = 1200;
 const z = (...stops: (number | string | ExpressionSpecification)[]) => ["interpolate", ["linear"], ["zoom"], ...stops] as ExpressionSpecification;
 
 /** The first line layer: the pollution pictures go under the coast and border lines. */
@@ -205,14 +211,25 @@ function setSatellite(m: MapLibre, date: string | null) {
 }
 
 /** The camera that frames the air's path (Singapore to where the air came from), or null for a path too short to frame. */
-function pathCamera(m: MapLibre, trail: GlobeDay["trail"], w: number) {
+function pathCamera(m: MapLibre, trail: GlobeDay["trail"], w: number): Camera | null {
   if (trail.length < 2) return null;
   const narrow = w < NARROW;
   const bounds = trail.reduce((b, [lat, lon]) => b.extend([lon, lat]), new LngLatBounds([SG.lon, SG.lat], [SG.lon, SG.lat]));
-  const padding: PaddingOptions = { top: 90, left: 40, right: 40, bottom: narrow ? 300 : 280 }; // the card and timeline cover the bottom: about 280 px on a phone, the timeline panel on a laptop
+  const padding: Padding = { top: 90, left: 40, right: 40, bottom: narrow ? 300 : 280 }; // the card and timeline cover the bottom: about 280 px on a phone, the timeline panel on a laptop
   const cam = m.cameraForBounds(bounds, { padding, maxZoom: 6 });
-  return cam && { center: cam.center, zoom: cam.zoom, pitch: narrow ? 15 : 25, padding };
+  return cam?.center && cam.zoom != null ? { center: cam.center, zoom: cam.zoom, pitch: narrow ? 15 : 25, padding } : null;
 }
+
+type View = Props["view"];
+
+/** The camera for the view: the air's path when it is known, else the tilted view of the region. */
+const viewCamera = (m: MapLibre, view: View, trail: GlobeDay["trail"], w: number, h: number) => (view === "path" && pathCamera(m, trail, w)) || homeCamera(w, h);
+
+/** What the camera frames: the view, and in the path view the path (the camera moves when it changes, not for each new array). */
+const frameKey = (view: View, trail: GlobeDay["trail"]) => (view === "path" ? `path/${trail.length}/${trail[0]?.join(",")}/${trail.at(-1)?.join(",")}` : view);
+
+/** Whether the visitor has seen the fly-in. */
+const INTRO = ["first", "seen"] as const;
 
 /**
  * The air globe: NASA night lights and relief, a pollutant's CAMS field or NASA's smoke picture, fires, wind and the air's path,
@@ -222,10 +239,19 @@ export default function AirGlobe({ day, layer, satDate, dots, view, onFail }: Pr
   const box = useRef<HTMLDivElement>(null);
   const map = useRef<MapLibre>(undefined);
   const field = useRef<HTMLCanvasElement>(undefined);
-  const intro = useRef(true);
+  const windVeil = useRef<HTMLDivElement>(undefined);
+  /** "first" or "back" while the globe is to fly in, undefined when it opens on its place. */
+  const trip = useRef<"first" | "back">(undefined);
+  /** What the camera framed when the flight landed, so that the camera effect moves only if the view has changed since. */
+  const landedOn = useRef<string>(undefined);
   const closePopup = useRef<() => void>(undefined);
   const failRef = useRef(onFail);
   const [ready, setReady] = useState(false);
+  const [landed, setLanded] = useState(false);
+  const [started, setStarted] = useState(false);
+  const [intro, setIntro] = useStored("globe-intro", INTRO, "first");
+  const introRef = useRef(intro);
+  const latest = useRef({ view, trail: day.trail });
   const [windView, setWindView] = useState<WindView>();
   const { reduced, motion, toggle } = useWindMotion();
 
@@ -234,6 +260,15 @@ export default function AirGlobe({ day, layer, satDate, dots, view, onFail }: Pr
   }, [onFail]);
 
   useEffect(() => {
+    introRef.current = intro;
+    latest.current = { view, trail: day.trail };
+  });
+
+  // The remembered intro is read in an effect: the globe is made on the render after it, with the answer in hand.
+  useEffect(() => setStarted(true), []);
+
+  useEffect(() => {
+    if (!started) return;
     const el = box.current!;
     let live = true;
     let failed = false;
@@ -245,15 +280,20 @@ export default function AirGlobe({ day, layer, satDate, dots, view, onFail }: Pr
     globeStyle().then((style) => {
       if (!live) return;
       const { clientWidth: w, clientHeight: h } = el;
+      // The globe opens far out and flies in; for a viewer who asked for less motion it opens on its place.
+      const home = homeCamera(w, h);
+      const far = !matchMedia("(prefers-reduced-motion: reduce)").matches;
+      trip.current = far ? (introRef.current === "first" ? "first" : "back") : undefined;
+      const from = startPose(introRef.current === "first");
       let m: MapLibre;
       try {
         m = new MapLibre({
           container: el,
           style,
-          center: CENTER,
-          zoom: introZoom(homeCamera(w, h).zoom),
-          pitch: 0,
-          minZoom: 1.2,
+          center: far ? [from.lng, from.lat] : home.center,
+          zoom: far ? from.zoom : home.zoom,
+          pitch: far ? 0 : home.pitch,
+          minZoom: far ? FAR_MIN_ZOOM : MIN_ZOOM,
           maxZoom: 9,
           dragRotate: false,
           pitchWithRotate: false,
@@ -266,6 +306,7 @@ export default function AirGlobe({ day, layer, satDate, dots, view, onFail }: Pr
         return;
       }
       map.current = m;
+      if (!far) setLanded(true);
       m.touchZoomRotate.disableRotation();
       m.on("webglcontextlost", () => fail("webgl"));
       m.on("error", (e) => {
@@ -277,8 +318,9 @@ export default function AirGlobe({ day, layer, satDate, dots, view, onFail }: Pr
         closePopup.current = wireReadings(m);
         // The wind's canvas goes in a layer of its own, still faint (about 1.5 times the brightness of the Now map's lines, which use the same engine) and faded out towards the globe's edge and the card.
         const veil = document.createElement("div");
-        veil.style.cssText = "position:absolute;inset:0;pointer-events:none;opacity:0.92;mask-image:linear-gradient(to bottom,transparent 8%,#000 28%,#000 62%,transparent 92%)";
+        veil.style.cssText = `position:absolute;inset:0;pointer-events:none;opacity:${far ? 0 : WIND_OPACITY};transition:opacity 700ms;mask-image:linear-gradient(to bottom,transparent 8%,#000 28%,#000 62%,transparent 92%)`;
         m.getCanvasContainer().appendChild(veil);
+        windVeil.current = veil;
         setWindView({ ...globeView(m), container: veil });
         setReady(true);
       });
@@ -288,10 +330,13 @@ export default function AirGlobe({ day, layer, satDate, dots, view, onFail }: Pr
       map.current?.remove();
       map.current = undefined;
       field.current = undefined;
+      windVeil.current = undefined;
+      landedOn.current = undefined;
       setReady(false);
+      setLanded(false);
       setWindView(undefined);
     };
-  }, []);
+  }, [started]);
 
   // The day's fires, zones, path and wind.
   const geo = useMemo(() => frameGeo(day), [day]);
@@ -345,21 +390,57 @@ export default function AirGlobe({ day, layer, satDate, dots, view, onFail }: Pr
     if (ready && m) setSatellite(m, picture);
   }, [ready, picture]);
 
-  // The camera: the tilted view of the region, or the air's path. It moves when the view changes, and (in the path view only, which
-  // frames the path) when the path does. A day change in the default view leaves the viewer's pan and zoom alone.
-  const trail = day.trail;
-  const pathKey = `${trail.length}/${trail[0]?.join(",")}/${trail.at(-1)?.join(",")}`;
-  const trailKey = view === "path" ? pathKey : "";
+  // The fly-in: once the far view has drawn (or a slow network has kept it that long), the camera drops from space onto the view.
+  // The wind returns when it lands. A path that arrives during the flight is left to the camera effect below.
   useEffect(() => {
     const m = map.current;
-    if (!ready || !m) return;
+    if (!ready || !m || !trip.current) return;
+    let stop = () => {};
+    const timer = setTimeout(() => go(), DRAWN_MS);
+    const go = () => {
+      clearTimeout(timer);
+      m.off("idle", go);
+      const { clientWidth: w, clientHeight: h } = box.current!;
+      const { view, trail } = latest.current;
+      const cam = viewCamera(m, view, trail, w, h);
+      const { lng, lat } = LngLat.convert(cam.center);
+      const landing: Landing = { lng, lat, zoom: cam.zoom, pitch: cam.pitch, padding: cam.padding };
+      // NASA's tiles for the landing view start now, so that they are there when the camera is.
+      const tiles = tilesAround({ lng, lat }, cam.zoom, w, h, BASE_MAX_ZOOM);
+      prefetchTiles(Object.values(BASE_TILES).flatMap((tpl) => tiles.map((t) => tpl.replace("{z}", `${t.z}`).replace("{y}", `${t.y}`).replace("{x}", `${t.x}`))));
+      const first = trip.current === "first";
+      stop = fly(m, startPose(first), flightLegs(first, landing), landing, () => {
+        m.setMinZoom(MIN_ZOOM);
+        if (windVeil.current) windVeil.current.style.opacity = WIND_OPACITY;
+        landedOn.current = frameKey(view, trail);
+        setIntro("seen");
+        setLanded(true);
+      });
+    };
+    m.on("idle", go);
+    return () => {
+      clearTimeout(timer);
+      m.off("idle", go);
+      stop();
+    };
+  }, [ready, setIntro]);
+
+  // The camera: the tilted view of the region, or the air's path. It moves when the view changes, and (in the path view only, which
+  // frames the path) when the path does; after the fly-in, only if the view is no longer the one it landed on. A day change in the
+  // default view leaves the viewer's pan and zoom alone.
+  const trail = day.trail;
+  const frame = frameKey(view, trail);
+  useEffect(() => {
+    const m = map.current;
+    if (!ready || !landed || !m) return;
+    const same = landedOn.current === frame;
+    landedOn.current = undefined;
+    if (same) return;
     const { clientWidth: w, clientHeight: h } = box.current!;
-    const cam = (view === "path" && pathCamera(m, trail, w)) || homeCamera(w, h);
     const quiet = matchMedia("(prefers-reduced-motion: reduce)").matches;
-    m.easeTo({ ...cam, duration: quiet ? 0 : intro.current ? INTRO_MS : MOVE_MS, easing: ease });
-    intro.current = false;
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- trailKey stands for the path: the camera moves when it changes, not for each new array (and `trail` is read only in the path view)
-  }, [ready, view, trailKey]);
+    m.easeTo({ ...viewCamera(m, view, trail, w, h), duration: quiet ? 0 : MOVE_MS, easing: easeOut });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- frame stands for the view and the path: the camera moves when it changes, not for each new array
+  }, [ready, landed, frame]);
 
   return (
     <div className="relative size-full overflow-hidden bg-[#02030a] text-white">
