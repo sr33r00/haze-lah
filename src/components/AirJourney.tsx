@@ -2,7 +2,7 @@
 
 import { Share2 } from "lucide-react";
 import { useRef, useState } from "react";
-import { BMC_LABEL, BMC_URL, SITE_URL } from "@/lib/links";
+import { SUPPORT_LABEL, SUPPORT_URL, SITE_URL } from "@/lib/links";
 import { FIRE_COLOR, TRAIL_COLOR, journeyText } from "@/lib/replay";
 import type { ReplayDay } from "@/lib/types";
 
@@ -104,8 +104,8 @@ export default function AirJourney({ day, shareable = true }: { day: ReplayDay; 
         {shared && (
           <>
             Thanks for sharing. Haze Lah is free. Supporters keep it running.{" "}
-            <a href={BMC_URL} target="_blank" rel="noreferrer" className="font-semibold text-accent underline">
-              {BMC_LABEL}
+            <a href={SUPPORT_URL} target="_blank" rel="noreferrer" className="font-semibold text-accent underline">
+              {SUPPORT_LABEL}
             </a>
           </>
         )}
