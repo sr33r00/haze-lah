@@ -2,9 +2,10 @@
 
 import { Share2 } from "lucide-react";
 import { useRef, useState } from "react";
-import { SUPPORT_LABEL, SUPPORT_URL, SITE_URL } from "@/lib/links";
+import { SITE_URL } from "@/lib/links";
 import { FIRE_COLOR, TRAIL_COLOR, journeyText } from "@/lib/replay";
 import type { ReplayDay } from "@/lib/types";
+import SupportDialog from "./SupportDialog";
 
 const PICTURE = "/air-journey";
 
@@ -100,16 +101,14 @@ export default function AirJourney({ day, shareable = true }: { day: ReplayDay; 
         </p>
         {shareable && <ShareJourney text={`Today's air travelled ${t.trip} to reach Singapore.`} onShared={() => setShared(true)} />}
       </div>
-      <p aria-live="polite" className={`px-4 text-[13px] leading-snug text-muted ${shared ? "pb-3" : ""}`}>
+      <div aria-live="polite" className={`px-4 text-[13px] leading-snug text-muted ${shared ? "pb-3" : ""}`}>
         {shared && (
           <>
             Thanks for sharing. Haze Lah is free. Supporters keep it running.{" "}
-            <a href={SUPPORT_URL} target="_blank" rel="noreferrer" className="font-semibold text-accent underline">
-              {SUPPORT_LABEL}
-            </a>
+            <SupportDialog variant="link" />
           </>
         )}
-      </p>
+      </div>
     </div>
   );
 }

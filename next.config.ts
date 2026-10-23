@@ -10,6 +10,8 @@ const csp = [
   "font-src 'self'",
   // cdn.jsdelivr.net serves the globe's history files (data/history of the repo). OpenFreeMap serves the globe's map to MapLibre as data, not images: the style, the tile list, the vector tiles and the font glyphs. MapLibre's worker is a file of this origin.
   "connect-src 'self' https://tiles.openfreemap.org https://gibs.earthdata.nasa.gov https://cdn.jsdelivr.net https://raw.githubusercontent.com",
+  // Ko-fi's donation panel in the support dialog.
+  "frame-src https://ko-fi.com",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",
@@ -29,8 +31,10 @@ const nextConfig: NextConfig = {
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "X-Frame-Options", value: "DENY" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-          { key: "Permissions-Policy", value: "geolocation=(self), camera=(), microphone=(), payment=(), usb=()" },
-          { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
+          // payment: Apple Pay and Google Pay inside the Ko-fi frame (Ko-fi hands them to Stripe).
+          { key: "Permissions-Policy", value: 'geolocation=(self), camera=(), microphone=(), payment=("https://ko-fi.com" "https://js.stripe.com"), usb=()' },
+          // allow-popups: payment windows (PayPal) opened from the Ko-fi frame must keep working.
+          { key: "Cross-Origin-Opener-Policy", value: "same-origin-allow-popups" },
         ],
       },
       {

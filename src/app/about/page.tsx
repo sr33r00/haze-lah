@@ -5,7 +5,7 @@ import { pageMeta } from "@/lib/seo";
 import { GROUP_LABEL, LEVEL_COLOR, LEVEL_NAME, NEA_ADVICE, type Group } from "@/lib/bands";
 import AccuracyTable from "@/components/AccuracyTable";
 import AppShell from "@/components/AppShell";
-import CoffeeButton from "@/components/CoffeeButton";
+import SupportDialog from "@/components/SupportDialog";
 import SectionNav from "@/components/SectionNav";
 import { Bullets } from "@/components/ui";
 import { fetchAccuracy } from "@/lib/accuracy";
@@ -290,7 +290,7 @@ export default async function About() {
             <section id="support" className="scroll-mt-20 space-y-3">
               <h2 className={H2}>Support</h2>
               <p>Haze Lah is free, has no ads and is made by one person. Supporters pay for the servers and the data.</p>
-              <CoffeeButton />
+              <SupportDialog />
             </section>
 
             <section id="whats-new" className="scroll-mt-20 space-y-3">

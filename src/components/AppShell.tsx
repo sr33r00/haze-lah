@@ -1,6 +1,6 @@
-import { Coffee, Info } from "lucide-react";
+import { Info } from "lucide-react";
 import Link from "next/link";
-import { ALERTS_URL, SUPPORT_ICON_LABEL, SUPPORT_URL } from "@/lib/links";
+import { ALERTS_URL } from "@/lib/links";
 import { newestTime } from "@/lib/situation";
 import type { HazeData } from "@/lib/types";
 import AlertsButton from "./AlertsButton";
@@ -9,6 +9,7 @@ import Freshness from "./Freshness";
 import InstallPrompt from "./InstallPrompt";
 import Logo from "./Logo";
 import ShareButton from "./ShareButton";
+import SupportDialog from "./SupportDialog";
 import ThemeToggle from "./ThemeToggle";
 import WhatsNew from "./WhatsNew";
 
@@ -48,16 +49,7 @@ export default function AppShell({ data, title, children }: { data?: HazeData; t
             >
               <Info size={16} aria-hidden />
             </Link>
-            <a
-              href={SUPPORT_URL}
-              target="_blank"
-              rel="noreferrer"
-              aria-label={SUPPORT_ICON_LABEL}
-              title={SUPPORT_ICON_LABEL}
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-line bg-surface transition-colors hover:bg-line"
-            >
-              <Coffee size={16} aria-hidden />
-            </a>
+            <SupportDialog variant="icon" />
             <ThemeToggle />
             <ShareButton />
           </div>
