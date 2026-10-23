@@ -2,36 +2,41 @@ import { fmtFullDate } from "./format";
 
 /** The current release, shown once to each visitor in the "What's new" sheet and listed on the About page. Keep `version` in step with package.json. */
 export const RELEASE = {
-  version: "1.2.0",
-  date: "2026-10-21",
+  version: "1.3.0",
+  date: "2026-10-23",
   items: [
     {
-      title: "Smoke you breathe",
-      text: "The cigarette card now shows how much fine dust you breathed today. It also compares today with a normal day.",
-      href: "/#everyday",
-    },
-    {
-      title: "Your air's journey",
-      text: "See where today's air started, how far it travelled and how many fires it passed. You can share it as a picture.",
-      href: "/#origin",
-    },
-    {
-      title: "Smoke on the way",
-      text: "See if smoke from today's fires will reach Singapore, and about when.",
-      href: "/#origin",
-    },
-    {
-      title: "Wind on the globe",
-      text: "The map is now a globe. It shows the wind, the fires and the air's path for each day, from 1 August to the forecast. Press play to see them change.",
+      title: "The air globe",
+      text: "The map is now a globe of the Earth from NASA. It shows the fires, the wind and the path of the air to Singapore.",
       href: "/map",
     },
     {
-      title: "AQICN number",
-      text: "The Now card shows the number AQICN shows for the same PM2.5 reading. The Guide explains why it is bigger.",
-      href: "/guide#other-apps",
+      title: "Every day since 1 August",
+      text: "Drag the timeline to see each day of the haze season and the next 3 days. Press play to see the smoke move.",
+      href: "/map",
+    },
+    {
+      title: "More pollutants",
+      text: "See PM2.5, PM10, carbon monoxide, nitrogen dioxide, sulphur dioxide, ozone and dust on the globe, and NASA's smoke picture.",
+      href: "/map",
+    },
+    {
+      title: "Measured readings",
+      text: "Dots on the globe show what NEA, Malaysian stations and air sensors measure now. Tap a dot to see the number.",
+      href: "/map",
+    },
+    {
+      title: "New fire zones",
+      text: "Cyan rings show fires that started far from earlier ones.",
+      href: "/map?view=path",
+    },
+    {
+      title: "One smoke map on Now",
+      text: "The air journey map now shows the wind and the smoke. Move the slider from 5 days ago to 3 days ahead, and tap a spot to read the smoke level. Neighbours is now under it.",
+      href: "/#origin",
     },
   ],
 };
 
-/** "Version 1.2.0, 21 Oct 2026". */
+/** "Version 1.3.0, 23 Oct 2026". */
 export const RELEASE_LABEL = `Version ${RELEASE.version}, ${fmtFullDate(RELEASE.date)}`;
