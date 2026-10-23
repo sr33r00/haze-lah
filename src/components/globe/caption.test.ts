@@ -8,7 +8,7 @@ import type { GlobeDay } from "./frame";
 const LATS = [0, 1, 2, 3];
 const LONS = [100, 101, 102, 103, 104, 105];
 const base = (extra: Partial<GlobeDay> = {}): GlobeDay => ({
-  date: "2026-10-23", kind: "today", fires: [], older: [], fresh: [], trail: [], ahead: [], grid: { lats: LATS, lons: LONS }, wind: null, field: null, ...extra,
+  date: "2026-10-23", kind: "today", fires: [], fireDate: "2026-10-23", older: [], fresh: [], trail: [], ahead: [], grid: { lats: LATS, lons: LONS }, wind: null, field: null, ...extra,
 });
 const live = (extra: Partial<ReplayDay> = {}) => ({ from: "southeast", area: "Riau", near: 12, ahead: null, ...extra }) as ReplayDay;
 
@@ -42,6 +42,22 @@ test("facts: the model value over Singapore with its band, fires, new zones, PSI
     "Highest 24-hour PSI in Singapore: 86",
     "Wind from the southeast, 25 km/h",
   ]);
+});
+
+test("today before the afternoon pass counts the fires it draws and says whose they are, as the Now map does", () => {
+  const { facts } = captionOf({ day: base({ fireDate: "2026-10-22" }), layer: "off", fires: 812 });
+  assert.deepEqual(facts, ["812 fires in Sumatra and Borneo", "Fires of Thu 22 Oct"]);
+  // The day's own fires need no date.
+  assert.ok(!captionOf({ day: base(), layer: "off", fires: 812 }).facts.some((f) => f.startsWith("Fires of")));
+  // Nor does a day with no count.
+  assert.ok(!captionOf({ day: base({ fireDate: "2026-10-22" }), layer: "off", fires: null }).facts.some((f) => f.startsWith("Fires of")));
+});
+
+test("a layer the day has no data for says so instead of showing a value; a day with no grid says nothing", () => {
+  assert.ok(captionOf({ day: base({ kind: "past" }), layer: "co", fires: null }).facts.includes("No CO model for this day"));
+  const none = captionOf({ day: base({ grid: { lats: [], lons: [] } }), layer: "pm25", fires: null }).facts;
+  assert.ok(!none.some((f) => f.includes("model")));
+  assert.ok(!captionOf({ day: base({ kind: "past" }), layer: "pm25", fires: null }).facts.some((f) => f.startsWith("Model PM2.5")));
 });
 
 test("facts: a day that has just begun has no fire count; the satellite layer has no picture of a forecast day", () => {

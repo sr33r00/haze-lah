@@ -3,12 +3,12 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState, type KeyboardEvent, type MouseEvent } from "react";
 import { fmtDateShort, fmtHour, fmtLongWhen, fmtWeekday } from "@/lib/format";
-import type { HistoryDay } from "@/lib/history";
+import type { HistoryDay } from "@/lib/historyTypes";
 import { loadDay } from "@/lib/historyClient";
 import { fireDayAt, frameAt, originSteps } from "@/lib/originSteps";
 import { PM25, bandNames, bandOf, rampCss } from "@/lib/pollutants";
 import { WIND_NOTE } from "@/lib/links";
-import { FIRE_COLOR, NEW_FIRE_COLOR, TRAIL_COLOR, fetchReplay, fetchSmoke, newFires, newZonesText, trailCaption, windAtSg, windText } from "@/lib/replay";
+import { AHEAD_LABEL, FIRE_COLOR, NEW_FIRE_COLOR, TRAIL_COLOR, fetchReplay, fetchSmoke, newFires, newZonesText, trailCaption, windAtSg, windText } from "@/lib/replay";
 import { RELIEF, SAT_BOX, atImage, onImage } from "@/lib/satellite";
 import type { Replay, SmokeGrid } from "@/lib/types";
 import { SG, sgDate } from "@/lib/util";
@@ -83,7 +83,7 @@ export default function HazeOrigin({ className }: { className?: string }) {
       .catch(() => setFailed(true));
   }, []);
 
-  // The forecast grid is about 100 KB: fetched when the map is about to scroll into view, not on every visit.
+  // The forecast grid is about 250 KB (74 KB gzipped, with the gases): fetched when the map is about to scroll into view, not on every visit.
   useEffect(() => {
     if (!figure) return;
     const load = () => fetchSmoke().then(setSmoke, () => setSmokeFailed(true));
@@ -116,7 +116,7 @@ export default function HazeOrigin({ className }: { className?: string }) {
   // The PM2.5 of the step and the grid it is on; null where there is none (no file, or no frame near the day's air).
   const model = useMemo(() => {
     if (!step || !day) return null;
-    if (step.kind !== "past") return smoke && step.frame != null ? { grid: smoke, values: smoke.values[step.frame] } : null;
+    if (step.kind !== "past") return smoke && step.frame != null && smoke.values[step.frame] ? { grid: smoke, values: smoke.values[step.frame] } : null;
     const h = history[day.date];
     const f = h ? frameAt(h, day.arrival) : null;
     const values = f != null ? h?.gases.pm25?.[f] : undefined;
@@ -334,7 +334,7 @@ export default function HazeOrigin({ className }: { className?: string }) {
                   {ahead && (
                     <span className="flex items-center gap-1.5">
                       <span aria-hidden className="w-4 border-t-[3px] border-dashed" style={{ borderColor: FIRE_COLOR }} />
-                      Where smoke goes next
+                      {AHEAD_LABEL}
                     </span>
                   )}
                 </p>

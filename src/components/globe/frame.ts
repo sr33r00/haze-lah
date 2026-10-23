@@ -1,6 +1,6 @@
-import { latestFireDay, type HistoryDay } from "@/lib/history";
+import { latestFireDay, type HistoryDay } from "@/lib/historyTypes";
 import type { PollutantId } from "@/lib/pollutants";
-import { ARRIVAL_SGT, dayTrail, newFires } from "@/lib/replay";
+import { MAP_FIRES, arrivalAt, dayTrail, newFires } from "@/lib/replay";
 import type { Bar } from "@/lib/timeline";
 import type { Replay, SmokeGrid } from "@/lib/types";
 import { sgDate } from "@/lib/util";
@@ -18,6 +18,8 @@ export type GlobeDay = {
   kind: Bar["kind"];
   /** The day's fires: lat, lon, FRP in MW (0 where the source has no FRP, as the live replay). */
   fires: [number, number, number][];
+  /** The date of the day the fires are from: `date`, except on today before the afternoon pass, which shows the newest day with enough fires; null for a forecast day, which shows none of its own. */
+  fireDate: string | null;
   /** The fires of the days before, drawn dim. */
   older: Pt[];
   /** New fire zones: fires with none within 50 km on the days before, one per 30 km (`newFires`). */
@@ -42,7 +44,7 @@ export type GlobeSource = {
 };
 
 /** How many days before the shown one are dimmed in. */
-const DIM_DAYS = 4;
+export const DIM_DAYS = 4;
 const HOUR = 3600_000;
 
 const pairs = (fires: readonly (readonly number[])[]): Pt[] => fires.map((f) => [f[0], f[1]]);
@@ -54,7 +56,7 @@ function forecastTrail(smoke: SmokeGrid, date: string): Pt[] {
   if (!wind || !times.length) return [];
   const frames: WindFrame[] = times.map((t, i) => ({ t: Date.parse(t), u: { lats, lons, data: wind.u[i] }, v: { lats, lons, data: wind.v[i] } }));
   const last = frames[frames.length - 1].t;
-  if (Date.parse(`${date}T${String(ARRIVAL_SGT).padStart(2, "0")}:00:00+08:00`) > last) return []; // past the last frame: the trail would be that of an earlier hour
+  if (arrivalAt(date) > last) return []; // past the last frame: the trail would be that of an earlier hour
   const { arrival, trail } = dayTrail(frames, date, last);
   const covered = Math.floor((arrival - frames[0].t) / HOUR);
   return covered < 1 ? [] : trail.slice(0, covered + 1);
@@ -76,17 +78,17 @@ export function globeDay(source: GlobeSource, date: string, step: number, layer:
   const at = days.findIndex((d) => d.date === date);
   const liveAt = kind === "today" && at < 0 ? days.length - 1 : at; // the newest replay day stands in for today
   const live = kind === "forecast" ? undefined : days[liveAt];
-  const out: GlobeDay = { date, kind, fires: [], older: [], fresh: [], trail: [], ahead: [], grid: { lats: [], lons: [] }, wind: null, field: null };
+  const out: GlobeDay = { date, kind, fires: [], fireDate: null, older: [], fresh: [], trail: [], ahead: [], grid: { lats: [], lons: [] }, wind: null, field: null };
 
   // Fires. A day that has only just begun has few: today shows the newest day with enough, its path and wind stay today's.
   if (own) {
     const prior = before.slice(-DIM_DAYS);
-    Object.assign(out, { fires: withFrp(own.fires), older: prior.flatMap((d) => pairs(d.fires)), fresh: newFires([...prior, own]) });
+    Object.assign(out, { fires: withFrp(own.fires), fireDate: date, older: prior.flatMap((d) => pairs(d.fires)), fresh: newFires([...prior, own].map((d) => ({ fires: d.fires.slice(0, MAP_FIRES) }))) }); // the strongest MAP_FIRES of each day, as the live replay keeps, so that a date has the same zones here as on Now
   } else if (live) {
     const upTo = days.slice(0, liveAt + 1);
     const shown = kind === "today" ? (latestFireDay(upTo) ?? live) : live;
     const k = upTo.indexOf(shown);
-    Object.assign(out, { fires: withFrp(shown.fires), older: upTo.slice(Math.max(0, k - DIM_DAYS), k).flatMap((d) => pairs(d.fires)), fresh: newFires(upTo.slice(0, k + 1)) });
+    Object.assign(out, { fires: withFrp(shown.fires), fireDate: shown.date, older: upTo.slice(Math.max(0, k - DIM_DAYS), k).flatMap((d) => pairs(d.fires)), fresh: newFires(upTo.slice(0, k + 1)) });
   } else if (kind === "forecast") {
     const fireDay = latestFireDay(days) ?? days[days.length - 1];
     out.older = pairs(fireDay?.fires ?? []);

@@ -1,7 +1,7 @@
 import type { ExpressionSpecification, LayerSpecification, StyleSpecification } from "maplibre-gl";
 import { fetchBasemap, trimStyle } from "@/lib/basemap";
 import { GIBS_WMTS } from "@/lib/globe";
-import { TRAIL_COLOR } from "@/lib/replay";
+import { NEW_FIRE_COLOR, TRAIL_COLOR } from "@/lib/replay";
 
 /** Colours of the globe, in one place. */
 export const INK = {
@@ -10,7 +10,7 @@ export const INK = {
   horizon: "#3d78c9", // the glow at the limb
   fireCore: "#ffd23f",
   fireGlow: "#ff3b1f",
-  newZone: "#5fe3ee",
+  newZone: NEW_FIRE_COLOR,
   trail: TRAIL_COLOR,
   ahead: "#fbbf77",
 };

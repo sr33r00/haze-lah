@@ -29,8 +29,8 @@ type Props = {
   dots: Dot[];
   /** "default" is the tilted view of the region; "path" frames the air's path. */
   view: "default" | "path";
-  /** Called once when the globe cannot run: no WebGL, a lost WebGL context, or a basemap that will not load. */
-  onFail?: () => void;
+  /** Called once when the globe cannot run: "webgl" for no WebGL or a lost context, "map" for a basemap that will not load. */
+  onFail?: (reason: "webgl" | "map") => void;
 };
 
 const CENTER: [number, number] = [108.5, -1]; // between Sumatra and Borneo
@@ -232,10 +232,10 @@ export default function AirGlobe({ day, layer, satDate, dots, view, onFail }: Pr
     const el = box.current!;
     let live = true;
     let failed = false;
-    const fail = () => {
+    const fail = (reason: "webgl" | "map") => {
       if (failed || !live) return;
       failed = true;
-      failRef.current?.();
+      failRef.current?.(reason);
     };
     globeStyle().then((style) => {
       if (!live) return;
@@ -257,14 +257,14 @@ export default function AirGlobe({ day, layer, satDate, dots, view, onFail }: Pr
           pixelRatio: Math.min(devicePixelRatio, 2),
         });
       } catch {
-        fail(); // no WebGL
+        fail("webgl");
         return;
       }
       map.current = m;
       m.touchZoomRotate.disableRotation();
-      m.on("webglcontextlost", fail);
+      m.on("webglcontextlost", () => fail("webgl"));
       m.on("error", (e) => {
-        if ((e.error as Error | undefined)?.name === "GPUInitializationError") fail(); // the context could not be made again after a loss
+        if ((e.error as Error | undefined)?.name === "GPUInitializationError") fail("webgl"); // the context could not be made again after a loss
       });
       m.on("load", () => {
         addOverlays(m);
@@ -277,7 +277,7 @@ export default function AirGlobe({ day, layer, satDate, dots, view, onFail }: Pr
         setWindView({ ...globeView(m), container: veil });
         setReady(true);
       });
-    }).catch(fail); // the basemap style would not load
+    }).catch(() => fail("map")); // the basemap style would not load
     return () => {
       live = false;
       map.current?.remove();
@@ -340,9 +340,11 @@ export default function AirGlobe({ day, layer, satDate, dots, view, onFail }: Pr
     if (ready && m) setSatellite(m, picture);
   }, [ready, picture]);
 
-  // The camera: the tilted view of the region, or the air's path. Moves again when the path does.
+  // The camera: the tilted view of the region, or the air's path. It moves when the view changes, and (in the path view only, which
+  // frames the path) when the path does. A day change in the default view leaves the viewer's pan and zoom alone.
   const trail = day.trail;
-  const trailKey = `${trail.length}/${trail[0]?.join(",")}/${trail.at(-1)?.join(",")}`;
+  const pathKey = `${trail.length}/${trail[0]?.join(",")}/${trail.at(-1)?.join(",")}`;
+  const trailKey = view === "path" ? pathKey : "";
   useEffect(() => {
     const m = map.current;
     if (!ready || !m) return;
@@ -351,7 +353,7 @@ export default function AirGlobe({ day, layer, satDate, dots, view, onFail }: Pr
     const quiet = matchMedia("(prefers-reduced-motion: reduce)").matches;
     m.easeTo({ ...cam, duration: quiet ? 0 : intro.current ? INTRO_MS : MOVE_MS, easing: ease });
     intro.current = false;
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- trailKey stands for the path: the camera moves when it changes, not for each new array
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- trailKey stands for the path: the camera moves when it changes, not for each new array (and `trail` is read only in the path view)
   }, [ready, view, trailKey]);
 
   return (

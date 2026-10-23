@@ -7,7 +7,7 @@ import { SG } from "@/lib/util";
 import { sample } from "@/lib/wind";
 import type { GlobeDay, LayerChoice } from "./frame";
 
-/** What the card says about a day. `live` is the live replay's day for the same date (it knows the fires the air passed), `fires` the day's fire count, `psi` Singapore's highest 24-hr PSI. */
+/** What the card says about a day. `live` is the live replay's day for the same date (it knows the fires the air passed), `fires` the count of the fires drawn (the day `day.fireDate`), `psi` Singapore's highest 24-hr PSI. */
 export type CaptionInput = { day: GlobeDay; layer: LayerChoice; live?: ReplayDay; fires: number | null; psi?: number; now?: number };
 
 /**
@@ -28,13 +28,14 @@ export function captionOf({ day, layer, live, fires, psi, now = Date.now() }: Ca
   if (p && v != null) {
     const band = p.bands ? `, ${bandNames(p)[bandOf(p, v)]}` : "";
     facts.push(`Model ${p.label} over Singapore: ${Math.round(v).toLocaleString("en-SG")} ${p.unit}${band}`);
-  }
+  } else if (p && day.grid.lats.length > 1) facts.push(`No ${p.label} model for this day`); // as on the Now map; a day with no grid at all (a forecast day without a forecast) says nothing
   if (layer === "smoke") {
     const latest = globeDates(now).at(-1)!; // NASA's newest pass: today's only from the evening
     if (future) facts.push("No satellite picture for this day.");
     else if (day.date > latest) facts.push(`Satellite picture: the latest pass, ${fmtDateShort(latest)}`);
   }
   if (fires != null && !(day.kind === "today" && fires === 0)) facts.push(fires === 0 ? "No fires seen in Sumatra and Borneo" : `${fires.toLocaleString("en-SG")} ${fires === 1 ? "fire" : "fires"} in Sumatra and Borneo`);
+  if (fires != null && day.fireDate && day.fireDate !== day.date) facts.push(`Fires of ${fmtDateShort(day.fireDate)}`); // as on the Now map: the picture shows an earlier day's fires
   if (day.fresh.length) facts.push(newZonesText(day.fresh.length));
   if (psi != null) facts.push(`Highest 24-hour PSI in Singapore: ${psi}`);
   const wind = day.wind && day.grid.lats.length > 1 ? windAtSg(day.grid, day.wind) : null;

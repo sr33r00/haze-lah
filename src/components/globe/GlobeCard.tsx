@@ -2,10 +2,11 @@
 
 import { ChevronUp } from "lucide-react";
 import { useRef, type PointerEvent, type ReactNode } from "react";
-import { GLOBE_LAYERS, rampCss as satelliteRampCss } from "@/lib/globe";
+import { GLOBE_LAYERS, satelliteRampCss } from "@/lib/globe";
 import { OPEN_DATA_LICENCE, WIND_NOTE } from "@/lib/links";
 import { bandNames, pollutant, rampCss } from "@/lib/pollutants";
 import type { Dot } from "@/lib/readings";
+import { AHEAD_LABEL } from "@/lib/replay";
 import type { GlobeDay, LayerChoice } from "./frame";
 import RampBar from "../RampBar";
 import { INK } from "./globeStyle";
@@ -46,7 +47,7 @@ function keyOf(day: GlobeDay, dots: Dot[]): [keyof typeof swatch, string][] {
     ["fire", "Fire", day.fires.length > 0],
     ["zone", "New fire zone", day.fresh.length > 0],
     ["path", "Where the air came from", day.trail.length > 1],
-    ["ahead", "Smoke on the way", day.ahead.length > 1],
+    ["ahead", AHEAD_LABEL, day.ahead.length > 1],
     ["measured", "Measured reading", dots.some((d) => d.kind === "measured")],
     ["model", "Model value", dots.some((d) => d.kind === "model")],
   ];
@@ -149,7 +150,7 @@ export default function GlobeCard({ headline, facts, layer, day, dots, live, exp
           <details className="mt-3 border-t border-white/10 text-white/60 [&_summary::-webkit-details-marker]:hidden">
             <summary className="flex min-h-11 cursor-pointer list-none items-center text-[12px] font-semibold text-white/80 underline-offset-2 hover:underline">Sources</summary>
           <p className="pb-1 pt-1 text-[11px] leading-[15px] text-white/60">
-            Fires: NASA FIRMS. Satellite pictures: NASA GIBS (AIRS, OMPS). Pollution and wind: Copernicus Atmosphere Monitoring Service and ECMWF via Open-Meteo; contains modified Copernicus
+            Fires: NASA FIRMS. Satellite pictures: NASA GIBS (OMPS). Pollution and wind: Copernicus Atmosphere Monitoring Service and ECMWF via Open-Meteo; contains modified Copernicus
             Atmosphere Monitoring Service information. Readings: NEA under the{" "}
             <a href={OPEN_DATA_LICENCE} target="_blank" rel="noreferrer" className="underline">
               Singapore Open Data Licence

@@ -22,6 +22,10 @@ type Props = {
   /** Frames are on their way. */
   busy: boolean;
   playing: boolean;
+  /** The day is changing under the viewer (playing or dragging): the readout is not announced then, the slider speaks for itself. */
+  quiet: boolean;
+  /** Called with true when a drag on the strip starts and false when it ends. */
+  onDrag: (dragging: boolean) => void;
   onPick: (bar: number) => void;
   onNudge: (unit: "day" | "step", dir: 1 | -1) => void;
   onEdge: (end: "first" | "last") => void;
@@ -36,7 +40,7 @@ const clamp = (x: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, x
  * exists, faint where there is no record) with event marks. A slider: drag across the strip, or use the arrow keys
  * (one day; with Shift one step). Newest on the right; a strip longer than VISIBLE_DAYS scrolls back.
  */
-export default function Timeline({ bars, marks, selected, readout, busy, playing, onPick, onNudge, onEdge, onPlay, className = "" }: Props) {
+export default function Timeline({ bars, marks, selected, readout, busy, playing, quiet, onDrag, onPick, onNudge, onEdge, onPlay, className = "" }: Props) {
   const scroller = useRef<HTMLDivElement>(null);
   const track = useRef<HTMLDivElement>(null);
   const dragging = useRef(false);
@@ -82,6 +86,7 @@ export default function Timeline({ bars, marks, selected, readout, busy, playing
       e.currentTarget.setPointerCapture(e.pointerId);
     } catch {} // an untracked pointer (a synthetic one) cannot be captured; dragging still works inside the strip
     dragging.current = true;
+    onDrag(true);
     lastPick.current = null;
     pick(e.clientX);
   };
@@ -91,6 +96,10 @@ export default function Timeline({ bars, marks, selected, readout, busy, playing
     if (e.clientX < box.left + 24) e.currentTarget.scrollLeft -= 10;
     else if (e.clientX > box.right - 24) e.currentTarget.scrollLeft += 10;
     pick(e.clientX);
+  };
+  const release = () => {
+    dragging.current = false;
+    onDrag(false);
   };
   const key = (e: KeyboardEvent) => {
     const dir = e.key === "ArrowRight" || e.key === "ArrowUp" ? 1 : e.key === "ArrowLeft" || e.key === "ArrowDown" ? -1 : 0;
@@ -116,7 +125,7 @@ export default function Timeline({ bars, marks, selected, readout, busy, playing
     <section aria-label="Timeline" className={`px-4 pb-2.5 pt-0.5 ${className}`}>
       <div className="flex items-center gap-3">
         <PlayButton playing={playing} loading={busy && playing} onClick={onPlay} what="the timeline" className="bg-white text-[#02030a]" />
-        <div aria-live={playing ? "off" : "polite"} aria-atomic="true" className="min-w-0 flex-1">
+        <div aria-live={quiet ? "off" : "polite"} aria-atomic="true" className="min-w-0 flex-1">
           <p className="truncate text-[16px] font-bold leading-6 tabular">
             {readout.text}
             {readout.tag && <span className="ml-2 rounded-full bg-white/15 px-2 py-0.5 align-[1px] text-[11px] font-semibold uppercase tracking-wide text-white/85">{readout.tag}</span>}
@@ -136,8 +145,9 @@ export default function Timeline({ bars, marks, selected, readout, busy, playing
         aria-orientation="horizontal"
         onPointerDown={down}
         onPointerMove={move}
-        onPointerUp={() => (dragging.current = false)}
-        onPointerCancel={() => (dragging.current = false)}
+        onPointerUp={release}
+        onPointerCancel={release}
+        onLostPointerCapture={release}
         onKeyDown={key}
         className="no-scrollbar mt-1.5 cursor-ew-resize touch-none overflow-x-auto overscroll-x-contain rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-white/80"
       >

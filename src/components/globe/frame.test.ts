@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import type { HistoryDay } from "@/lib/history";
+import type { HistoryDay } from "@/lib/historyTypes";
 import type { Replay, ReplayDay, SmokeGrid } from "@/lib/types";
 import { SG } from "@/lib/util";
 import { frameGeo, globeDay } from "./frame";
@@ -114,10 +114,29 @@ test("uses latestFireDay when today's live day has under 20 fires", () => {
   ]);
   const day = globeDay({ replay, smoke: smokeOf() }, TODAY, 0, "pm25", TODAY);
   assert.equal(day.fires.length, 25); // the 22nd's, not today's 4
+  assert.equal(day.fireDate, "2026-10-22"); // and the card is told whose they are
   assert.deepEqual(day.fires[0], [2, 102, 0]);
   assert.deepEqual(day.older.length, 60); // the days before the 22nd
   assert.deepEqual(day.trail, trailOf(3)); // the path is still today's
   assert.ok(day.fresh.length > 0 && day.fresh.length <= 25);
+});
+
+test("fireDate is the day whose fires are drawn: the day itself, an earlier one on a slow today, none for a forecast day", () => {
+  const replay = replayOf([replayDay("2026-10-22", firesAt(30, 0, 100)), replayDay(TODAY, firesAt(40, 0, 100))]);
+  assert.equal(globeDay({ replay, smoke: smokeOf() }, TODAY, 0, "off", TODAY).fireDate, TODAY);
+  assert.equal(globeDay({ replay, smoke: smokeOf() }, "2026-10-22", 0, "off", TODAY).fireDate, "2026-10-22");
+  assert.equal(globeDay({ history: historyDay("2026-09-10", firesAt(5, 0, 100)) }, "2026-09-10", 0, "off", TODAY).fireDate, "2026-09-10");
+  assert.equal(globeDay({ replay, smoke: smokeOf() }, "2026-10-25", 0, "off", TODAY).fireDate, null);
+});
+
+test("new zones of a history day count only its strongest MAP_FIRES fires, as the live replay keeps", () => {
+  // 451 fires on the day; the last two, far from every earlier fire, are beyond the 400 strongest: the live replay would not have them, so no zone.
+  const day = historyDay("2026-09-10", firesAt(5, 0, 100));
+  day.fires = [...Array.from({ length: 449 }, (): [number, number, number] => [0, 100, 40]), [8, 118, 40], [9, 119, 40]];
+  const before = [historyDay("2026-09-09", [[0, 100]])];
+  assert.deepEqual(globeDay({ history: day, before }, "2026-09-10", 0, "off", TODAY).fresh, []);
+  day.fires[10] = [8, 118, 40]; // one within the first 400
+  assert.deepEqual(globeDay({ history: day, before }, "2026-09-10", 0, "off", TODAY).fresh, [[8, 118]]);
 });
 
 test("a live past day has no grid, and its wind and trail", () => {
