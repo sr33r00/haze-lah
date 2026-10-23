@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { BAND_NAMES, POLLUTANTS, bandNames, bandOf, colorOf, pollutant, rampCss } from "@/lib/pollutants";
+import { BAND_NAMES, POLLUTANTS, bandNames, bandOf, colorOf, concentrationOfSub, pollutant, rampCss } from "@/lib/pollutants";
 
 const get = pollutant;
 
@@ -92,4 +92,46 @@ test("a missing or NaN value is band 0 and transparent, not garbage", () => {
       assert.equal(bandOf(p, v), 0);
       assert.deepEqual(colorOf(p, v), [0, 0, 0, 0]);
     }
+});
+
+test("CO is a tracer: 200 is nearly clear, 1000 mid-ramp and opaque, 6000 the top colour", () => {
+  const co = get("co");
+  assert.ok(co.tracer);
+  assert.ok(colorOf(co, 200)[3] < 0.05);
+  assert.equal(colorOf(co, 100)[3], 0);
+  const mid = colorOf(co, 1000);
+  assert.ok(mid[3] > 0.65, "1000 is opaque");
+  assert.ok(mid[1] > mid[0] && mid[1] > mid[2], "1000 is in the green part");
+  const top = colorOf(co, 5000);
+  assert.deepEqual(colorOf(co, 6000), top);
+  assert.deepEqual(colorOf(co, 24599), top);
+  assert.ok(top[0] > top[1] && top[0] > top[2] && top[0] < 200, "crimson");
+});
+
+test("CO plumes of 400 to 2000 climb through teal, green, yellow and orange, and its opacity never falls", () => {
+  const co = get("co");
+  const [r1, g1, b1] = colorOf(co, 450);
+  assert.ok(b1 > r1 && g1 > r1, "450 is teal or blue");
+  const [r2, g2, b2] = colorOf(co, 1500);
+  assert.ok(r2 > 200 && g2 > 180 && b2 < 100, "1500 is yellow");
+  const [r3, g3] = colorOf(co, 2200);
+  assert.ok(r3 > 230 && g3 < 170, "2200 is orange");
+  let last = 0;
+  for (let v = 100; v <= 8000; v *= 1.05) {
+    const a = colorOf(co, v)[3];
+    assert.ok(a >= last - 1e-9, `alpha dips at ${v}`);
+    last = a;
+  }
+});
+
+test("only CO has a tracer scale, and its legend gradient runs over it", () => {
+  assert.deepEqual(POLLUTANTS.filter((p) => p.tracer).map((p) => p.id), ["co"]);
+  assert.match(rampCss(get("co")), /rgba\(140, 15, 55, 0\.88\) 100\.0%\)$/);
+  assert.ok(rampCss(get("co")) !== rampCss(get("pm25")));
+  assert.equal(rampCss(get("pm25")), rampCss(get("so2")));
+});
+
+test("a PSI sub-index maps to a concentration through the band limits", () => {
+  const co = get("co");
+  assert.deepEqual([0, 25, 50, 75, 100, 200, 400].map((s) => concentrationOfSub(co, s)), [0, 2500, 5000, 7500, 10000, 17000, 17000]);
 });

@@ -1,6 +1,6 @@
 import { REGIONS, REGION_POINT, psiLevel, type Region } from "@/lib/bands";
 import { cap } from "@/lib/format";
-import { PM25, bandOf, colorOf, pollutant, type Pollutant, type PollutantId } from "@/lib/pollutants";
+import { PM25, bandOf, colorOf, concentrationOfSub, pollutant, type Pollutant, type PollutantId } from "@/lib/pollutants";
 import type { HazeData, NeaNow, Station } from "@/lib/types";
 import { MAX_SENSOR_AGE_MS } from "@/lib/util";
 
@@ -17,6 +17,8 @@ export type Dot = {
   kind: "measured" | "model";
   /** What shows first when zoomed out: 0 NEA's regions, 1 Malaysian stations and Indonesian cities, 2 community sensors. */
   rank: 0 | 1 | 2;
+  /** Dot colour where the layer has its own scale (CO's tracer ramp); else the band's. */
+  color?: string;
 };
 
 /** What the dots need of the page's data: small enough to send to the browser (the stations without their extras, only the newest NEA hour). */
@@ -56,7 +58,11 @@ function neaDots(data: DotData, p: Pollutant): Dot[] {
       if (v != null && Number.isFinite(v)) out.push({ ...at, value: `${Math.round(v)} ${p.unit} ${p.label}`, band: bandOf(p, v) });
     } else {
       const v = nea?.sub[p.id as keyof NonNullable<DotData["nea"]>["sub"]]?.[r];
-      if (v != null && Number.isFinite(v)) out.push({ ...at, value: `PSI sub-index ${Math.round(v)} (${p.label})`, band: psiBand(v) });
+      if (v != null && Number.isFinite(v)) {
+        const dot: Dot = { ...at, value: `PSI sub-index ${Math.round(v)} (${p.label})`, band: psiBand(v) };
+        if (p.tracer) dot.color = rgbOf(colorOf(p, concentrationOfSub(p, v))); // the dot sits on the same ramp as the field
+        out.push(dot);
+      }
     }
   }
   return out;
@@ -83,6 +89,8 @@ export function readingDots(data: DotData, layer: PollutantId | "smoke" | "off",
   return out;
 }
 
+const rgbOf = ([r, g, b]: number[], k = 1) => `rgb(${Math.round(r * k)},${Math.round(g * k)},${Math.round(b * k)})`;
+
 /** One value in each band to take the colour from the shared ramp (the band limits for 0 and 1, then mid-band for 2 and 3). */
 const BAND_VALUE = [55, 100, 200, 350] as const;
 const GREY = "rgb(150,150,150)";
@@ -90,9 +98,7 @@ const GREY = "rgb(150,150,150)";
 /** The ramp colour of a band at full opacity (the same ramp as the field, so a dot matches the colours around it); Normal is darkened so that a ring of quiet readings does not look like a hazard. */
 export function bandColor(band: Dot["band"]): string {
   if (band == null) return GREY;
-  const k = band === 0 ? 0.6 : 1;
-  const [r, g, b] = colorOf(PM25, BAND_VALUE[band]);
-  return `rgb(${Math.round(r * k)},${Math.round(g * k)},${Math.round(b * k)})`;
+  return rgbOf(colorOf(PM25, BAND_VALUE[band]), band === 0 ? 0.6 : 1);
 }
 
 /** The dots as GeoJSON points for the map's source. */
@@ -101,7 +107,7 @@ export function dotFeatures(dots: Dot[]): GeoJSON.FeatureCollection<GeoJSON.Poin
     type: "FeatureCollection",
     features: dots.map((d) => ({
       type: "Feature",
-      properties: { label: d.label, value: d.value, kind: d.kind, rank: d.rank, color: bandColor(d.band) },
+      properties: { label: d.label, value: d.value, kind: d.kind, rank: d.rank, color: d.color ?? bandColor(d.band) },
       geometry: { type: "Point", coordinates: [d.lon, d.lat] },
     })),
   };

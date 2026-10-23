@@ -19,3 +19,6 @@ export const OPEN_DATA_LICENCE = "https://data.gov.sg/open-data-licence";
 
 /** What the wind lines on the Smoke and fires map and the globe show. */
 export const WIND_NOTE = "Lines show the wind at about 1.5 km up.";
+
+/** NEA, Computation of the Pollutant Standards Index (PSI): the PSI breakpoints for every pollutant. */
+export const NEA_PSI_URL = "https://www.haze.gov.sg/docs/default-source/faq/computation-of-the-pollutant-standards-index-(psi).pdf";

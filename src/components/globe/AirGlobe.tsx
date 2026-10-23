@@ -270,9 +270,9 @@ export default function AirGlobe({ day, layer, satDate, dots, view, onFail }: Pr
         addOverlays(m);
         addReadings(m);
         closePopup.current = wireReadings(m);
-        // The wind's canvas goes in a layer of its own, a little fainter and faded out towards the globe's edge and the card.
+        // The wind's canvas goes in a layer of its own, still faint (about 1.5 times the brightness of the Now map's lines, which use the same engine) and faded out towards the globe's edge and the card.
         const veil = document.createElement("div");
-        veil.style.cssText = "position:absolute;inset:0;pointer-events:none;opacity:0.62;mask-image:linear-gradient(to bottom,transparent 8%,#000 28%,#000 62%,transparent 92%)";
+        veil.style.cssText = "position:absolute;inset:0;pointer-events:none;opacity:0.92;mask-image:linear-gradient(to bottom,transparent 8%,#000 28%,#000 62%,transparent 92%)";
         m.getCanvasContainer().appendChild(veil);
         setWindView({ ...globeView(m), container: veil });
         setReady(true);

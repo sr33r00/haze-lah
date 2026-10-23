@@ -3,7 +3,7 @@
 import { ChevronUp } from "lucide-react";
 import { useRef, type PointerEvent, type ReactNode } from "react";
 import { GLOBE_LAYERS, satelliteRampCss } from "@/lib/globe";
-import { OPEN_DATA_LICENCE, WIND_NOTE } from "@/lib/links";
+import { NEA_PSI_URL, OPEN_DATA_LICENCE, WIND_NOTE } from "@/lib/links";
 import { bandNames, pollutant, rampCss } from "@/lib/pollutants";
 import type { Dot } from "@/lib/readings";
 import { AHEAD_LABEL } from "@/lib/replay";
@@ -59,9 +59,9 @@ function Legend({ layer, expanded }: { layer: LayerChoice; expanded: boolean }) 
   if (layer === "off") return null;
   const p = layer === "smoke" ? null : pollutant(layer);
   const { ramp } = GLOBE_LAYERS.smoke;
-  const title = p ? `${p.label} (${p.unit}), model` : `${ramp.unit}, NASA satellite`;
-  const names = p ? (p.bands ? bandNames(p) : ["Low", "High"]) : [...ramp.ends]; // four bands, or the two ends of a ramp
-  const limits = p?.bands ?? null;
+  const title = p ? `${p.label}, ${p.unit}, model` : `${ramp.unit}, NASA satellite`;
+  const names = p?.tracer ? p.tracer.ends : p ? (p.bands ? bandNames(p) : ["Low", "High"]) : [...ramp.ends]; // four bands, or the two ends of a ramp
+  const limits = p?.tracer ? null : (p?.bands ?? null);
   return (
     <div className="mt-2">
       <p className={`text-[11px] leading-4 text-white/65 ${expanded ? "" : "hidden"} ${EXTRAS}`}>{title}</p>
@@ -74,6 +74,14 @@ function Legend({ layer, expanded }: { layer: LayerChoice; expanded: boolean }) 
             </span>
           ))}
         </div>
+      )}
+      {p?.tracer && (
+        <p className={`mt-1 text-[11px] leading-4 text-white/65 ${expanded ? "block" : "hidden"} ${EXTRAS}`}>
+          {p.tracer.note}{" "}
+          <a href={NEA_PSI_URL} target="_blank" rel="noreferrer" className="underline">
+            NEA PSI method
+          </a>
+        </p>
       )}
     </div>
   );

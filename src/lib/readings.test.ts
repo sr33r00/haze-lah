@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { REGIONS, REGION_POINT, type Region } from "@/lib/bands";
+import { colorOf, pollutant } from "@/lib/pollutants";
 import { bandColor, dotData, dotFeatures, readingDots } from "@/lib/readings";
 import type { HazeData, Sensor, Station } from "@/lib/types";
 
@@ -131,4 +132,12 @@ test("dots carry a rank: NEA regions 0, stations 1, sensors 2", () => {
   assert.ok(dots.filter((d) => d.label.endsWith("NEA")).every((d) => d.rank === 0));
   assert.ok(dots.filter((d) => d.label.endsWith("Sensor")).every((d) => d.rank === 2));
   assert.ok(dots.filter((d) => d.label.endsWith("Malaysia")).every((d) => d.rank === 1));
+});
+
+test("NEA CO dots take their colour from the CO tracer ramp, other layers from the band", () => {
+  const co = readingDots(data(), "co", true, NOW).find((x) => x.label === "North, NEA")!;
+  assert.equal(co.value, "PSI sub-index 8 (CO)");
+  assert.equal(co.color, "rgb(" + colorOf(pollutant("co"), 800).slice(0, 3).map(Math.round).join(",") + ")");
+  assert.equal(readingDots(data(), "o3", true, NOW).find((x) => x.label === "North, NEA")!.color, undefined);
+  assert.equal(dotFeatures([co]).features[0].properties!.color, co.color);
 });

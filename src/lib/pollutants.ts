@@ -1,4 +1,5 @@
 import { LEVEL_NAME, PM25_BANDS } from "@/lib/bands";
+import { NEA_PSI_URL } from "@/lib/links";
 
 export type PollutantId = "pm25" | "pm10" | "co" | "no2" | "so2" | "o3" | "dust";
 
@@ -12,9 +13,17 @@ export type Pollutant = {
   bands: [number, number, number] | null;
   /** Where the band limits come from. */
   source: string;
+  /** A tracer scale in place of the shared health ramp: colours that show where the gas is, not how safe the air is. */
+  tracer?: Tracer;
 };
 
-const NEA_PSI = "NEA, Computation of the Pollutant Standards Index (PSI), updated March 2014, https://www.haze.gov.sg/docs/default-source/faq/computation-of-the-pollutant-standards-index-(psi).pdf";
+type Rgb = [number, number, number];
+type Stop = [at: number, rgb: Rgb, alpha: number];
+
+/** A log-scaled colour ramp from `lo` (clear) to `hi` (the top colour, held above), with the legend's two ends and one line of explanation. */
+export type Tracer = { lo: number; hi: number; stops: Stop[]; ends: [string, string]; note: string };
+
+const NEA_PSI = `NEA, Computation of the Pollutant Standards Index (PSI), updated March 2014, ${NEA_PSI_URL}`;
 
 /**
  * In picker order. Band limits are the PSI breakpoints at sub-index 50, 100 and 200 (NEA table above), kept in the unit CAMS
@@ -25,7 +34,35 @@ export const POLLUTANTS: Pollutant[] = [
   // 24-hour PM10: 50, 150, 350 µg/m³ at sub-index 50, 100, 200.
   { id: "pm10", label: "PM10", unit: "µg/m³", camsVar: "pm10", bands: [50, 150, 350], source: NEA_PSI },
   // 8-hour CO: 5.0, 10.0, 17.0 mg/m³; CAMS gives µg/m³, so × 1000.
-  { id: "co", label: "CO", unit: "µg/m³", camsVar: "carbon_monoxide", bands: [5000, 10000, 17000], source: NEA_PSI },
+  {
+    id: "co",
+    label: "CO",
+    unit: "µg/m³",
+    camsVar: "carbon_monoxide",
+    bands: [5000, 10000, 17000],
+    source: NEA_PSI,
+    // The health bands put 99% of a day's CO in Normal, so the map shows CO as a tracer of smoke on its own scale.
+    // Log scale: 200 µg/m³ is clean background air (the CAMS median is about 430), plumes of 400 to 2000 sit in the middle and
+    // 5000 (NEA's 8-hour limit) is the top. The stops follow the old satellite CO ramp (purple, blue, cyan, green, yellow, orange, red)
+    // in smoother steps, with opacity rising from nothing so that clean air shows the Earth.
+    tracer: {
+      lo: 200,
+      hi: 5000,
+      ends: ["Clean", "Heavy"],
+      note: "Colours show smoke, not a health level. NEA's CO limit is 5,000 µg/m³ averaged over 8 hours.",
+      stops: [
+        [0, [60, 30, 150], 0],
+        [0.1, [70, 45, 185], 0.12],
+        [0.2, [55, 95, 225], 0.42],
+        [0.32, [30, 190, 205], 0.62],
+        [0.46, [85, 215, 95], 0.68],
+        [0.6, [245, 225, 55], 0.74],
+        [0.74, [250, 145, 30], 0.78],
+        [0.88, [225, 50, 40], 0.84],
+        [1, [140, 15, 55], 0.88],
+      ],
+    },
+  },
   {
     id: "no2",
     label: "NO₂",
@@ -80,9 +117,6 @@ function position(p: Pollutant, v: number): number {
   return i - 1 + (x - edges[i - 1]) / (edges[i] - edges[i - 1]);
 }
 
-type Rgb = [number, number, number];
-type Stop = [at: number, rgb: Rgb, alpha: number];
-
 /** Below this share of the band 0 limit the air is clean: nothing is drawn (PM2.5: 20 of 55 µg/m³). */
 const CLEAR = 20 / 55;
 
@@ -101,30 +135,47 @@ const STOPS: Stop[] = [
   [4, [110, 20, 35], 0.82],
 ];
 
-/** Colour at ramp position `at`, linear between stops; transparent at or below CLEAR. */
-function rampAt(at: number): [number, number, number, number] {
-  if (at <= CLEAR) return [0, 0, 0, 0];
-  const i = Math.max(1, STOPS.findIndex(([s]) => at <= s));
-  const [a, ca, aa] = STOPS[i - 1];
-  const [b, cb, ab] = STOPS[i];
+/** Where `v` sits on a tracer scale: 0 at or below `lo` (and for a missing value), 1 at or above `hi`, log-spaced between. */
+const tracerPosition = ({ lo, hi }: Tracer, v: number) => (v > lo ? Math.min(1, Math.log(v / lo) / Math.log(hi / lo)) : 0);
+
+/** Colour at ramp position `at`, linear between `stops`; transparent at or below the first stop. */
+function rampAt(at: number, stops: Stop[] = STOPS): [number, number, number, number] {
+  if (!(at > stops[0][0])) return [0, 0, 0, 0];
+  const i = Math.max(1, stops.findIndex(([s]) => at <= s));
+  const [a, ca, aa] = stops[i - 1];
+  const [b, cb, ab] = stops[i];
   const t = Math.min(1, (at - a) / (b - a));
   const mix = (x: number, y: number) => x + (y - x) * t;
   return [mix(ca[0], cb[0]), mix(ca[1], cb[1]), mix(ca[2], cb[2]), mix(aa, ab)];
 }
 
 /** Colour and opacity (a in 0..1) of a concentration in the pollutant's unit; transparent for a missing or NaN value. */
-export const colorOf = (p: Pollutant, v: number): [r: number, g: number, b: number, a: number] => rampAt(position(p, v));
+export const colorOf = (p: Pollutant, v: number): [r: number, g: number, b: number, a: number] =>
+  p.tracer ? rampAt(tracerPosition(p.tracer, v), p.tracer.stops) : rampAt(position(p, v));
 
 /**
- * CSS gradient for the legend: the same ramp across band positions 0 to 4, so band limits sit at 25, 50 and 75 per cent.
- * Every pollutant shares the ramp (the labels differ, not the colours), so `p` only keeps the call site uniform.
+ * CSS gradient for the legend. The shared ramp runs across band positions 0 to 4, so band limits sit at 25, 50 and 75 per cent
+ * (every pollutant shares it: the labels differ, not the colours). A tracer scale runs evenly over its own log range.
  */
 export function rampCss(p: Pollutant): string {
-  void p;
-  const at = [0, CLEAR, ...STOPS.slice(1).map(([s]) => s)];
+  const stops = p.tracer?.stops ?? STOPS;
+  const top = p.tracer ? 1 : 4;
+  const at = p.tracer ? stops.map(([s]) => s) : [0, CLEAR, ...STOPS.slice(1).map(([s]) => s)];
   const parts = at.map((s) => {
-    const [r, g, b, a] = rampAt(s);
-    return `rgba(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)}, ${a.toFixed(2)}) ${((s / 4) * 100).toFixed(1)}%`;
+    const [r, g, b, a] = rampAt(s, stops);
+    return `rgba(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)}, ${a.toFixed(2)}) ${((s / top) * 100).toFixed(1)}%`;
   });
   return `linear-gradient(to right, ${parts.join(", ")})`;
+}
+
+/**
+ * The concentration (the pollutant's unit) that NEA's PSI sub-index `sub` stands for, from the PSI breakpoints at sub-index 0, 50,
+ * 100 and 200 (the pollutant's band limits; NEA table above), linear between and held at the last limit above. For a pollutant with bands only.
+ */
+export function concentrationOfSub(p: Pollutant, sub: number): number {
+  const at = [0, 50, 100, 200];
+  const conc = [0, ...p.bands!];
+  const x = Math.max(0, Math.min(200, sub));
+  const i = Math.max(1, at.findIndex((a) => x <= a));
+  return conc[i - 1] + ((x - at[i - 1]) / (at[i] - at[i - 1])) * (conc[i] - conc[i - 1]);
 }
