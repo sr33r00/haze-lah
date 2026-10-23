@@ -69,25 +69,25 @@ export default function InstallPrompt() {
     <div
       role="dialog"
       aria-label="Add Haze Lah to your home screen"
-      className="fixed inset-x-3 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-[999] mx-auto flex max-w-md animate-rise items-center gap-3 rounded-3xl border border-line bg-surface p-3 pl-4 shadow-lg lg:inset-x-auto lg:bottom-6 lg:right-6 lg:w-[380px]"
+      className="fixed inset-x-3 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-[999] mx-auto flex max-w-md animate-rise items-center gap-3 rounded-3xl bg-fg p-3 pl-4 text-bg shadow-xl ring-1 ring-black/10 lg:inset-x-auto lg:bottom-6 lg:right-6 lg:w-[380px]"
     >
-      <Smartphone size={22} aria-hidden className="shrink-0 text-accent" />
+      <Smartphone size={22} aria-hidden className="shrink-0" />
       <div className="min-w-0 flex-1 text-[14px] leading-snug">
         <p className="font-bold">Add Haze Lah to your home screen</p>
         {mode === "install" ? (
-          <p className="text-muted">Today&apos;s haze, one tap away.</p>
+          <p className="opacity-75">Today&apos;s haze, one tap away.</p>
         ) : (
-          <p className="text-muted">
+          <p className="opacity-75">
             Tap <Share size={14} aria-label="Share" className="inline align-[-2px]" /> then &ldquo;Add to Home Screen&rdquo;.
           </p>
         )}
       </div>
       {mode === "install" && (
-        <button onClick={install} className="min-h-[40px] shrink-0 rounded-full bg-accent px-4 text-[14px] font-semibold text-bg hover:opacity-90">
+        <button onClick={install} className="min-h-11 shrink-0 rounded-full bg-accent px-4 text-[14px] font-semibold text-bg ring-2 ring-bg/30 hover:opacity-90">
           Install
         </button>
       )}
-      <button onClick={close} aria-label="Dismiss" className="flex size-10 shrink-0 items-center justify-center rounded-full text-muted hover:bg-line">
+      <button onClick={close} aria-label="Dismiss" className="flex size-11 shrink-0 items-center justify-center rounded-full opacity-75 hover:bg-bg/15 hover:opacity-100">
         <X size={18} aria-hidden />
       </button>
     </div>

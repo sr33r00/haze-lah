@@ -2,7 +2,7 @@ import { fmtFullDate } from "./format";
 
 /** The current release, shown once to each visitor in the "What's new" sheet and listed on the About page. Keep `version` in step with package.json. */
 export const RELEASE = {
-  version: "1.3.0",
+  version: "1.3.1",
   date: "2026-10-23",
   items: [
     {
@@ -38,5 +38,5 @@ export const RELEASE = {
   ],
 };
 
-/** "Version 1.3.0, 23 Oct 2026". */
+/** "Version 1.3.1, 23 Oct 2026". */
 export const RELEASE_LABEL = `Version ${RELEASE.version}, ${fmtFullDate(RELEASE.date)}`;
