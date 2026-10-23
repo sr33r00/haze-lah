@@ -153,6 +153,9 @@ function rampAt(at: number, stops: Stop[] = STOPS): [number, number, number, num
 export const colorOf = (p: Pollutant, v: number): [r: number, g: number, b: number, a: number] =>
   p.tracer ? rampAt(tracerPosition(p.tracer, v), p.tracer.stops) : rampAt(position(p, v));
 
+/** The concentration from which `colorOf` no longer changes (the ramp's top): the colour table of a picture needs no values above it. */
+export const rampTop = (p: Pollutant): number => (p.tracer ? p.tracer.hi : p.bands ? p.bands[2] * 2 : DUST_TOP);
+
 /**
  * CSS gradient for the legend. The shared ramp runs across band positions 0 to 4, so band limits sit at 25, 50 and 75 per cent
  * (every pollutant shares it: the labels differ, not the colours). A tracer scale runs evenly over its own log range.

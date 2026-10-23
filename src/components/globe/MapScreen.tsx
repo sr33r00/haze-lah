@@ -132,8 +132,9 @@ export default function MapScreen({ dots: dotData, psiDaily, summary }: Props) {
   if (fresh && fresh !== shown) setShown(fresh); // derived during render: no extra frame with the old day
   const blank = useMemo(() => globeDay({}, today, 0, "off", today), [today]);
   const day = shown ?? blank;
+  const drawn = day.layer; // what the globe and card show: the layer the shown day was built for, which lags the picker while a past day's files come
 
-  const dots = useMemo(() => readingDots(dotData, layer, day.kind === "today"), [dotData, layer, day.kind]);
+  const dots = useMemo(() => readingDots(dotData, drawn, day.kind === "today"), [dotData, drawn, day.kind]);
 
   // Playing: the next step after a pause, once its files are here.
   useEffect(() => {
@@ -151,6 +152,12 @@ export default function MapScreen({ dots: dotData, psiDaily, summary }: Props) {
       clearTimeout(t);
     };
   }, [playing, sel, bars, stepsFor, hasFile, indexed]);
+  // A hidden tab stops playing: the steps would only be built for no one to see.
+  useEffect(() => {
+    const stop = () => document.hidden && setPlaying(false);
+    document.addEventListener("visibilitychange", stop);
+    return () => document.removeEventListener("visibilitychange", stop);
+  }, []);
   useEffect(() => {
     if (playing && date) prefetchAround(date, bars.filter(hasFile).map((b) => b.date));
   }, [playing, date, bars, hasFile]);
@@ -175,7 +182,7 @@ export default function MapScreen({ dots: dotData, psiDaily, summary }: Props) {
     return replay.days.find((d) => d.date === day.date) ?? (day.kind === "today" ? replay.days.at(-1) : undefined);
   }, [replay, day.date, day.kind]);
   const fireBar = bars.find((b) => b.date === (day.fireDate ?? day.date)); // the count is of the fires drawn, which on today may be an earlier day's
-  const { headline, facts } = captionOf({ day, layer, live, fires: fireBar?.fires ?? null, psi: psi.get(day.date) });
+  const { headline, facts } = captionOf({ day, layer: drawn, live, fires: fireBar?.fires ?? null, psi: psi.get(day.date) });
   const quiet = playing || dragging; // nothing is announced while the day changes under the viewer's finger or the play button; the slider speaks for itself
 
   // A pollutant the live model has no data for (a gas with none anywhere, or PM2.5 in an outage).
@@ -263,14 +270,14 @@ export default function MapScreen({ dots: dotData, psiDaily, summary }: Props) {
 
           <main id="main" tabIndex={-1} className="absolute inset-0 outline-none">
             {summaryBlock}
-            <AirGlobeLoader day={day} layer={layer} satDate={sel?.date ?? today} dots={dots} view={view} onFail={setFailed} />
+            <AirGlobeLoader day={day} layer={drawn} satDate={sel?.date ?? today} dots={dots} view={view} onFail={setFailed} />
             {bars.length > 0 && sel && (
               <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 min-[700px]:p-4">
                 <div className={`pointer-events-auto rounded-t-3xl border-t border-white/10 pb-[env(safe-area-inset-bottom)] ${PANEL} min-[700px]:pointer-events-none min-[700px]:flex min-[700px]:items-end min-[700px]:gap-3 min-[700px]:border-0 min-[700px]:bg-transparent min-[700px]:pb-0 min-[700px]:backdrop-blur-none`}>
                   <GlobeCard
                     headline={headline}
                     facts={facts}
-                    layer={layer}
+                    layer={drawn}
                     day={day}
                     dots={dots}
                     live={!quiet}

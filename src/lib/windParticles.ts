@@ -2,7 +2,8 @@ import { sample, type Field } from "@/lib/wind";
 
 const PX_PER_PARTICLE = 900; // screen area per particle, so big maps are as dense as small ones
 const MIN_COUNT = 400;
-const MAX_COUNT = 2500;
+const MAX_COUNT = 1500; // a big monitor gets this many, not more: the work per frame grows with the count (about 4 times a phone's)
+const MAX_BACKING = 4_000_000; // pixels the canvas may have in memory; the rest of a big, sharp screen is not worth the fill and composite of every frame (1920 x 1080 at 2x would have 8.3 million)
 const MAX_AGE = 80; // steps
 const STEP_MS = 16; // one step per ~60 Hz frame, so 120 and 144 Hz screens move and fade at the same speed
 const PX_PER_MS = 0.012; // screen speed per m/s of wind
@@ -13,6 +14,12 @@ const LEVELS = 5; // steps of that fade; the lines of one step are drawn togethe
 const ARROW_STEP = 2; // degrees between static arrows, doubled while they would be closer than ARROW_GAP
 const ARROW_GAP = 20; // pixels
 const SEED_TRIES = 6; // looks for a spot that is on screen, for maps where part of the grid is hidden
+
+/** How many particles a map of `w` x `h` CSS pixels gets before the share of it that the grid covers is taken into account. */
+export const particleCount = (w: number, h: number) => Math.round(Math.min(MAX_COUNT, Math.max(MIN_COUNT, (w * h) / PX_PER_PARTICLE)));
+
+/** The canvas pixels per CSS pixel for a map of `w` x `h` at device ratio `dpr`: the screen's (up to 2), less where that would pass MAX_BACKING pixels, never under 1. */
+export const canvasRatio = (w: number, h: number, dpr: number) => Math.max(1, Math.min(2, dpr, Math.sqrt(MAX_BACKING / Math.max(1, w * h))));
 
 /** Wind (m/s) on a lat/lon grid: u towards the east, v towards the north. */
 export type Wind = { u: Field; v: Field };
@@ -63,7 +70,6 @@ export function windParticles(view: WindView, ink?: string): WindParticles {
   view.container.appendChild(canvas);
   const ctx = canvas.getContext("2d")!;
   const reduced = matchMedia("(prefers-reduced-motion: reduce)");
-  const dpr = Math.min(2, window.devicePixelRatio || 1);
   const parts: Particle[] = [];
   let wind: Wind | undefined;
   let motion = false;
@@ -77,9 +83,10 @@ export function windParticles(view: WindView, ink?: string): WindParticles {
 
   const size = () => {
     const { w, h } = view.size();
-    canvas.width = w * dpr;
-    canvas.height = h * dpr;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const ratio = canvasRatio(w, h, window.devicePixelRatio || 1);
+    canvas.width = Math.round(w * ratio);
+    canvas.height = Math.round(h * ratio);
+    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
   };
   const clear = () => ctx.clearRect(0, 0, canvas.width, canvas.height);
   const readInk = () => {
@@ -218,7 +225,7 @@ export function windParticles(view: WindView, ink?: string): WindParticles {
   /** Particle count for the map's size, fewer where the grid covers only a part of it. */
   const fit = () => {
     const { w, h } = view.size();
-    const full = Math.round(Math.min(MAX_COUNT, Math.max(MIN_COUNT, (w * h) / PX_PER_PARTICLE)));
+    const full = particleCount(w, h);
     const want = Math.max(MIN_SHARE_COUNT, Math.round(full * Math.min(1, share() / FULL_SHARE)));
     while (parts.length < want) {
       const p = { lat: 0, lon: 0, pLat: 0, pLon: 0, age: 0 };

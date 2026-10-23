@@ -8,7 +8,7 @@ import type { GlobeDay } from "./frame";
 const LATS = [0, 1, 2, 3];
 const LONS = [100, 101, 102, 103, 104, 105];
 const base = (extra: Partial<GlobeDay> = {}): GlobeDay => ({
-  date: "2026-10-23", kind: "today", fires: [], fireDate: "2026-10-23", older: [], fresh: [], trail: [], ahead: [], grid: { lats: LATS, lons: LONS }, wind: null, field: null, ...extra,
+  date: "2026-10-23", kind: "today", layer: "off", fires: [], fireDate: "2026-10-23", older: [], fresh: [], trail: [], ahead: [], grid: { lats: LATS, lons: LONS }, wind: null, field: null, ...extra,
 });
 const live = (extra: Partial<ReplayDay> = {}) => ({ from: "southeast", area: "Riau", near: 12, ahead: null, ...extra }) as ReplayDay;
 

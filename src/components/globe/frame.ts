@@ -16,6 +16,8 @@ type Pt = [lat: number, lon: number];
 export type GlobeDay = {
   date: string;
   kind: Bar["kind"];
+  /** The layer `field` is of. The day is kept as it was while the next one's files come, so the colour layer on screen follows this, not the picker, and a field is never coloured as another pollutant. */
+  layer: LayerChoice;
   /** The day's fires: lat, lon, FRP in MW (0 where the source has no FRP, as the live replay). */
   fires: [number, number, number][];
   /** The date of the day the fires are from: `date`, except on today before the afternoon pass, which shows the newest day with enough fires; null for a forecast day, which shows none of its own. */
@@ -78,7 +80,7 @@ export function globeDay(source: GlobeSource, date: string, step: number, layer:
   const at = days.findIndex((d) => d.date === date);
   const liveAt = kind === "today" && at < 0 ? days.length - 1 : at; // the newest replay day stands in for today
   const live = kind === "forecast" ? undefined : days[liveAt];
-  const out: GlobeDay = { date, kind, fires: [], fireDate: null, older: [], fresh: [], trail: [], ahead: [], grid: { lats: [], lons: [] }, wind: null, field: null };
+  const out: GlobeDay = { date, kind, layer, fires: [], fireDate: null, older: [], fresh: [], trail: [], ahead: [], grid: { lats: [], lons: [] }, wind: null, field: null };
 
   // Fires. A day that has only just begun has few: today shows the newest day with enough, its path and wind stay today's.
   if (own) {

@@ -11,7 +11,7 @@ import type { WindView } from "@/lib/windParticles";
 import { globeView } from "@/components/globeWind";
 import { useWindParticles } from "@/components/useWindParticles";
 import WindMotionButton, { useWindMotion } from "@/components/WindMotion";
-import { drawField, fieldCorners } from "./fieldImage";
+import { GLOBE_PX_PER_DEG, drawField, fieldCorners } from "./fieldImage";
 import { flowOf, frameGeo, type GlobeDay, type LayerChoice } from "./frame";
 import { INK, globeStyle } from "./globeStyle";
 import { SMOKE_SCHEME, registerSmokeScheme } from "./smokeTiles";
@@ -319,7 +319,7 @@ export default function AirGlobe({ day, layer, satDate, dots, view, onFail }: Pr
       if (m.getLayer("pm")) m.setLayoutProperty("pm", "visibility", "none");
       return;
     }
-    field.current = drawField({ lats, lons }, values, layer, field.current);
+    field.current = drawField({ lats, lons }, values, layer, field.current, undefined, GLOBE_PX_PER_DEG);
     const corners = fieldCorners({ lats, lons });
     const source = m.getSource("pm") as CanvasSource | undefined;
     if (source) {
