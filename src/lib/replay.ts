@@ -1,14 +1,15 @@
 import { windFrom } from "./context";
 import { fmtDayHour } from "./format";
 import type { Ahead, Fire, Journey, Replay, ReplayDay, SmokeGrid } from "./types";
-import { SG, sgDate } from "./util";
+import { SG, sgDate, sgtTime } from "./util";
 import { backTrail, forwardTrail, sample, type WindFrame } from "./wind";
 
 const DAYS = 5; // FIRMS keeps 5 days, so the replay goes back that far
 export const ARRIVAL_SGT = 14; // trace the air that reached Singapore at 2pm each day
 const WINDOW_H = 72; // how far back the trail goes, and which fires count as "passed"
 const NEAR_KM = 50;
-const MAP_FIRES = 400;
+/** Fires a live replay day keeps (the strongest). */
+export const MAP_FIRES = 400;
 const START_MAX_KM = 400; // a trail's oldest point farther than this from every area centre is not "near" any
 const AHEAD_H = 72; // how far forward smoke from today's fires is followed
 const AHEAD_FIRES = 150; // strongest fires of the last 24 h that are followed
@@ -40,7 +41,10 @@ const AREAS: [string, number, number][] = [
 /** Map colours for fires and for the air's path, shared by every view of the replay. */
 export const FIRE_COLOR = "#c2410c";
 export const TRAIL_COLOR = "#a855f7";
-export const NEW_FIRE_COLOR = "#22d3ee";
+export const NEW_FIRE_COLOR = "#5fe3ee";
+
+/** The key to the line that follows today's strongest fires on the wind, on the Now map and the globe. Whether that smoke reaches Singapore is said by `aheadParts` (the "Smoke on the way" heading of SmokeAhead and the globe's headline). */
+export const AHEAD_LABEL = "Where today's smoke goes";
 
 /** The browser-side API paths that pages preload (`preload(url, { as: "fetch", crossOrigin: "anonymous" })`), so that the data is on its way before the code that uses it has loaded. */
 export const REPLAY_URL = "/api/replay";
@@ -232,9 +236,12 @@ export function windNear(frames: WindFrame[], t: number) {
   return { u: r(f.u.data), v: r(f.v.data) };
 }
 
+/** The moment (ms) the air of SGT `date` is traced from: ARRIVAL_SGT o'clock SGT. */
+export const arrivalAt = (date: string) => sgtTime(date, ARRIVAL_SGT);
+
 /** The air that reached Singapore at ARRIVAL_SGT on SGT `date` (not after `latest`, ms): when, and its WINDOW_H-hour back-trail. */
 export function dayTrail(frames: WindFrame[], date: string, latest = Infinity) {
-  const arrival = Math.min(Date.parse(`${date}T${String(ARRIVAL_SGT).padStart(2, "0")}:00:00+08:00`), latest);
+  const arrival = Math.min(arrivalAt(date), latest);
   return { arrival, trail: backTrail(frames, SG.lat, SG.lon, arrival, WINDOW_H) };
 }
 

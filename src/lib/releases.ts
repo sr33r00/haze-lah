@@ -7,7 +7,7 @@ export const RELEASE = {
   items: [
     {
       title: "The air globe",
-      text: "The map is now a globe of the Earth from NASA. It shows the fires, the wind and the path of the air to Singapore.",
+      text: "The map is now a globe of the Earth from NASA. See the fires, the wind and the air's path to Singapore.",
       href: "/map",
     },
     {
@@ -32,7 +32,7 @@ export const RELEASE = {
     },
     {
       title: "One smoke map on Now",
-      text: "The air journey map now shows the wind and the smoke. Move the slider from 5 days ago to 3 days ahead, and tap a spot to read the smoke level. Neighbours is now under it.",
+      text: "The air journey map now shows the wind and the smoke. Move the slider over the past few days and the next 3, and tap a spot to read the smoke level.",
       href: "/#origin",
     },
   ],

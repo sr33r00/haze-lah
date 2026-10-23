@@ -1,8 +1,8 @@
 import { sgDate, sgHour } from "./util";
 
-// The globe of NASA pollution data: carbon monoxide and smoke pictures drawn by /api/globe/[layer] from NASA GIBS. Pure config, shared by the server and the browser.
+// NASA's smoke picture for the globe, drawn by /api/globe/[layer] from NASA GIBS. Pure config, shared by the server and the browser.
 
-export type GlobeLayer = "co" | "smoke";
+export type GlobeLayer = "smoke";
 type Rgb = [number, number, number];
 
 /**
@@ -27,24 +27,6 @@ const FRAMES = 8;
 type Layer = { days: number; ramp: Ramp };
 
 export const GLOBE_LAYERS: Record<GlobeLayer, Layer> = {
-  co: {
-    days: 3,
-    ramp: {
-      unit: "CO, ppbv",
-      range: [50, 300],
-      ends: ["Clean", "Heavy"],
-      stops: [
-        [0, [40, 20, 110]],
-        [0.15, [30, 90, 200]],
-        [0.3, [40, 180, 220]],
-        [0.45, [60, 190, 90]],
-        [0.6, [240, 230, 50]],
-        [0.75, [250, 140, 30]],
-        [0.88, [215, 40, 25]],
-        [1, [165, 15, 35]],
-      ],
-    },
-  },
   smoke: {
     days: 1,
     ramp: {
@@ -63,9 +45,6 @@ export const GLOBE_LAYERS: Record<GlobeLayer, Layer> = {
     },
   },
 };
-
-/** The layers, the default first. */
-export const LAYERS = Object.keys(GLOBE_LAYERS) as GlobeLayer[];
 
 /**
  * The date of each frame, oldest first. The satellites pass over around 1:30pm
@@ -117,5 +96,5 @@ export function rampT({ range: [lo, hi] }: Ramp, value: number) {
   return Math.min(1, Math.max(0, (value - lo) / (hi - lo)));
 }
 
-/** A CSS gradient of a ramp, for the legend. */
-export const rampCss = ({ stops }: Ramp) => `linear-gradient(to right, ${stops.map(([t, c]) => `rgb(${c}) ${t * 100}%`).join(", ")})`;
+/** A CSS gradient of a satellite ramp, for the legend. */
+export const satelliteRampCss = ({ stops }: Ramp) => `linear-gradient(to right, ${stops.map(([t, c]) => `rgb(${c}) ${t * 100}%`).join(", ")})`;

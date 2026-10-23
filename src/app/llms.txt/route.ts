@@ -50,7 +50,7 @@ Canonical site: ${SITE_URL}
 - [NASA FIRMS](https://firms.modaps.eosdis.nasa.gov): satellite fire detections
 - [Copernicus CAMS via Open-Meteo](https://open-meteo.com/en/docs/air-quality-api): PM2.5 forecast
 - [OpenAQ](https://openaq.org): community air sensors
-- [NASA GIBS](https://gibs.earthdata.nasa.gov): satellite images (OMPS aerosol index, AIRS carbon monoxide)
+- [NASA GIBS](https://gibs.earthdata.nasa.gov): satellite images (OMPS aerosol index)
 - [OpenFreeMap](https://openfreemap.org): the vector map under them, drawn with MapLibre (map data © OpenStreetMap contributors, © OpenMapTiles)
 - LTA traffic images: live camera photos
 

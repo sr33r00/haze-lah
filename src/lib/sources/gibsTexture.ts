@@ -12,20 +12,13 @@ import { getText } from "../util";
 type Source = {
   layers: string[]; // one picture per layer and day
   colormap: string;
-  fill: boolean; // paint wide gaps between passes with the values around them; otherwise gaps read as "none"
 };
 
 const COLORMAPS = "https://gibs.earthdata.nasa.gov/colormaps/v1.3";
 const SOURCES: Record<GlobeLayer, Source> = {
-  co: {
-    layers: ["AIRS_L2_Carbon_Monoxide_500hPa_Volume_Mixing_Ratio_Day", "AIRS_L2_Carbon_Monoxide_500hPa_Volume_Mixing_Ratio_Night"],
-    colormap: "AIRS_Carbon_Monoxide_Volume_Mixing_Ratio",
-    fill: true,
-  },
   smoke: {
     layers: ["OMPS_NOAA20_NadirMapper_AerosolIndex_380", "OMPS_NOAA21_NadirMapper_AerosolIndex_380"],
     colormap: "OMPS_Aerosol_Index",
-    fill: false,
   },
 };
 
@@ -33,7 +26,6 @@ const W = 1440; // the size of every pass: 0.25 degrees a pixel, about the sharp
 const H = 720;
 const SIZE = 2048; // the finished picture is this many pixels square, in Web Mercator: smooth and about 100 KB as WebP when zoomed to a city
 const SIGMA = 5; // pixels of smoothing, about 1.25 degrees
-const COARSE = 8; // gaps wider than that are filled on a picture this many times smaller
 
 /** Pixel colour (r << 16 | g << 8 | b) to the middle of the value range it stands for. */
 async function valueLookup(colormap: string) {
@@ -100,28 +92,6 @@ function blur2(a: Float32Array, b: Float32Array, w: number, h: number) {
 function smooth(values: Float32Array, have: Float32Array, w: number, h: number) {
   const [v, weight] = blur2(values, have, w, h);
   return { value: v.map((x, i) => (weight[i] > 1e-3 ? x / weight[i] : NaN)), weight };
-}
-
-/** Smoothed values at full size (NaN where there is nothing), with gaps wider than the smoothing filled in from a coarser picture if `fill`. */
-function smoothFilled(values: Float32Array, have: Float32Array, fill: boolean) {
-  const fine = smooth(values, have, W, H);
-  if (!fill) return fine.value;
-  const cw = W / COARSE;
-  const ch = H / COARSE;
-  const sum = new Float32Array(cw * ch);
-  const n = new Float32Array(cw * ch);
-  for (let i = 0; i < W * H; i++) {
-    const c = ((i / W / COARSE) | 0) * cw + (((i % W) / COARSE) | 0);
-    sum[c] += values[i];
-    n[c] += have[i];
-  }
-  const mean = sum.map((v, c) => (n[c] ? v / n[c] : 0));
-  const coarse = smooth(mean, n.map((v) => (v ? 1 : 0)), cw, ch);
-  return fine.value.map((v, i) => {
-    const c = ((i / W / COARSE) | 0) * cw + (((i % W) / COARSE) | 0);
-    const a = Math.min(1, fine.weight[i] / 0.2); // how much of the fine picture to trust
-    return Number.isNaN(coarse.value[c]) ? v : Number.isNaN(v) ? coarse.value[c] : a * v + (1 - a) * coarse.value[c];
-  });
 }
 
 /** The mean of every valid value per pixel over `passes` (raw RGBA pictures of `n` pixels), and which pixels had any. */
@@ -204,9 +174,9 @@ async function buildPicture(layer: GlobeLayer, date: string): Promise<{ webp: st
   const got = passes.filter((p) => p !== null);
   if (!got.length) throw new Error("GIBS: no passes");
 
-  // Average the passes, smooth, filling gaps from what is around them, then lay the result on the Mercator square.
+  // Average the passes, smooth, then lay the result on the Mercator square.
   const { mean, have } = meanValues(got, lookup, W * H);
-  const value = toMercator(smoothFilled(mean, have, src.fill));
+  const value = toMercator(smooth(mean, have, W, H).value);
 
   const colours = Array.from({ length: 256 }, (_, i) => rampRgb(ramp, i / 255));
   const rgba = Buffer.alloc(SIZE * SIZE * 4);
