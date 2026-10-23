@@ -2,9 +2,14 @@ import { fmtFullDate } from "./format";
 
 /** The current release, shown once to each visitor in the "What's new" sheet and listed on the About page. Keep `version` in step with package.json. */
 export const RELEASE = {
-  version: "1.3.1",
+  version: "1.4.0",
   date: "2026-10-23",
   items: [
+    {
+      title: "Fly in from space",
+      text: "The globe now opens on the whole Earth and flies down to Singapore, and it loads faster. Tap anywhere to skip.",
+      href: "/map",
+    },
     {
       title: "The air globe",
       text: "The map is now a globe of the Earth from NASA. See the fires, the wind and the air's path to Singapore.",
@@ -38,5 +43,5 @@ export const RELEASE = {
   ],
 };
 
-/** "Version 1.3.1, 23 Oct 2026". */
+/** "Version 1.4.0, 23 Oct 2026". */
 export const RELEASE_LABEL = `Version ${RELEASE.version}, ${fmtFullDate(RELEASE.date)}`;
