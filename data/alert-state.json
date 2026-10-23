@@ -3,14 +3,15 @@
   "pm25Band": 1,
   "neaUrl": "https://www.nea.gov.sg/media/news/advisories/index/haze-situation-update-22-october-2026",
   "newsUrls": [
+    "https://www.straitstimes.com/singapore/health/how-pm2-5-in-haze-affects-the-human-body",
     "https://www.channelnewsasia.com/singapore/haze-psi-pm25-oct-23-6484486",
     "https://www.straitstimes.com/singapore/haze-eases-in-singapore-as-residents-wake-up-to-improved-air-quality",
     "https://www.straitstimes.com/singapore/environment/a-look-back-at-the-strongest-fire-and-haze-episodes-faced-by-se-asia",
     "https://www.channelnewsasia.com/singapore/tsh-resources-hotspots-sgx-questions-haze-6483271",
     "https://www.straitstimes.com/singapore/environment/shelters-nparks-mandai-wildlife-group-take-haze-relief-measures-to-protect-animals",
     "https://www.straitstimes.com/singapore/air-quality-improves-to-good-to-moderate-range-across-singapore-after-18-days-of-unhealthy-air",
-    "https://www.channelnewsasia.com/singapore/haze-vegetables-fruits-smaller-expensive-malaysia-indonesia-import-6481731",
     "https://www.straitstimes.com/singapore/why-cant-singapores-anti-haze-law-get-indonesian-companies-to-stop-the-fires",
+    "https://www.channelnewsasia.com/singapore/haze-vegetables-fruits-smaller-expensive-malaysia-indonesia-import-6481731",
     "https://www.channelnewsasia.com/singapore/haze-mask-collection-vending-machines-age-60-6481056",
     "https://www.straitstimes.com/singapore/environment/singaporeans-60-and-above-can-collect-masks-from-oct-23-to-guard-against-haze-grace-fu",
     "https://www.channelnewsasia.com/singapore/haze-psi-pm25-oct-22-6480596",
@@ -31,10 +32,9 @@
     "https://www.channelnewsasia.com/singapore/haze-psi-pm25-oct-21-6476941",
     "https://www.straitstimes.com/singapore/firefly-plans-oct-22-resumption-of-all-subang-seletar-flights-after-haze-cancellations",
     "https://www.channelnewsasia.com/singapore/haze-asia-pulp-paper-environment-council-6471366",
-    "https://www.channelnewsasia.com/singapore/haze-alfresco-outdoor-dining-busking-drop-6471381",
-    "https://www.channelnewsasia.com/singapore/haze-indonesia-official-oxygen-comments-disappointing-shanmugam-6471166"
+    "https://www.channelnewsasia.com/singapore/haze-alfresco-outdoor-dining-busking-drop-6471381"
   ],
   "briefDate": "2026-10-23",
   "outlookDate": "2026-10-22",
-  "hourTime": "2026-10-23T11:00:00+08:00"
+  "hourTime": "2026-10-23T14:00:00+08:00"
 }
