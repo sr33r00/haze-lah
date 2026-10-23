@@ -1,10 +1,11 @@
 import { Activity, BookOpen, Camera, CloudSun, Flame, History, Newspaper } from "lucide-react";
 import Link from "next/link";
-import { OPEN_DATA_LICENCE } from "@/lib/links";
+import { BMC_LABEL, BMC_URL, OPEN_DATA_LICENCE } from "@/lib/links";
 import { pageMeta } from "@/lib/seo";
 import { GROUP_LABEL, LEVEL_COLOR, LEVEL_NAME, NEA_ADVICE, type Group } from "@/lib/bands";
 import AccuracyTable from "@/components/AccuracyTable";
 import AppShell from "@/components/AppShell";
+import CoffeeButton from "@/components/CoffeeButton";
 import SectionNav from "@/components/SectionNav";
 import { Bullets } from "@/components/ui";
 import { fetchAccuracy } from "@/lib/accuracy";
@@ -29,6 +30,7 @@ const SECTIONS = [
   { id: "accuracy", title: "Accuracy" },
   { id: "cigarettes", title: "Cigarette comparison" },
   { id: "privacy", title: "Privacy" },
+  { id: "support", title: "Support" },
   { id: "whats-new", title: "What's new" },
 ];
 
@@ -283,6 +285,22 @@ export default async function About() {
                 No accounts and no cookies. Anonymous page-view counts are collected with Vercel Web Analytics. Your region and group
                 choices stay on your device.
               </p>
+            </section>
+
+            <section id="support" className="scroll-mt-20 space-y-3">
+              <h2 className={H2}>Support</h2>
+              <p>Haze Lah is free, has no ads and is made by one person. Supporters pay for the servers and the data.</p>
+              <div className="flex flex-col items-center gap-3 sm:flex-row">
+                <CoffeeButton />
+                <a
+                  href={BMC_URL}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex min-h-11 items-center justify-center rounded-full border border-line px-5 text-[14px] font-semibold transition-colors hover:bg-line"
+                >
+                  {BMC_LABEL}
+                </a>
+              </div>
             </section>
 
             <section id="whats-new" className="scroll-mt-20 space-y-3">

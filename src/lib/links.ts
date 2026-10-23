@@ -11,6 +11,9 @@ export const SUPPORT_URL = "https://ko-fi.com/sr33r00";
 export const SUPPORT_LABEL = "Support on Ko-fi";
 /** Name of the icon-only link in the title bar. */
 export const SUPPORT_ICON_LABEL = "Support Haze Lah on Ko-fi";
+/** The old tip jar, kept as a second option on the About page for supporters who already use it. */
+export const BMC_URL = "https://buymeacoffee.com/hazelah";
+export const BMC_LABEL = "Buy Me a Coffee";
 
 /** OpenStreetMap page centred on a point, with a pin. */
 export const mapLink = (lat: number, lon: number) => `https://www.openstreetmap.org/?mlat=${lat.toFixed(5)}&mlon=${lon.toFixed(5)}#map=16/${lat.toFixed(5)}/${lon.toFixed(5)}`;
