@@ -290,6 +290,10 @@ body {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
+/* Focused by code only (e.g. a dialog title), never by Tab: no ring. */
+[tabindex="-1"]:focus-visible {
+  outline: none;
+}
 
 @media (prefers-reduced-motion: reduce) {
   html {

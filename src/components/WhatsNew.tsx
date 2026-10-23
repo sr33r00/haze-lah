@@ -43,7 +43,7 @@ export default function WhatsNew() {
       className="fixed inset-x-0 bottom-0 top-auto m-0 max-h-[85dvh] w-full max-w-none animate-sheet overflow-y-auto overscroll-contain rounded-t-[28px] border border-line bg-surface p-0 text-fg backdrop:bg-black/50 lg:inset-0 lg:m-auto lg:h-fit lg:max-w-md lg:animate-rise lg:rounded-[28px]"
     >
       <div className="px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-6">
-        <h2 id="whats-new-title" className="text-[22px] font-extrabold leading-tight tracking-tight">
+        <h2 id="whats-new-title" tabIndex={-1} autoFocus className="text-[22px] font-extrabold leading-tight tracking-tight">
           New in Haze Lah
         </h2>
         <p className="mt-0.5 text-[13px] text-muted">{RELEASE_LABEL}</p>
@@ -63,7 +63,6 @@ export default function WhatsNew() {
         </div>
         <button
           type="button"
-          autoFocus
           onClick={close}
           className="mt-4 min-h-11 w-full rounded-full bg-accent px-5 text-[15px] font-semibold text-bg transition-opacity hover:opacity-90"
         >
