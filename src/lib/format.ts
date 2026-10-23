@@ -14,6 +14,12 @@ export const fmtTime = (t: string | number) =>
     .replace(" ", "")
     .toLowerCase();
 
+/** "3:30–6:30pm" for two moments in time, in Singapore: the first loses its "am"/"pm" when it is the same as the second's. */
+export function fmtTimeRange(from: string | number, to: string | number) {
+  const [a, b] = [fmtTime(from), fmtTime(to)];
+  return `${a.slice(-2) === b.slice(-2) ? a.slice(0, -2) : a}–${b}`;
+}
+
 /** Weekday name of an SGT date (YYYY-MM-DD). */
 export const fmtWeekday = (date: string, weekday: "short" | "long" = "short") =>
   new Intl.DateTimeFormat("en-SG", { timeZone: TZ, weekday }).format(new Date(`${date}T12:00:00+08:00`));

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { aheadParts, newFires, newZonesText, trailCaption, windAtSg, windOutlook, windText } from "@/lib/replay";
+import { aheadParts, newFires, topAreas, newZonesText, trailCaption, windAtSg, windOutlook, windText } from "@/lib/replay";
 import type { WindFrame } from "@/lib/wind";
 
 /** A day with only the fires filled in; newFires reads nothing else. */
@@ -103,4 +103,15 @@ test("windOutlook: fires older than 24 hours are not counted", () => {
 test("windOutlook: stops where the wind forecast ends, and has no steps without frames", () => {
   assert.equal(windOutlook(uniform(4, 4, 30), [], NOW).length, 10); // frames reach NOW + 30 h
   assert.deepEqual(windOutlook([], [], NOW), []);
+});
+
+test("topAreas names the provinces with most fires, with the fires' mean position", () => {
+  const jambi = [[-1.6, 103], [-1.4, 103.2]] as const;
+  const riau = [[0.3, 101.7]] as const;
+  const got = topAreas([...riau, ...jambi], 1);
+  assert.equal(got.length, 1);
+  assert.equal(got[0].name, "Jambi");
+  assert.equal(got[0].count, 2);
+  assert.ok(Math.abs(got[0].lat - -1.5) < 1e-9);
+  assert.deepEqual(topAreas([], 3), []);
 });

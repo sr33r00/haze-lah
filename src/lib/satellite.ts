@@ -39,13 +39,8 @@ export const onImage = (lat: number, lon: number, box: Box = SAT_BOX) => ({
  */
 export const RELIEF = "/relief.jpg";
 
-/** The Himawari-9 bands GIBS serves, as the picker lists them: `layer` is the GIBS layer, `note` what to say when a band has no picture. */
-export const HIMAWARI_BANDS = [
-  { id: "infrared", label: "Infrared", layer: "Himawari_AHI_Band13_Clean_Infrared", note: null },
-  { id: "visible", label: "Visible", layer: "Himawari_AHI_Band3_Red_Visible_1km", note: "Visible images are daytime only" },
-  { id: "airmass", label: "Air mass", layer: "Himawari_AHI_Air_Mass", note: null },
-] as const;
-export type HimawariBand = (typeof HIMAWARI_BANDS)[number]["id"];
+/** The Himawari-9 band the page shows: Band 3, red light at 1 km, where smoke is a smooth grey-brown veil. It has pictures by day only. */
+export const HIMAWARI_LAYER = "Himawari_AHI_Band3_Red_Visible_1km";
 
 /** Size of a Himawari picture: about 1000 px wide keeps it fast, and the shape is that of `SAT_BOX`. */
 export const HIMAWARI_SIZE = { w: 1000, h: 520 } as const;
@@ -60,6 +55,30 @@ export function himawariTimes(now = Date.now(), count = HIMAWARI_FRAMES) {
   return Array.from({ length: count }, (_, k) => `${new Date(latest - (count - 1 - k) * HIMAWARI_STEP).toISOString().slice(0, 16)}:00Z`);
 }
 
+const DAYLIGHT_FROM = 7 * 60 + 30; // minutes into the Singapore day: 07:30 ...
+const DAYLIGHT_TO = 18 * 60 + 30; // ... to 18:30. Sunrise and sunset fall between about 06:30 and 19:30 across Sumatra and Borneo; the sun is low at both ends, so the window is trimmed.
+const MIN_DAY_FRAMES = 6; // fewer daylight pictures than this (an hour) is not worth a loop
+
+/** Whether the time `t` is daylight over `SAT_BOX`, when the visible band has pictures: 07:30 to 18:30 Singapore time. */
+export function isDaylight(t: string | number | Date) {
+  const d = new Date(t);
+  const minutes = (d.getUTCHours() * 60 + d.getUTCMinutes() + 8 * 60) % (24 * 60);
+  return minutes >= DAYLIGHT_FROM && minutes <= DAYLIGHT_TO;
+}
+
+/**
+ * The times of the visible band's loop at `now` (ms), oldest first: the daylight pictures of the last 3 hours (`himawariTimes`). With
+ * fewer than an hour of them (the night, and the first hour after sunrise) it is the last 3 hours of daylight instead, and `night` is true.
+ */
+export function visibleTimes(now = Date.now(), count = HIMAWARI_FRAMES) {
+  const recent = himawariTimes(now, count);
+  const day = recent.filter(isDaylight);
+  // Daytime only while the newest picture is still in daylight: after sunset, a few dusk pictures left in the window are night.
+  if (isDaylight(recent.at(-1)!) && day.length >= MIN_DAY_FRAMES) return { times: day, night: false };
+  let end = Date.parse(recent.at(-1)!); // the newest picture in daylight, stepping back 10 minutes at a time
+  while (!isDaylight(end)) end -= HIMAWARI_STEP;
+  return { times: himawariTimes(end + HIMAWARI_DELAY, count), night: true };
+}
+
 /** One Himawari picture of `SAT_BOX` at `time` (an entry of `himawariTimes`), with coastlines. GIBS answers a time it does not have with a black picture, not an error. */
-export const himawariUrl = (layer: string, time: string) =>
-  gibsMap(`${layer},Coastlines_15m`, HIMAWARI_SIZE.w, HIMAWARI_SIZE.h, { box: SAT_BOX, time });
+export const himawariUrl = (time: string) => gibsMap(`${HIMAWARI_LAYER},Coastlines_15m`, HIMAWARI_SIZE.w, HIMAWARI_SIZE.h, { box: SAT_BOX, time });

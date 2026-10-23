@@ -49,6 +49,8 @@ export const NEW_FIRE_COLOR = "#5fe3ee";
 
 /** The key to the line that follows today's strongest fires on the wind, on the Now map and the globe. Whether that smoke reaches Singapore is said by `aheadParts` (the "Smoke on the way" heading of SmokeAhead and the globe's headline). */
 export const AHEAD_LABEL = "Where today's smoke goes";
+/** What to say when the wind forecast carries today's smoke away from Singapore (`aheadParts` is null). */
+export const AHEAD_NONE = "Wind in the next 3 days carries smoke from today's strongest fires away from Singapore.";
 
 /** The browser-side API paths that pages preload (`preload(url, { as: "fetch", crossOrigin: "anonymous" })`), so that the data is on its way before the code that uses it has loaded. */
 export const REPLAY_URL = "/api/replay";
@@ -92,15 +94,25 @@ function km(a: readonly number[], lat: number, lon: number) {
 const nearestArea = (lat: number, lon: number) => AREAS.reduce((best, a) => (km([a[1], a[2]], lat, lon) < km([best[1], best[2]], lat, lon) ? a : best));
 const areaOf = (lat: number, lon: number) => nearestArea(lat, lon)[0];
 
-/** The province or state with most of the given fires, or null for none. */
-function topArea(fires: { lat: number; lon: number }[]) {
-  const counts = new Map<string, number>();
+/** The provinces and states the given fires fall in, most fires first: name, count and the fires' mean position. */
+function areaCounts(fires: { lat: number; lon: number }[]) {
+  const sums = new Map<string, { name: string; count: number; lat: number; lon: number }>();
   for (const f of fires) {
-    const a = areaOf(f.lat, f.lon);
-    counts.set(a, (counts.get(a) ?? 0) + 1);
+    const name = areaOf(f.lat, f.lon);
+    const s = sums.get(name) ?? { name, count: 0, lat: 0, lon: 0 };
+    s.count++;
+    s.lat += f.lat;
+    s.lon += f.lon;
+    sums.set(name, s);
   }
-  return [...counts].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+  return [...sums.values()].map((s) => ({ ...s, lat: s.lat / s.count, lon: s.lon / s.count })).sort((a, b) => b.count - a.count);
 }
+
+/** The province or state with most of the given fires, or null for none. */
+const topArea = (fires: { lat: number; lon: number }[]) => areaCounts(fires)[0]?.name ?? null;
+
+/** The `n` provinces or states with most of the map's fires (`[lat, lon]`), each with the fires' mean position, for labels. */
+export const topAreas = (fires: readonly (readonly number[])[], n: number) => areaCounts(fires.map(([lat, lon]) => ({ lat, lon }))).slice(0, n);
 
 /** Compass point the air came from, or null if it barely moved. */
 export function fromDirection(trail: [number, number][]) {

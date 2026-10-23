@@ -1,5 +1,5 @@
 import { WIND_HEIGHT } from "@/lib/links";
-import { aheadParts } from "@/lib/replay";
+import { AHEAD_NONE, aheadParts } from "@/lib/replay";
 import type { Ahead } from "@/lib/types";
 
 /** "Smoke on the way": when smoke from today's strongest fires should reach Singapore, from the wind forecast. */
@@ -11,7 +11,7 @@ export default function SmokeAhead({ ahead }: { ahead: Ahead }) {
       <p className="mt-1 text-[15px] text-fg">
         {parts
           ? [parts.reach, parts.source, parts.expected].filter(Boolean).join(" ")
-          : "Wind in the next 3 days carries smoke from today's strongest fires away from Singapore."}
+          : AHEAD_NONE}
       </p>
       <p className="mt-2 text-[13px] text-muted">From the wind forecast {WIND_HEIGHT}. Rain and changes in the wind can change this.</p>
     </div>
