@@ -58,25 +58,31 @@ export function himawariTimes(now = Date.now(), count = HIMAWARI_FRAMES) {
 const DAYLIGHT_FROM = 7 * 60 + 30; // minutes into the Singapore day: 07:30 ...
 const DAYLIGHT_TO = 18 * 60 + 30; // ... to 18:30. Sunrise and sunset fall between about 06:30 and 19:30 across Sumatra and Borneo; the sun is low at both ends, so the window is trimmed.
 const MIN_DAY_FRAMES = 6; // fewer daylight pictures than this (an hour) is not worth a loop
+const NIGHT_REPLAY_END = 17 * 60 + 30; // the night loop ends at 17:30 SGT (so it runs 14:30 to 17:30): the last hour before 18:30 is too dark to read smoke
+
+/** Minutes into the Singapore day at `t`. */
+const sgMinutes = (t: string | number | Date) => {
+  const d = new Date(t);
+  return (d.getUTCHours() * 60 + d.getUTCMinutes() + 8 * 60) % (24 * 60);
+};
 
 /** Whether the time `t` is daylight over `SAT_BOX`, when the visible band has pictures: 07:30 to 18:30 Singapore time. */
 export function isDaylight(t: string | number | Date) {
-  const d = new Date(t);
-  const minutes = (d.getUTCHours() * 60 + d.getUTCMinutes() + 8 * 60) % (24 * 60);
+  const minutes = sgMinutes(t);
   return minutes >= DAYLIGHT_FROM && minutes <= DAYLIGHT_TO;
 }
 
 /**
  * The times of the visible band's loop at `now` (ms), oldest first: the daylight pictures of the last 3 hours (`himawariTimes`). With
- * fewer than an hour of them (the night, and the first hour after sunrise) it is the last 3 hours of daylight instead, and `night` is true.
+ * fewer than an hour of them (the night, and the first hour after sunrise) it is the 3 hours up to the latest `NIGHT_REPLAY_END` instead, and `night` is true.
  */
 export function visibleTimes(now = Date.now(), count = HIMAWARI_FRAMES) {
   const recent = himawariTimes(now, count);
   const day = recent.filter(isDaylight);
   // Daytime only while the newest picture is still in daylight: after sunset, a few dusk pictures left in the window are night.
   if (isDaylight(recent.at(-1)!) && day.length >= MIN_DAY_FRAMES) return { times: day, night: false };
-  let end = Date.parse(recent.at(-1)!); // the newest picture in daylight, stepping back 10 minutes at a time
-  while (!isDaylight(end)) end -= HIMAWARI_STEP;
+  let end = Date.parse(recent.at(-1)!); // the latest 17:30 SGT picture, stepping back 10 minutes at a time
+  while (sgMinutes(end) !== NIGHT_REPLAY_END) end -= HIMAWARI_STEP;
   return { times: himawariTimes(end + HIMAWARI_DELAY, count), night: true };
 }
 

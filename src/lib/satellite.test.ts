@@ -52,28 +52,28 @@ test("visibleTimes: just after sunrise it keeps only the daylight pictures", () 
   assert.equal(times.length, 10);
 });
 
-test("visibleTimes: at night it is the 3 hours up to the end of the daylight window", () => {
+test("visibleTimes: at night it is the 3 hours up to 17:30", () => {
   const { times, night } = visibleTimes(Date.parse("2026-10-23T15:00:00Z")); // 23:00 SGT
   assert.equal(night, true);
   assert.equal(times.length, 19);
-  assert.equal(times.at(-1), "2026-10-23T10:30:00Z"); // 18:30 SGT
-  assert.equal(times[0], "2026-10-23T07:30:00Z"); // 15:30 SGT
+  assert.equal(times.at(-1), "2026-10-23T09:30:00Z"); // 17:30 SGT
+  assert.equal(times[0], "2026-10-23T06:30:00Z"); // 14:30 SGT
 });
 
 test("visibleTimes: in the evening, with dusk pictures still in the window, it is night", () => {
   const { times, night } = visibleTimes(Date.parse("2026-10-23T13:38:00Z")); // 21:38 SGT
   assert.equal(night, true);
-  assert.equal(times.at(-1), "2026-10-23T10:30:00Z"); // 18:30 SGT
+  assert.equal(times.at(-1), "2026-10-23T09:30:00Z"); // 17:30 SGT
 });
 
 test("visibleTimes: before sunrise it is yesterday's evening", () => {
   const { times, night } = visibleTimes(Date.parse("2026-10-23T21:00:00Z")); // 05:00 SGT on the 24th
   assert.equal(night, true);
-  assert.equal(times.at(-1), "2026-10-23T10:30:00Z");
+  assert.equal(times.at(-1), "2026-10-23T09:30:00Z");
 });
 
 test("visibleTimes: in the first hour of daylight it still shows the last evening", () => {
   const { night, times } = visibleTimes(Date.parse("2026-10-24T00:20:00Z")); // 08:20 SGT; newest 07:10 SGT
   assert.equal(night, true);
-  assert.equal(times.at(-1), "2026-10-23T10:30:00Z");
+  assert.equal(times.at(-1), "2026-10-23T09:30:00Z");
 });

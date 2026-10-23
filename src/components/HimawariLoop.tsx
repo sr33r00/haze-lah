@@ -1,11 +1,12 @@
 "use client";
 
+import { Maximize2, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { fmtDateTime, fmtTimeRange } from "@/lib/format";
 import { AHEAD_LABEL, AHEAD_NONE, FIRE_COLOR, NEW_FIRE_COLOR, aheadParts, fetchReplay, newFires, newZonesText, trailCaption } from "@/lib/replay";
-import { HIMAWARI_SIZE, himawariUrl, visibleTimes } from "@/lib/satellite";
+import { HIMAWARI_SIZE, himawariUrl, onImage, visibleTimes } from "@/lib/satellite";
 import type { Replay } from "@/lib/types";
-import { sgDate } from "@/lib/util";
+import { SG, sgDate } from "@/lib/util";
 import PlayButton from "./PlayButton";
 import SmokeOverlay, { SMOKE_LAYERS, hasLayer, type SmokeLayer } from "./SmokeOverlay";
 
@@ -32,10 +33,77 @@ function isBlank(img: HTMLImageElement) {
   }
 }
 
-/** The pictures of the loop, stacked so that the loop only swaps which one shows; empty ones are dropped. `overlay` is drawn over them and `badge` pinned to a corner. */
+/** The pictures of the loop, stacked so that the loop only swaps which one shows (`current`). `mark` reports how each one loaded; without it the pictures are ones already loaded and served from the cache. */
+function Frames({ times, current, mark }: { times: string[]; current: string | undefined; mark?: (t: string, s: Status) => void }) {
+  return (
+    <span role="img" aria-label="Visible-light satellite pictures of Sumatra, Singapore and Borneo" className="absolute inset-0 block">
+      {times.map((t) => (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          key={t}
+          src={himawariUrl(t)}
+          alt=""
+          crossOrigin="anonymous"
+          width={HIMAWARI_SIZE.w}
+          height={HIMAWARI_SIZE.h}
+          onLoad={mark && ((e) => mark(t, isBlank(e.currentTarget) ? "none" : "ok"))}
+          onError={mark && (() => mark(t, "error"))}
+          className={`absolute inset-0 size-full ${current === t ? "opacity-100" : "opacity-0"}`}
+        />
+      ))}
+    </span>
+  );
+}
+
+/** What fills the box of the picture, inline and full screen alike: the pictures, then `overlay`, with `badge` pinned to a corner (or `note` instead of both). Spans only, so it can sit inside a button. */
+function Picture({ times, current, mark, note, overlay, badge }: { times: string[]; current: string | undefined; mark?: (t: string, s: Status) => void; note: string | null; overlay: React.ReactNode; badge: string | null }) {
+  return (
+    <>
+      <Frames times={times} current={current} mark={mark} />
+      {note ? (
+        <span className="absolute inset-0 grid place-items-center p-4 text-center text-[15px] text-white/80">{note}</span>
+      ) : (
+        <>
+          {overlay}
+          {badge && <span className="tabular absolute left-2 top-2 rounded-lg bg-black/60 px-2 py-1 text-[13px] font-semibold text-white">{badge}</span>}
+        </>
+      )}
+    </>
+  );
+}
+
+/** Play/pause, the scrubber and the time of the picture shown. `onDark` suits the black full-screen view. */
+function Controls({ playing, onPlaying, loading, n, at, onSeek, caption, onDark = false }: { playing: boolean; onPlaying: (on: boolean) => void; loading: boolean; n: number; at: number; onSeek: (i: number) => void; caption: string | null; onDark?: boolean }) {
+  return (
+    <>
+      <div className="flex items-center gap-3">
+        <PlayButton playing={playing} onClick={() => onPlaying(!playing)} loading={loading} disabled={!loading && n < 2} what="satellite loop" className={onDark ? "bg-white text-black" : undefined} />
+        <input
+          type="range"
+          min={0}
+          max={Math.max(0, n - 1)}
+          value={Math.max(0, at)}
+          disabled={n < 2}
+          onChange={(e) => onSeek(Number(e.target.value))}
+          aria-label="Picture time"
+          className={`h-11 min-w-0 flex-1 ${onDark ? "accent-white" : "accent-[var(--accent)]"}`}
+        />
+      </div>
+      {/* Announced only while paused: a loop at 4 pictures a second would read out every one. */}
+      <p aria-live={playing ? "off" : "polite"} className="tabular mt-1 min-h-5 text-[15px] font-semibold">
+        {caption}
+      </p>
+    </>
+  );
+}
+
+/** The loop, and a button over its picture that opens the same loop full screen: a native dialog on black, panned and pinch-zoomed by scrolling, in step with the inline one (same picture, same play state). `overlay` is drawn over the pictures and `badge` pinned to a corner. */
 function Player({ times, playing, onPlaying, overlay, badge }: { times: string[]; playing: boolean; onPlaying: (on: boolean) => void; overlay: React.ReactNode; badge: string | null }) {
   const [status, setStatus] = useState<Record<string, Status>>({});
   const [pos, setPos] = useState(-1); // -1 is the newest picture
+  const [full, setFull] = useState(false);
+  const dialog = useRef<HTMLDialogElement>(null);
+  const scroller = useRef<HTMLDivElement>(null);
   const have = times.filter((t) => status[t] === "ok");
   const settled = times.every((t) => status[t]);
   const n = have.length;
@@ -47,58 +115,87 @@ function Player({ times, playing, onPlaying, overlay, badge }: { times: string[]
     return () => clearInterval(id);
   }, [playing, settled, n]);
 
+  // Where it opens on a phone, where the picture is wider than the screen: Singapore in the middle.
+  useEffect(() => {
+    const el = scroller.current;
+    if (full && el) el.scrollLeft = ((el.scrollWidth * onImage(SG.lat, SG.lon).x) / 100) - el.clientWidth / 2;
+  }, [full]);
+
   const note = settled && n === 0 ? "Satellite pictures are unavailable right now." : null;
   const mark = (t: string, s: Status) => setStatus((old) => ({ ...old, [t]: s }));
+  const seek = (i: number) => {
+    onPlaying(false);
+    setPos(i);
+  };
+  const controls = { playing, onPlaying, loading: !settled, n, at, onSeek: seek, caption: n > 0 ? fmtDateTime(have[at]) : null };
+  const close = () => dialog.current?.close();
+  const backdrop = (e: React.MouseEvent) => e.target === e.currentTarget && close(); // the dialog itself, or the black around the picture
+  const picture = { current: have[at], note, overlay, badge };
   return (
     <>
-      <div className="relative overflow-hidden rounded-2xl bg-black" style={{ aspectRatio: ASPECT }}>
-        <div role="img" aria-label="Visible-light satellite pictures of Sumatra, Singapore and Borneo" className="absolute inset-0">
-          {times
-            .filter((t) => status[t] !== "none" && status[t] !== "error")
-            .map((t) => (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                key={t}
-                src={himawariUrl(t)}
-                alt=""
-                crossOrigin="anonymous"
-                width={HIMAWARI_SIZE.w}
-                height={HIMAWARI_SIZE.h}
-                onLoad={(e) => mark(t, isBlank(e.currentTarget) ? "none" : "ok")}
-                onError={() => mark(t, "error")}
-                className={`absolute inset-0 size-full ${have[at] === t ? "opacity-100" : "opacity-0"}`}
-              />
-            ))}
-        </div>
-        {note ? (
-          <p className="absolute inset-0 grid place-items-center p-4 text-center text-[15px] text-white/80">{note}</p>
-        ) : (
+      <button
+        type="button"
+        aria-label="View full screen"
+        disabled={n === 0}
+        onClick={() => {
+          setFull(true);
+          dialog.current?.showModal();
+        }}
+        className="relative block w-full cursor-zoom-in overflow-hidden rounded-2xl bg-black disabled:cursor-default"
+        style={{ aspectRatio: ASPECT }}
+      >
+        <Picture times={times.filter((t) => status[t] !== "none" && status[t] !== "error")} mark={mark} {...picture} />
+        {n > 0 && (
+          <span aria-hidden className="absolute bottom-2 right-2 grid size-8 place-items-center rounded-full bg-black/60 text-white">
+            <Maximize2 size={16} />
+          </span>
+        )}
+      </button>
+      <div className="mt-3">
+        <Controls {...controls} />
+      </div>
+      <dialog
+        ref={dialog}
+        aria-label="Satellite loop, full screen"
+        onClose={() => setFull(false)}
+        onClick={backdrop}
+        className="fixed inset-0 m-0 h-dvh max-h-none w-dvw max-w-none flex-col overflow-hidden border-0 bg-black p-0 text-white open:flex backdrop:bg-black"
+      >
+        {full && (
           <>
-            {overlay}
-            {badge && <p className="tabular absolute left-2 top-2 rounded-lg bg-black/60 px-2 py-1 text-[13px] font-semibold text-white">{badge}</p>}
+            <div className="relative min-h-0 flex-1">
+              {/* Wide enough to pan: on a phone held upright the picture is as tall as the screen; elsewhere it fits. touch-action leaves the browser's own pinch-zoom on. */}
+              <div
+                ref={scroller}
+                tabIndex={0}
+                aria-label="Satellite picture"
+                onClick={backdrop}
+                className="absolute inset-0 flex touch-pan-x touch-pan-y touch-pinch-zoom overflow-auto overscroll-contain [container-type:size]"
+              >
+                <div
+                  className="relative m-auto w-[min(100cqw,calc(100cqh*var(--ar)))] shrink-0 pointer-coarse:portrait:h-[100cqh] pointer-coarse:portrait:w-auto"
+                  style={{ aspectRatio: ASPECT, "--ar": HIMAWARI_SIZE.w / HIMAWARI_SIZE.h } as React.CSSProperties}
+                >
+                  <Picture times={have} {...picture} />
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={close}
+                autoFocus
+                aria-label="Close"
+                className="absolute right-[max(0.5rem,env(safe-area-inset-right))] top-[max(0.5rem,env(safe-area-inset-top))] flex size-11 items-center justify-center rounded-full bg-black/60 text-white transition-colors hover:bg-white/20"
+              >
+                <X size={20} aria-hidden />
+              </button>
+              <p className="pointer-events-none absolute bottom-2 left-1/2 hidden -translate-x-1/2 rounded-full bg-black/60 px-3 py-1 text-[13px] text-white pointer-coarse:block">Pinch to zoom</p>
+            </div>
+            <div className="shrink-0 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2 lg:px-6">
+              <Controls {...controls} onDark />
+            </div>
           </>
         )}
-      </div>
-      <div className="mt-3 flex items-center gap-3">
-        <PlayButton playing={playing} onClick={() => onPlaying(!playing)} loading={!settled} disabled={settled && n < 2} what="satellite loop" />
-        <input
-          type="range"
-          min={0}
-          max={Math.max(0, n - 1)}
-          value={Math.max(0, at)}
-          disabled={n < 2}
-          onChange={(e) => {
-            onPlaying(false);
-            setPos(Number(e.target.value));
-          }}
-          aria-label="Picture time"
-          className="h-11 min-w-0 flex-1 accent-[var(--accent)]"
-        />
-      </div>
-      {/* Announced only while paused: a loop at 4 pictures a second would read out every one. */}
-      <p aria-live={playing ? "off" : "polite"} className="tabular mt-1 min-h-5 text-[15px] font-semibold">
-        {n > 0 && fmtDateTime(have[at])}
-      </p>
+      </dialog>
     </>
   );
 }
@@ -117,7 +214,7 @@ function Key({ mark, children }: { mark: React.ReactNode; children: React.ReactN
 
 /**
  * "Smoke from space": the last 3 hours of Himawari-9 over Sumatra, Singapore and Borneo as a looping picture (visible light by day; at night
- * the last daylight loop), straight from NASA GIBS, with today's fires, the paths of today's smoke, province names and Singapore's PM2.5
+ * the afternoon's, up to 5:30pm), straight from NASA GIBS, with today's fires, the paths of today's smoke, province names and Singapore's PM2.5
  * (`pm25`, NEA's highest 1-hour reading) drawn over it, and a caption that says what it shows. The overlay is the latest data, not that of
  * the loop's frame. Nothing loads until the section is near the screen. Paused to begin with under reduced motion.
  */
@@ -179,7 +276,7 @@ export default function HimawariLoop({ pm25 }: { pm25: number | null }) {
           ) : (
             <div className="animate-pulse rounded-2xl bg-line" style={{ aspectRatio: ASPECT }} />
           )}
-          {frames?.night && <p className="mt-1 text-[13px] text-muted">Night: smoke can&apos;t be seen in the dark, so this is the last daylight. Fires and smoke paths are the latest.</p>}
+          {frames?.night && <p className="mt-1 text-[13px] text-muted">Night: smoke can&apos;t be seen in the dark, so this is the last good light. Fires and smoke paths are the latest.</p>}
         </div>
         <div className="mt-3 lg:mt-0">
           {shown.length > 0 && (
