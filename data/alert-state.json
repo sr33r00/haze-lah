@@ -3,6 +3,10 @@
   "pm25Band": 1,
   "neaUrl": "https://www.nea.gov.sg/media/news/advisories/index/haze-situation-update-22-october-2026",
   "newsUrls": [
+    "https://www.channelnewsasia.com/singapore/haze-psi-pm25-oct-23-6484486",
+    "https://www.straitstimes.com/singapore/haze-eases-in-singapore-as-residents-wake-up-to-improved-air-quality",
+    "https://www.straitstimes.com/singapore/environment/a-look-back-at-the-strongest-fire-and-haze-episodes-faced-by-se-asia",
+    "https://www.channelnewsasia.com/singapore/tsh-resources-hotspots-sgx-questions-haze-6483271",
     "https://www.straitstimes.com/singapore/environment/shelters-nparks-mandai-wildlife-group-take-haze-relief-measures-to-protect-animals",
     "https://www.straitstimes.com/singapore/air-quality-improves-to-good-to-moderate-range-across-singapore-after-18-days-of-unhealthy-air",
     "https://www.channelnewsasia.com/singapore/haze-vegetables-fruits-smaller-expensive-malaysia-indonesia-import-6481731",
@@ -28,13 +32,9 @@
     "https://www.straitstimes.com/singapore/firefly-plans-oct-22-resumption-of-all-subang-seletar-flights-after-haze-cancellations",
     "https://www.channelnewsasia.com/singapore/haze-asia-pulp-paper-environment-council-6471366",
     "https://www.channelnewsasia.com/singapore/haze-alfresco-outdoor-dining-busking-drop-6471381",
-    "https://www.channelnewsasia.com/singapore/haze-indonesia-official-oxygen-comments-disappointing-shanmugam-6471166",
-    "https://www.channelnewsasia.com/singapore/singapore-haze-firms-companies-laws-shanmugam-6470856",
-    "https://www.straitstimes.com/singapore/singapore-appreciates-efforts-by-prabowo-and-administration-to-solve-haze-issue-shanmugam",
-    "https://www.straitstimes.com/singapore/spore-to-use-every-legal-and-regulatory-lever-against-companies-linked-to-haze-shanmugam",
-    "https://www.straitstimes.com/singapore/nea-issues-notices-to-three-more-companies-in-indonesia-over-haze-role"
+    "https://www.channelnewsasia.com/singapore/haze-indonesia-official-oxygen-comments-disappointing-shanmugam-6471166"
   ],
   "briefDate": "2026-10-23",
   "outlookDate": "2026-10-22",
-  "hourTime": "2026-10-22T22:00:00+08:00"
+  "hourTime": "2026-10-23T11:00:00+08:00"
 }
