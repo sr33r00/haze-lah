@@ -284,6 +284,11 @@ body {
   }
 }
 
+/* A transparent outline makes Chrome paint the tiles' edges whole: without it a hairline shows between scaled tiles. */
+.origin-map .leaflet-tile {
+  outline: 1px solid transparent;
+}
+
 /* Leaflet's zoom buttons as 44 px targets on the Now page's smoke map. */
 .origin-map .leaflet-bar a {
   width: 44px;

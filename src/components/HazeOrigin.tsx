@@ -177,7 +177,7 @@ export default function HazeOrigin({
   const hasSensors = dots.some((d) => d.rank === 2);
 
   return (
-    <Section id="origin" className={className} title="Where today's air came from" aside={replay ? `Past ${today} days to next ${AHEAD_DAYS}` : undefined}>
+    <Section id="origin" className={className} title="Where today's air came from" aside={replay ? <span className="hidden whitespace-nowrap sm:inline">{`Past ${today} days to next ${AHEAD_DAYS}`}</span> : undefined}>
       <figure ref={setFigure} className="px-4">
         <div
           onKeyDown={onKey}
@@ -186,7 +186,7 @@ export default function HazeOrigin({
           role="group"
           tabIndex={0}
           aria-label="Smoke map. Tap to read the smoke level at a spot, or use the arrow keys."
-          className="relative isolate h-[26rem] overflow-hidden rounded-2xl bg-line outline-offset-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--accent)] lg:h-[30rem]"
+          className="relative isolate h-[23rem] overflow-hidden rounded-2xl bg-line outline-offset-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--accent)] lg:h-[30rem]"
         >
           <OriginMap layers={layers} onTap={(at) => tap(...at)} />
           {day && step && (

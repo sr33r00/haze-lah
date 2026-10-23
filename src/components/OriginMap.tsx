@@ -2,8 +2,8 @@
 
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import { Fragment, useEffect, useMemo, useState } from "react";
-import { CircleMarker, ImageOverlay, MapContainer, Marker, Pane, Polyline, TileLayer, Tooltip, useMapEvents } from "react-leaflet";
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { CircleMarker, ImageOverlay, MapContainer, Marker, Pane, Polyline, TileLayer, Tooltip, useMap, useMapEvents } from "react-leaflet";
 import { FIRE_COLOR, NEW_FIRE_COLOR, TRAIL_COLOR } from "@/lib/replay";
 import { bandColor, type Dot } from "@/lib/readings";
 import type { SmokeGrid } from "@/lib/types";
@@ -11,10 +11,13 @@ import { SG } from "@/lib/util";
 import { drawField, fieldCorners } from "./globe/fieldImage";
 import WindLayer from "./WindLayer";
 
-/** Centred on Singapore, wide enough for Sumatra's and Borneo's fires on a phone as well as a monitor. */
+/**
+ * The first view: the old smoke map's frame (Singapore, 6.5° north and south) moved 2.5° south so that Java's north coast shows,
+ * 8.5° of longitude west of Singapore and 12.2° east, to reach the fires of Kalimantan. FitPath widens it for the path.
+ */
 const START: [[number, number], [number, number]] = [
-  [SG.lat - 6.5, SG.lon - 11],
-  [SG.lat + 6.5, SG.lon + 11],
+  [SG.lat - 9, SG.lon - 8.5],
+  [SG.lat + 4, SG.lon + 12.2],
 ];
 
 type Pt = [number, number];
@@ -43,6 +46,18 @@ export type OriginLayers = {
 /** Reports where the map is clicked. */
 function Tap({ onTap }: { onTap: (at: Pt) => void }) {
   useMapEvents({ click: (e) => onTap([e.latlng.lat, e.latlng.lng]) });
+  return null;
+}
+
+/** Once the air's path is known, widens the first view to take in the whole path (its start included) and never zooms out past START. */
+function FitPath({ trail }: { trail: Pt[] }) {
+  const map = useMap();
+  const done = useRef(false);
+  useEffect(() => {
+    if (done.current || trail.length < 2) return;
+    done.current = true;
+    map.fitBounds(L.latLngBounds(START).extend(L.latLngBounds(trail)), { padding: [8, 8], animate: false });
+  }, [map, trail]);
   return null;
 }
 
@@ -141,6 +156,7 @@ export default function OriginMap({ layers, onTap }: { layers: OriginLayers; onT
       {marks.map((m, i) => (
         <Marker key={i} position={m.at} icon={markIcon(m.label)} interactive={false} keyboard={false} />
       ))}
+      <FitPath trail={trail} />
       <Tap onTap={onTap} />
       {spot && <CircleMarker center={spot} radius={7} interactive={false} pathOptions={{ color: "#fff", weight: 3, fillColor: "#2563eb", fillOpacity: 1 }} />}
       {wind && <WindLayer {...wind} motion={motion} />}
