@@ -28,3 +28,6 @@ export const WIND_NOTE = `Lines show the wind at ${WIND_HEIGHT}.`;
 
 /** NEA, Computation of the Pollutant Standards Index (PSI): the PSI breakpoints for every pollutant. */
 export const NEA_PSI_URL = "https://www.haze.gov.sg/docs/default-source/faq/computation-of-the-pollutant-standards-index-(psi).pdf";
+
+/** NASA Earth Observatory, "Aerosols: Small Particles with Big Impacts": what aerosol optical depth is. */
+export const NASA_AOD_URL = "https://earthobservatory.nasa.gov/features/Aerosols";

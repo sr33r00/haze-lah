@@ -2,6 +2,7 @@ import { pageMeta } from "@/lib/seo";
 import AppShell from "@/components/AppShell";
 import GroundViews from "@/components/GroundViews";
 import HimawariLoop from "@/components/HimawariLoop";
+import SmokeThickness from "@/components/SmokeThickness";
 import { Section } from "@/components/ui";
 import { getHazeData } from "@/lib/data";
 import { islandSummary } from "@/lib/situation";
@@ -19,6 +20,9 @@ export default async function Photos() {
     <AppShell data={data} title="Photos">
       <Section id="space" title="Smoke from space" aside="Himawari-9, every 10 min">
         <HimawariLoop pm25={islandSummary(data)?.peak?.value ?? null} />
+      </Section>
+      <Section id="thickness" title="Smoke thickness" aside="NASA VIIRS, daily">
+        <SmokeThickness psiDaily={data.psiDaily} />
       </Section>
       <Section id="ground" title="On the ground">
         <GroundViews />

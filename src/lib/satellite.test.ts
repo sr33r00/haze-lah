@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { himawariTimes, himawariUrl, isDaylight, onImage, visibleTimes } from "@/lib/satellite";
+import { AOD_DAYS, AOD_LAYERS, aodDates, aodUrl, himawariTimes, himawariUrl, isDaylight, onImage, visibleTimes } from "@/lib/satellite";
 
 test("himawariTimes: 10-minute steps, the newest an hour or more before now, oldest first", () => {
   const times = himawariTimes(Date.parse("2026-10-23T12:07:30Z"), 18);
@@ -76,4 +76,23 @@ test("visibleTimes: in the first hour of daylight it still shows the last evenin
   const { night, times } = visibleTimes(Date.parse("2026-10-24T00:20:00Z")); // 08:20 SGT; newest 07:10 SGT
   assert.equal(night, true);
   assert.equal(times.at(-1), "2026-10-23T09:30:00Z");
+});
+
+test("aodUrl stacks the three VIIRS layers, then the coastlines, as a PNG over SAT_BOX for the date", () => {
+  const q = new URL(aodUrl("2026-10-18")).searchParams;
+  assert.equal(q.get("LAYERS"), `${AOD_LAYERS.join(",")},Coastlines_15m`);
+  assert.equal(q.get("LAYERS")!.split(",").length, 4);
+  assert.equal(q.get("TIME"), "2026-10-18");
+  assert.equal(q.get("FORMAT"), "image/png");
+  assert.equal(q.get("TRANSPARENT"), "true");
+  assert.equal(q.get("CRS"), "EPSG:4326");
+  assert.equal(q.get("BBOX"), "-6,95,7,120");
+  assert.equal(`${q.get("WIDTH")}x${q.get("HEIGHT")}`, "1000x520");
+});
+
+test("aodDates: the last 7 SGT days, oldest first, ending today, across a month end", () => {
+  const dates = aodDates("2026-11-02");
+  assert.equal(dates.length, AOD_DAYS);
+  assert.equal(dates[0], "2026-10-27");
+  assert.equal(dates.at(-1), "2026-11-02");
 });

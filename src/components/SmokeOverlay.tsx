@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { FIRE_COLOR, NEW_FIRE_COLOR, topAreas } from "@/lib/replay";
-import { HIMAWARI_SIZE, onImage } from "@/lib/satellite";
+import { SAT_SIZE, onImage } from "@/lib/satellite";
 import type { Replay } from "@/lib/types";
 import { SG } from "@/lib/util";
 
@@ -14,8 +14,11 @@ export const SMOKE_LAYERS = [
 ] as const;
 export type SmokeLayer = (typeof SMOKE_LAYERS)[number]["id"];
 
-const LABELLED_AREAS = 3; // provinces named: the ones with most fires today
+const LABELLED_AREAS = 3; // provinces named: the ones with most fires that day
 const LABEL_GAP = { x: 80, y: 14 }; // px; a province label this close to an earlier one is left out
+const LABEL_W = 7; // px a character of a 12 px semi-bold province label takes, for its box
+const LABEL_H = 15; // px; a province label's height, halo included
+const SG_TEXT_W = 6.6; // px a character of Singapore's reading takes, for its box
 const HALO = { stroke: "rgb(0 0 0 / 0.75)", strokeWidth: 3, strokeLinejoin: "round", paintOrder: "stroke" } as const; // so text reads on cloud and on dark land
 const DARK = "rgb(0 0 0 / 0.45)";
 
@@ -25,12 +28,59 @@ export function hasLayer(replay: Replay | null, layer: SmokeLayer) {
   return layer === "ahead" ? (day?.ahead?.path.length ?? 0) > 1 : (day?.fires.length ?? 0) > 0;
 }
 
+/** The chips that switch the `shown` layers of a picture on and off, `layers` saying which are on. */
+export function LayerChips({ shown, layers, onToggle }: { shown: readonly { id: SmokeLayer; label: string }[]; layers: Partial<Record<SmokeLayer, boolean>>; onToggle: (id: SmokeLayer) => void }) {
+  return (
+    <div role="group" aria-label="Show on the picture" className="mb-3 grid gap-1 rounded-2xl bg-surface p-1" style={{ gridTemplateColumns: `repeat(${shown.length}, minmax(0, 1fr))` }}>
+      {shown.map((l) => (
+        <button
+          key={l.id}
+          type="button"
+          aria-pressed={!!layers[l.id]}
+          onClick={() => onToggle(l.id)}
+          className={`min-h-[44px] rounded-xl px-2 text-[14px] font-semibold ${layers[l.id] ? "bg-fg text-bg" : "text-muted hover:bg-line"}`}
+        >
+          {l.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/** One line of a picture's key: a `mark` and what it means. */
+export function Key({ mark, children }: { mark: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <li className="flex items-start gap-2.5">
+      <span aria-hidden className="mt-[3px] flex h-3.5 w-5 shrink-0 items-center justify-center">
+        {mark}
+      </span>
+      <span>{children}</span>
+    </li>
+  );
+}
+
+type Box = { left: number; top: number; right: number; bottom: number };
+const overlap = (a: Box, b: Box) => a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
+
 /**
- * Today's fires, the paths of today's smoke and the names of the provinces with most fires, drawn over the satellite picture of `SAT_BOX`,
- * with the new fire zones (`fresh`), Singapore and its highest 1-hour PM2.5 (`pm25`). An SVG in the picture's own pixels (measured, so dots and text keep their size at
- * any width); whatever lies outside the picture is cut off. Meant to sit inside the picture's box: it ignores the pointer.
+ * Fires (`fires`: [lat, lon, ...]), the names of the provinces with most of them, the paths of the smoke (`ahead`) and the new fire
+ * zones (`fresh`), drawn over the satellite picture of `SAT_BOX`, with Singapore and, under its name, `reading` (a short text such as its PM2.5).
+ * A province label never lands on Singapore's dot or text: it moves clear of it, or is left out. An SVG in the picture's own pixels
+ * (measured, so dots and text keep their size at any width); whatever lies outside the picture is cut off. Meant to sit inside the picture's box: it ignores the pointer.
  */
-export default function SmokeOverlay({ replay, layers, pm25, fresh }: { replay: Replay | null; layers: Record<SmokeLayer, boolean>; pm25: number | null; fresh: [number, number][] }) {
+export default function SmokeOverlay({
+  fires,
+  ahead,
+  layers,
+  reading,
+  fresh = [],
+}: {
+  fires: readonly (readonly number[])[];
+  ahead?: readonly (readonly number[])[];
+  layers: Partial<Record<SmokeLayer, boolean>>;
+  reading: string | null;
+  fresh?: [number, number][];
+}) {
   const svg = useRef<SVGSVGElement>(null);
   const [w, setW] = useState(0);
   useEffect(() => {
@@ -41,34 +91,54 @@ export default function SmokeOverlay({ replay, layers, pm25, fresh }: { replay: 
     setW(el.clientWidth);
     return () => ro.disconnect();
   }, []);
-  const h = (w * HIMAWARI_SIZE.h) / HIMAWARI_SIZE.w;
+  const h = (w * SAT_SIZE.h) / SAT_SIZE.w;
   const at = (lat: number, lon: number) => {
     const p = onImage(lat, lon);
     return { x: (p.x * w) / 100, y: (p.y * h) / 100 };
   };
   const inside = (p: { x: number; y: number }) => p.x >= 0 && p.x <= w && p.y >= 0 && p.y <= h;
 
-  const day = replay?.days.at(-1);
-  const fires = useMemo(() => day?.fires ?? [], [day]);
   const areas = useMemo(() => topAreas(fires, LABELLED_AREAS), [fires]);
-  const ahead = (day?.ahead?.path ?? []).map(([la, lo]) => Object.values(at(la, lo)).join(",")).join(" ");
+  const path = (ahead ?? []).map(([la, lo]) => Object.values(at(la, lo)).join(",")).join(" ");
+
+  const sg = at(SG.lat, SG.lon);
+  const edge = (x: number, width: number) => (x < width / 2 ? "start" : x > w - width / 2 ? "end" : "middle");
+  // Singapore's dot, name and reading as one box, to keep province labels off.
+  const sgBox: Box = { left: sg.x - 7, top: sg.y - 17, right: sg.x + 9 + Math.max(70, (reading?.length ?? 0) * SG_TEXT_W), bottom: reading ? sg.y + 16 : sg.y + 7 };
+  /** The box a province label takes: its text sits on the baseline `l.y - 9`, anchored as `edge` says. */
+  const boxOf = (l: { name: string; x: number; y: number }): Box => {
+    const width = l.name.length * LABEL_W;
+    const anchor = edge(l.x, 90);
+    const left = anchor === "start" ? l.x : anchor === "end" ? l.x - width : l.x - width / 2;
+    const top = l.y - 9 - 12;
+    return { left, right: left + width, top, bottom: top + LABEL_H };
+  };
 
   const labels: { name: string; x: number; y: number }[] = [];
   for (const a of areas) {
     const p = at(a.lat, a.lon);
-    if (inside(p) && !labels.some((l) => Math.abs(l.x - p.x) < LABEL_GAP.x && Math.abs(l.y - p.y) < LABEL_GAP.y)) labels.push({ name: a.name, ...p });
+    if (!inside(p) || labels.some((l) => Math.abs(l.x - p.x) < LABEL_GAP.x && Math.abs(l.y - p.y) < LABEL_GAP.y)) continue;
+    let l = { name: a.name, ...p };
+    const b = boxOf(l);
+    if (overlap(b, sgBox)) {
+      // Moved clear of Singapore, just above or just below it, whichever is nearer; left out when that takes it off the picture.
+      const up = sgBox.top - b.bottom - 2;
+      const down = sgBox.bottom - b.top + 2;
+      l = { ...l, y: l.y + (-up <= down ? up : down) };
+      const moved = boxOf(l);
+      if (moved.top < 0 || moved.bottom > h) continue;
+    }
+    labels.push(l);
   }
-  const sg = at(SG.lat, SG.lon);
-  const edge = (x: number, width: number) => (x < width / 2 ? "start" : x > w - width / 2 ? "end" : "middle");
 
   return (
     <svg ref={svg} aria-hidden viewBox={`0 0 ${w || 1} ${h || 1}`} className="pointer-events-none absolute inset-0 size-full overflow-hidden">
       {w > 0 && (
         <>
-          {layers.ahead && hasLayer(replay, "ahead") && (
+          {layers.ahead && path && (
             <g fill="none" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points={ahead} stroke={DARK} strokeWidth={6} />
-              <polyline points={ahead} stroke={FIRE_COLOR} strokeWidth={3} strokeDasharray="7 6" />
+              <polyline points={path} stroke={DARK} strokeWidth={6} />
+              <polyline points={path} stroke={FIRE_COLOR} strokeWidth={3} strokeDasharray="7 6" />
             </g>
           )}
           {layers.fires && (
@@ -104,9 +174,9 @@ export default function SmokeOverlay({ replay, layers, pm25, fresh }: { replay: 
             <text x={sg.x + 9} y={sg.y - 5}>
               Singapore
             </text>
-            {pm25 != null && (
+            {reading && (
               <text x={sg.x + 9} y={sg.y + 10} fontSize={12} fontWeight={600}>
-                PM2.5 {Math.round(pm25)} µg/m³
+                {reading}
               </text>
             )}
           </g>

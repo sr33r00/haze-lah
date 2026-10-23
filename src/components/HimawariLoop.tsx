@@ -1,18 +1,18 @@
 "use client";
 
-import { Maximize2, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { fmtDateTime, fmtTimeRange } from "@/lib/format";
 import { AHEAD_LABEL, AHEAD_NONE, FIRE_COLOR, NEW_FIRE_COLOR, aheadParts, fetchReplay, newFires, newZonesText, trailCaption } from "@/lib/replay";
-import { HIMAWARI_SIZE, himawariUrl, onImage, visibleTimes } from "@/lib/satellite";
+import { SAT_ASPECT, SAT_SIZE, himawariUrl, visibleTimes } from "@/lib/satellite";
 import type { Replay } from "@/lib/types";
-import { SG, sgDate } from "@/lib/util";
+import { sgDate } from "@/lib/util";
+import FullScreenPicture, { Chip } from "./FullScreenPicture";
 import PlayButton from "./PlayButton";
-import SmokeOverlay, { SMOKE_LAYERS, hasLayer, type SmokeLayer } from "./SmokeOverlay";
+import SmokeOverlay, { Key, LayerChips, SMOKE_LAYERS, hasLayer, type SmokeLayer } from "./SmokeOverlay";
+import { useNearScreen } from "./useNearScreen";
 
 const FRAME_MS = 250; // about 4 pictures a second
 const BLANK_BELOW = 3; // a picture whose average brightness (0 to 255) is under this has no data
-const ASPECT = `${HIMAWARI_SIZE.w} / ${HIMAWARI_SIZE.h}`;
 
 type Status = "ok" | "none" | "error";
 
@@ -44,8 +44,8 @@ function Frames({ times, current, mark }: { times: string[]; current: string | u
           src={himawariUrl(t)}
           alt=""
           crossOrigin="anonymous"
-          width={HIMAWARI_SIZE.w}
-          height={HIMAWARI_SIZE.h}
+          width={SAT_SIZE.w}
+          height={SAT_SIZE.h}
           onLoad={mark && ((e) => mark(t, isBlank(e.currentTarget) ? "none" : "ok"))}
           onError={mark && (() => mark(t, "error"))}
           className={`absolute inset-0 size-full ${current === t ? "opacity-100" : "opacity-0"}`}
@@ -55,19 +55,12 @@ function Frames({ times, current, mark }: { times: string[]; current: string | u
   );
 }
 
-/** What fills the box of the picture, inline and full screen alike: the pictures, then `overlay`, with `badge` pinned to a corner (or `note` instead of both). Spans only, so it can sit inside a button. */
-function Picture({ times, current, mark, note, overlay, badge }: { times: string[]; current: string | undefined; mark?: (t: string, s: Status) => void; note: string | null; overlay: React.ReactNode; badge: string | null }) {
+/** What fills the box of the picture, inline and full screen alike: the pictures, or `note` instead of them. Spans only, so it can sit inside a button. */
+function Picture({ times, current, mark, note }: { times: string[]; current: string | undefined; mark?: (t: string, s: Status) => void; note: string | null }) {
   return (
     <>
       <Frames times={times} current={current} mark={mark} />
-      {note ? (
-        <span className="absolute inset-0 grid place-items-center p-4 text-center text-[15px] text-white/80">{note}</span>
-      ) : (
-        <>
-          {overlay}
-          {badge && <span className="tabular absolute left-2 top-2 rounded-lg bg-black/60 px-2 py-1 text-[13px] font-semibold text-white">{badge}</span>}
-        </>
-      )}
+      {note && <span className="absolute inset-0 grid place-items-center p-4 text-center text-[15px] text-white/80">{note}</span>}
     </>
   );
 }
@@ -97,13 +90,10 @@ function Controls({ playing, onPlaying, loading, n, at, onSeek, caption, onDark 
   );
 }
 
-/** The loop, and a button over its picture that opens the same loop full screen: a native dialog on black, panned and pinch-zoomed by scrolling, in step with the inline one (same picture, same play state). `overlay` is drawn over the pictures and `badge` pinned to a corner. */
-function Player({ times, playing, onPlaying, overlay, badge }: { times: string[]; playing: boolean; onPlaying: (on: boolean) => void; overlay: React.ReactNode; badge: string | null }) {
+/** The loop, and a button over its picture that opens the same loop full screen (`FullScreenPicture`), in step with the inline one (same picture, same play state). `overlay` is drawn over the pictures and `chips` pinned to their corners. */
+function Player({ times, playing, onPlaying, overlay, chips }: { times: string[]; playing: boolean; onPlaying: (on: boolean) => void; overlay: React.ReactNode; chips: React.ReactNode }) {
   const [status, setStatus] = useState<Record<string, Status>>({});
   const [pos, setPos] = useState(-1); // -1 is the newest picture
-  const [full, setFull] = useState(false);
-  const dialog = useRef<HTMLDialogElement>(null);
-  const scroller = useRef<HTMLDivElement>(null);
   const have = times.filter((t) => status[t] === "ok");
   const settled = times.every((t) => status[t]);
   const n = have.length;
@@ -115,12 +105,6 @@ function Player({ times, playing, onPlaying, overlay, badge }: { times: string[]
     return () => clearInterval(id);
   }, [playing, settled, n]);
 
-  // Where it opens on a phone, where the picture is wider than the screen: Singapore in the middle.
-  useEffect(() => {
-    const el = scroller.current;
-    if (full && el) el.scrollLeft = ((el.scrollWidth * onImage(SG.lat, SG.lon).x) / 100) - el.clientWidth / 2;
-  }, [full]);
-
   const note = settled && n === 0 ? "Satellite pictures are unavailable right now." : null;
   const mark = (t: string, s: Status) => setStatus((old) => ({ ...old, [t]: s }));
   const seek = (i: number) => {
@@ -128,87 +112,32 @@ function Player({ times, playing, onPlaying, overlay, badge }: { times: string[]
     setPos(i);
   };
   const controls = { playing, onPlaying, loading: !settled, n, at, onSeek: seek, caption: n > 0 ? fmtDateTime(have[at]) : null };
-  const close = () => dialog.current?.close();
-  const backdrop = (e: React.MouseEvent) => e.target === e.currentTarget && close(); // the dialog itself, or the black around the picture
-  const picture = { current: have[at], note, overlay, badge };
+  const picture = { current: have[at], note };
+  const over = note ? null : overlay;
   return (
     <>
-      <button
-        type="button"
-        aria-label="View full screen"
+      <FullScreenPicture
+        name="Satellite loop"
         disabled={n === 0}
-        onClick={() => {
-          setFull(true);
-          dialog.current?.showModal();
-        }}
-        className="relative block w-full cursor-zoom-in overflow-hidden rounded-2xl bg-black disabled:cursor-default"
-        style={{ aspectRatio: ASPECT }}
-      >
-        <Picture times={times.filter((t) => status[t] !== "none" && status[t] !== "error")} mark={mark} {...picture} />
-        {n > 0 && (
-          <span aria-hidden className="absolute bottom-2 right-2 grid size-8 place-items-center rounded-full bg-black/60 text-white">
-            <Maximize2 size={16} />
-          </span>
-        )}
-      </button>
+        inline={
+          <>
+            <Picture times={times.filter((t) => status[t] !== "none" && status[t] !== "error")} mark={mark} {...picture} />
+            {over}
+          </>
+        }
+        full={
+          <>
+            <Picture times={have} {...picture} />
+            {over}
+          </>
+        }
+        chips={note ? null : chips}
+        controls={<Controls {...controls} onDark />}
+      />
       <div className="mt-3">
         <Controls {...controls} />
       </div>
-      <dialog
-        ref={dialog}
-        aria-label="Satellite loop, full screen"
-        onClose={() => setFull(false)}
-        onClick={backdrop}
-        className="fixed inset-0 m-0 h-dvh max-h-none w-dvw max-w-none flex-col overflow-hidden border-0 bg-black p-0 text-white open:flex backdrop:bg-black"
-      >
-        {full && (
-          <>
-            <div className="relative min-h-0 flex-1">
-              {/* Wide enough to pan: on a phone held upright the picture is as tall as the screen; elsewhere it fits. touch-action leaves the browser's own pinch-zoom on. */}
-              <div
-                ref={scroller}
-                tabIndex={0}
-                aria-label="Satellite picture"
-                onClick={backdrop}
-                className="absolute inset-0 flex touch-pan-x touch-pan-y touch-pinch-zoom overflow-auto overscroll-contain [container-type:size]"
-              >
-                <div
-                  className="relative m-auto w-[min(100cqw,calc(100cqh*var(--ar)))] shrink-0 pointer-coarse:portrait:h-[100cqh] pointer-coarse:portrait:w-auto"
-                  style={{ aspectRatio: ASPECT, "--ar": HIMAWARI_SIZE.w / HIMAWARI_SIZE.h } as React.CSSProperties}
-                >
-                  <Picture times={have} {...picture} />
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={close}
-                autoFocus
-                aria-label="Close"
-                className="absolute right-[max(0.5rem,env(safe-area-inset-right))] top-[max(0.5rem,env(safe-area-inset-top))] flex size-11 items-center justify-center rounded-full bg-black/60 text-white transition-colors hover:bg-white/20"
-              >
-                <X size={20} aria-hidden />
-              </button>
-              <p className="pointer-events-none absolute bottom-2 left-1/2 hidden -translate-x-1/2 rounded-full bg-black/60 px-3 py-1 text-[13px] text-white pointer-coarse:block">Pinch to zoom</p>
-            </div>
-            <div className="shrink-0 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2 lg:px-6">
-              <Controls {...controls} onDark />
-            </div>
-          </>
-        )}
-      </dialog>
     </>
-  );
-}
-
-/** One line of the key: a `mark` and what it means. */
-function Key({ mark, children }: { mark: React.ReactNode; children: React.ReactNode }) {
-  return (
-    <li className="flex items-start gap-2.5">
-      <span aria-hidden className="mt-[3px] flex h-3.5 w-5 shrink-0 items-center justify-center">
-        {mark}
-      </span>
-      <span>{children}</span>
-    </li>
   );
 }
 
@@ -225,31 +154,22 @@ export default function HimawariLoop({ pm25 }: { pm25: number | null }) {
   const [failed, setFailed] = useState(false);
   const [layers, setLayers] = useState<Record<SmokeLayer, boolean>>({ fires: true, ahead: true, labels: true });
   const box = useRef<HTMLDivElement>(null);
+  const near = useNearScreen(box);
 
   useEffect(() => {
     if (matchMedia("(prefers-reduced-motion: reduce)").matches) setPlaying(false);
-    const start = () => {
-      setFrames(visibleTimes());
-      fetchReplay().then(setReplay, () => setFailed(true));
-    };
-    if (!("IntersectionObserver" in window)) return void start();
-    const io = new IntersectionObserver(
-      ([e]) => {
-        if (!e.isIntersecting) return;
-        start();
-        io.disconnect();
-      },
-      { rootMargin: "300px" },
-    );
-    if (box.current) io.observe(box.current);
-    return () => io.disconnect();
   }, []);
+  useEffect(() => {
+    if (!near) return;
+    setFrames(visibleTimes());
+    fetchReplay().then(setReplay, () => setFailed(true));
+  }, [near]);
 
   const day = replay?.days.at(-1);
   const fresh = useMemo(() => (replay ? newFires(replay.days) : []), [replay]);
   const reach = day?.ahead ? aheadParts(day.ahead) : null;
   const shown = SMOKE_LAYERS.filter((l) => hasLayer(replay, l.id));
-  const badge = frames?.night ? `${sgDate(0, new Date(frames.times[0])) === sgDate(0) ? "Today" : "Yesterday"} ${fmtTimeRange(frames.times[0], frames.times.at(-1)!)}` : null;
+  const night = frames?.night ? `${sgDate(0, new Date(frames.times[0])) === sgDate(0) ? "Today" : "Yesterday"} ${fmtTimeRange(frames.times[0], frames.times.at(-1)!)}` : null;
 
   return (
     <div ref={box} className="px-4">
@@ -270,30 +190,21 @@ export default function HimawariLoop({ pm25 }: { pm25: number | null }) {
               times={frames.times}
               playing={playing}
               onPlaying={setPlaying}
-              badge={badge}
-              overlay={<SmokeOverlay replay={replay} layers={layers} pm25={pm25} fresh={fresh} />}
+              chips={
+                <>
+                  {night && <Chip at="top">{night}</Chip>}
+                  {layers.fires && hasLayer(replay, "fires") && <Chip at="bottom">Fires: today</Chip>}
+                </>
+              }
+              overlay={<SmokeOverlay fires={day?.fires ?? []} ahead={day?.ahead?.path} layers={layers} reading={pm25 != null ? `PM2.5 ${Math.round(pm25)} µg/m³` : null} fresh={fresh} />}
             />
           ) : (
-            <div className="animate-pulse rounded-2xl bg-line" style={{ aspectRatio: ASPECT }} />
+            <div className="animate-pulse rounded-2xl bg-line" style={{ aspectRatio: SAT_ASPECT }} />
           )}
           {frames?.night && <p className="mt-1 text-[13px] text-muted">Night: smoke can&apos;t be seen in the dark, so this is the last good light. Fires and smoke paths are the latest.</p>}
         </div>
         <div className="mt-3 lg:mt-0">
-          {shown.length > 0 && (
-            <div role="group" aria-label="Show on the picture" className={`mb-3 grid gap-1 rounded-2xl bg-surface p-1 ${shown.length === 3 ? "grid-cols-3" : "grid-cols-2"}`}>
-              {shown.map((l) => (
-                <button
-                  key={l.id}
-                  type="button"
-                  aria-pressed={layers[l.id]}
-                  onClick={() => setLayers((old) => ({ ...old, [l.id]: !old[l.id] }))}
-                  className={`min-h-[44px] rounded-xl px-2 text-[14px] font-semibold ${layers[l.id] ? "bg-fg text-bg" : "text-muted hover:bg-line"}`}
-                >
-                  {l.label}
-                </button>
-              ))}
-            </div>
-          )}
+          {shown.length > 0 && <LayerChips shown={shown} layers={layers} onToggle={(id) => setLayers((old) => ({ ...old, [id]: !old[id] }))} />}
           <h3 className="text-[13px] font-semibold text-fg">How to read this</h3>
           <ul className="mt-1.5 space-y-1.5 text-[13px] text-muted">
             <Key mark={<span className="size-3.5 rounded-sm" style={{ background: "#9b8f84" }} />}>Smoke: smooth grey-brown veil, often over Sumatra and Borneo</Key>
