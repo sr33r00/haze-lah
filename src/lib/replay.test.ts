@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { aheadParts, newFires, newZonesText, trailCaption, windAtSg, windText } from "@/lib/replay";
+import { aheadParts, newFires, newZonesText, trailCaption, windAtSg, windOutlook, windText } from "@/lib/replay";
+import type { WindFrame } from "@/lib/wind";
 
 /** A day with only the fires filled in; newFires reads nothing else. */
 const day = (fires: [number, number][]) => ({ fires });
@@ -53,4 +54,53 @@ test("newZonesText and windText", () => {
 test("newFires takes plain {fires} days, with extra values per fire", () => {
   const zones = newFires([{ fires: [[0, 110, 40]] }, { fires: [[5, 120, 80]] }]);
   assert.deepEqual(zones, [[5, 120]]);
+});
+
+const H = 3600_000;
+const NOW = Date.parse("2026-10-23T04:00:00Z"); // 12:00 SGT
+
+/** Uniform wind (m/s, u towards the east, v towards the north) on a grid around Singapore, every 3 hours from 7 days back to `ahead` hours on. */
+function uniform(u: number, v: number, ahead = 96): WindFrame[] {
+  const lats = Array.from({ length: 31 }, (_, i) => -15 + i);
+  const lons = Array.from({ length: 31 }, (_, i) => 90 + i);
+  const field = (x: number) => ({ lats, lons, data: lats.flatMap(() => lons.map(() => x)) });
+  const n = (7 * 24 + ahead) / 3;
+  return Array.from({ length: n + 1 }, (_, k) => ({ t: NOW - 7 * 24 * H + k * 3 * H, u: field(u), v: field(v) }));
+}
+
+/** A fire detected `hoursAgo` hours before NOW. */
+const fire = (lat: number, lon: number, hoursAgo = 2) => ({ lat, lon, frp: 20, time: new Date(NOW - hoursAgo * H).toISOString(), confidence: "n" });
+
+test("windOutlook: 24 steps on SGT 3-hour marks, from the next one after now", () => {
+  const steps = windOutlook(uniform(4, 4), [], NOW);
+  assert.equal(steps.length, 24);
+  assert.equal(steps[0].t, "2026-10-23T07:00:00.000Z"); // 15:00 SGT
+  assert.equal(steps.at(-1)!.t, "2026-10-26T04:00:00.000Z"); // +72 h
+  assert.ok(steps.every((s, i) => i === 0 || Date.parse(s.t) - Date.parse(steps[i - 1].t) === 3 * H));
+});
+
+test("windOutlook: a south-west wind brings the air over fires to the south-west", () => {
+  const [step] = windOutlook(uniform(4, 4), [fire(-2.5, 99.9), fire(-2.4, 100), fire(8, 118)], NOW);
+  assert.equal(step.from, "southwest");
+  assert.equal(step.deg, 225);
+  assert.equal(step.kmh, 20); // 4 m/s east and north is 5.7 m/s
+  assert.equal(step.near, 2);
+  assert.equal(step.area, "West Sumatra");
+});
+
+test("windOutlook: a north-east wind leaves the same fires behind", () => {
+  const [step] = windOutlook(uniform(-4, -4), [fire(-2.5, 99.9)], NOW);
+  assert.equal(step.from, "northeast");
+  assert.equal(step.deg, 45);
+  assert.equal(step.near, 0);
+  assert.equal(step.area, null);
+});
+
+test("windOutlook: fires older than 24 hours are not counted", () => {
+  assert.equal(windOutlook(uniform(4, 4), [fire(-2.5, 99.9, 30)], NOW)[0].near, 0);
+});
+
+test("windOutlook: stops where the wind forecast ends, and has no steps without frames", () => {
+  assert.equal(windOutlook(uniform(4, 4, 30), [], NOW).length, 10); // frames reach NOW + 30 h
+  assert.deepEqual(windOutlook([], [], NOW), []);
 });

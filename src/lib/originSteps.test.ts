@@ -4,7 +4,7 @@ import { fireDayAt, frameAt, originSteps } from "@/lib/originSteps";
 import type { Replay, SmokeGrid } from "@/lib/types";
 
 const day = (arrival: string) => ({ arrival }) as Replay["days"][number];
-const replay = { lats: [], lons: [], days: [day("2026-10-20T06:00:00Z"), day("2026-10-21T06:00:00Z"), day("2026-10-22T06:00:00Z")] } as Replay;
+const replay = { lats: [], lons: [], days: [day("2026-10-20T06:00:00Z"), day("2026-10-21T06:00:00Z"), day("2026-10-22T06:00:00Z")], outlook: [] } as Replay;
 const smoke = { times: ["2026-10-22T05:00:00Z", "2026-10-22T08:00:00Z", "2026-10-22T11:00:00Z"] } as SmokeGrid;
 
 test("frameAt finds the step within half a step, else null", () => {

@@ -72,6 +72,7 @@ export type WeatherHour = {
   windSpeed: number; // km/h at 850 hPa
   rainProb: number | null;
   rain: number | null; // mm
+  gust: number | null; // km/h, strongest gust at 10 m in that hour
 };
 
 export type ForecastPoint = {
@@ -92,6 +93,8 @@ export type DayOutlook = {
   pHigh: number; // chance 1-hr PM2.5 goes above 55 at some point that day
   parts: (number | null)[]; // mean 1-hr PM2.5: morning 6-12, afternoon 12-18, evening 18-24
   rainProb: number | null;
+  rainMm: number | null; // the day's total rain
+  gustMax: number | null; // km/h, strongest gust of the day
 };
 
 /**
@@ -143,7 +146,17 @@ export type ReplayDay = {
   wind: { u: number[]; v: number[] }; // on the smoke grid, at `arrival`
 };
 
-export type Replay = { lats: number[]; lons: number[]; days: ReplayDay[] };
+/** One 3-hour step of the wind outlook: the air arriving at Singapore at `t`. */
+export type OutlookStep = {
+  t: string; // ISO; when the air arrives
+  from: string | null; // compass point the air came from over the last 72 h; null when it stayed near Singapore
+  deg: number; // direction the wind at Singapore blows from, degrees, rounded
+  kmh: number; // wind speed at Singapore, rounded
+  near: number; // fires of the last 24 h within reach of that air's trail
+  area: string | null; // province or state with most of them
+};
+
+export type Replay = { lats: number[]; lons: number[]; days: ReplayDay[]; outlook: OutlookStep[] };
 
 export type HazeData = {
   generatedAt: string;

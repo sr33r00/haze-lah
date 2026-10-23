@@ -20,8 +20,11 @@ export const mapLink = (lat: number, lon: number) => `https://www.openstreetmap.
 
 export const OPEN_DATA_LICENCE = "https://data.gov.sg/open-data-licence";
 
+/** The height of the wind the site shows (the 850 hPa level), as a phrase. */
+export const WIND_HEIGHT = "about 1.5 km up";
+
 /** What the wind lines on the Smoke and fires map and the globe show. */
-export const WIND_NOTE = "Lines show the wind at about 1.5 km up.";
+export const WIND_NOTE = `Lines show the wind at ${WIND_HEIGHT}.`;
 
 /** NEA, Computation of the Pollutant Standards Index (PSI): the PSI breakpoints for every pollutant. */
 export const NEA_PSI_URL = "https://www.haze.gov.sg/docs/default-source/faq/computation-of-the-pollutant-standards-index-(psi).pdf";

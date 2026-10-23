@@ -1,8 +1,9 @@
 import { windFrom } from "./context";
 import { fmtDayHour } from "./format";
-import type { Ahead, Fire, Journey, Replay, ReplayDay, SmokeGrid } from "./types";
+import { WIND_HEIGHT } from "./links";
+import type { Ahead, Fire, Journey, OutlookStep, Replay, ReplayDay, SmokeGrid } from "./types";
 import { SG, sgDate, sgtTime } from "./util";
-import { backTrail, forwardTrail, sample, type WindFrame } from "./wind";
+import { backTrail, forwardTrail, sample, windAt, type WindFrame } from "./wind";
 
 const DAYS = 5; // FIRMS keeps 5 days, so the replay goes back that far
 export const ARRIVAL_SGT = 14; // trace the air that reached Singapore at 2pm each day
@@ -11,6 +12,9 @@ const NEAR_KM = 50;
 /** Fires a live replay day keeps (the strongest). */
 export const MAP_FIRES = 400;
 const START_MAX_KM = 400; // a trail's oldest point farther than this from every area centre is not "near" any
+const OUTLOOK_STEP_H = 3; // the wind outlook has one step every 3 hours (the wind frames' spacing) ...
+const OUTLOOK_H = 72; // ... for this many hours ahead
+const OUTLOOK_FIRES_H = 24; // and counts the fires detected in the last 24 hours, as `ahead` does
 const AHEAD_H = 72; // how far forward smoke from today's fires is followed
 const AHEAD_FIRES = 150; // strongest fires of the last 24 h that are followed
 const REACH_KM = 75; // smoke "reaches" Singapore when it comes this close
@@ -109,19 +113,21 @@ export function fromDirection(trail: [number, number][]) {
 /** Whether a point lies within NEAR_KM of the trail. */
 export const isNearTrail = (trail: [number, number][], [lat, lon]: [number, number]) => trail.some((p) => km(p, lat, lon) < NEAR_KM);
 
-/** Fires the trail passed within NEAR_KM while the air was on its way, and the area with most of them. */
-function firesPassed(trail: [number, number][], arrival: number, fires: Fire[]) {
-  const from = arrival - WINDOW_H * 3600_000;
+/** Fires detected from `from` to `to` (ms) that lie within NEAR_KM of the trail, and the area with most of them. */
+function firesNear(trail: [number, number][], from: number, to: number, fires: Fire[]) {
   const box = trail.reduce((b, [la, lo]) => [Math.min(b[0], la), Math.max(b[1], la), Math.min(b[2], lo), Math.max(b[3], lo)], [90, -90, 180, -180]);
   const pad = NEAR_KM / 100;
   const passed = fires.filter((f) => {
     const t = Date.parse(f.time);
-    if (t < from || t > arrival) return false;
+    if (t < from || t > to) return false;
     if (f.lat < box[0] - pad || f.lat > box[1] + pad || f.lon < box[2] - pad || f.lon > box[3] + pad) return false;
     return isNearTrail(trail, [f.lat, f.lon]);
   });
   return { near: passed.length, area: topArea(passed) };
 }
+
+/** Fires the trail passed within NEAR_KM while the air was on its way, and the area with most of them. */
+const firesPassed = (trail: [number, number][], arrival: number, fires: Fire[]) => firesNear(trail, arrival - WINDOW_H * 3600_000, arrival, fires);
 
 /** How the air travelled: length and time of the trail, and the area near where it started. Null when the air stayed near Singapore. */
 function journeyOf(trail: [number, number][], arrival: number, from: string | null): Journey | null {
@@ -174,12 +180,16 @@ export function newFires(days: { fires: readonly (readonly number[])[] }[]): [nu
   return zones;
 }
 
+/** Wind of u (towards the east) and v (towards the north), in m/s, as the degrees it blows from (0 to 360) and its speed in km/h. */
+const uvToWind = (x: number, y: number) => ({ deg: (((Math.atan2(-x, -y) * 180) / Math.PI) + 360) % 360, kmh: Math.round(Math.hypot(x, y) * 3.6) });
+
 /** Wind (m/s) at Singapore on the replay's grid as the compass point it blows from and its speed in km/h; null outside the grid. */
 export function windAtSg({ lats, lons }: Pick<Replay, "lats" | "lons">, { u, v }: ReplayDay["wind"]) {
   const x = sample({ lats, lons, data: u }, SG.lat, SG.lon);
   const y = sample({ lats, lons, data: v }, SG.lat, SG.lon);
   if (x == null || y == null) return null;
-  return { from: windFrom((Math.atan2(-x, -y) * 180) / Math.PI), kmh: Math.round(Math.hypot(x, y) * 3.6) };
+  const { deg, kmh } = uvToWind(x, y);
+  return { from: windFrom(deg), kmh };
 }
 
 /** One line on where the day's air came from; `future` for a forecast day, which has no fires to name. */
@@ -245,6 +255,30 @@ export function dayTrail(frames: WindFrame[], date: string, latest = Infinity) {
   return { arrival, trail: backTrail(frames, SG.lat, SG.lon, arrival, WINDOW_H) };
 }
 
+/** The footnote of the wind outlook: what the wind is and which fires are counted. */
+export const OUTLOOK_NOTE = `Wind ${WIND_HEIGHT}. Forecast: ECMWF via Open-Meteo. Fires: NASA FIRMS, seen in the last ${OUTLOOK_FIRES_H} hours within ${NEAR_KM} km of the air's path over the ${WINDOW_H} hours before.`;
+
+/**
+ * Where the air will come from over the next 3 days: for every 3 hours (SGT clock hours divisible by 3) from the next one after `now`
+ * while the wind forecast covers it, the 72-hour back-trail of the air arriving at Singapore (as the daily replay traces it), the wind
+ * there, and the fires of the last 24 hours within NEAR_KM of the trail. A step needs the wind at Singapore; there are at most 24.
+ */
+export function windOutlook(frames: WindFrame[], fires: Fire[], now: number): OutlookStep[] {
+  const step = OUTLOOK_STEP_H * 3600_000;
+  const offset = 8 * 3600_000; // SGT
+  const last = frames.at(-1)?.t ?? 0;
+  const since = now - OUTLOOK_FIRES_H * 3600_000;
+  const out: OutlookStep[] = [];
+  for (let t = (Math.floor((now + offset) / step) + 1) * step - offset; t <= now + OUTLOOK_H * 3600_000 && t <= last; t += step) {
+    const w = windAt(frames, SG.lat, SG.lon, t);
+    if (!w) continue;
+    const trail = backTrail(frames, SG.lat, SG.lon, t, WINDOW_H);
+    const { deg, kmh } = uvToWind(...w);
+    out.push({ t: new Date(t).toISOString(), from: fromDirection(trail), deg: Math.round(deg) % 360, kmh, ...firesNear(trail, since, now, fires) });
+  }
+  return out;
+}
+
 /** The past few days: each day's fires and where the air reaching Singapore came from. */
 export function buildReplay(frames: WindFrame[], fires: (Fire & { where: string })[], now = Date.now()): Replay {
   const latest = frames.filter((f) => f.t <= now).at(-1)?.t ?? now;
@@ -271,5 +305,5 @@ export function buildReplay(frames: WindFrame[], fires: (Fire & { where: string 
     });
   }
   const { lats, lons } = frames[0].u;
-  return { lats, lons, days };
+  return { lats, lons, days, outlook: windOutlook(frames, fires, now) };
 }

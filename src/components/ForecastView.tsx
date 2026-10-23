@@ -9,8 +9,9 @@ import Outlook from "./Outlook";
 import PsiWeek from "./PsiWeek";
 import { Section } from "./ui";
 import { usePrefs } from "./usePrefs";
+import WindOutlook from "./WindOutlook";
 
-/** The Forecast tab: 48 hours, 5 days and the past week. */
+/** The Forecast tab: 48 hours, where the wind comes from, 5 days and the past week. */
 export default function ForecastView(props: {
   history: NeaPm25History | null;
   hourly: ForecastPoint[];
@@ -40,11 +41,15 @@ export default function ForecastView(props: {
         )}
       </Section>
 
+      <Section className="lg:col-span-2" title="Where the wind comes from" aside="Next 3 days">
+        <WindOutlook />
+      </Section>
+
       <Section className="lg:col-start-1" title="Next 5 days">
         <Outlook days={props.days} group={group} />
       </Section>
 
-      <Section className="lg:col-start-2 lg:row-start-2" title="Last 7 days" aside="Peak 24-hr PSI">
+      <Section className="lg:col-start-2 lg:row-start-3" title="Last 7 days" aside="Peak 24-hr PSI">
         <PsiWeek days={props.psiDaily} />
         {since && (
           <p className="mt-2 px-4 text-[13px] text-muted">

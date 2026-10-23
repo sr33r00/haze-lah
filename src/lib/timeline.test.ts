@@ -14,6 +14,7 @@ const replayOf = (days: [string, number][]): Replay => ({
   lats: [],
   lons: [],
   days: days.map(([date, total]) => ({ date, total, arrival: `${date}T06:00:00.000Z` }) as ReplayDay),
+  outlook: [],
 });
 /** Smoke steps every 3 h from `start` (ISO UTC) for `n` steps. */
 const smokeFrom = (start: string, n: number): SmokeGrid => ({

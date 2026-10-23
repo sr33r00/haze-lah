@@ -39,6 +39,9 @@ export const fmtMonth = (date: string) => new Intl.DateTimeFormat("en-SG", { tim
 /** "Sat 17 Oct" for an SGT date (YYYY-MM-DD): `fmtDate` without the comma. */
 export const fmtDateShort = (date: string) => fmtDate(date).replace(",", "");
 
+/** "Fri 23 Oct, 7:40pm" for a moment in time, in Singapore. */
+export const fmtDateTime = (t: string | number) => `${fmtDateShort(sgDate(0, new Date(t)))}, ${fmtTime(t)}`;
+
 export const fmtDay = (date: string, i: number) => (i === 0 ? "Today" : i === 1 ? "Tmrw" : fmtWeekday(date));
 
 export function ago(t: string) {

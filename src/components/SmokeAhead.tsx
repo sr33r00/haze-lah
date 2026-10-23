@@ -1,3 +1,4 @@
+import { WIND_HEIGHT } from "@/lib/links";
 import { aheadParts } from "@/lib/replay";
 import type { Ahead } from "@/lib/types";
 
@@ -12,7 +13,7 @@ export default function SmokeAhead({ ahead }: { ahead: Ahead }) {
           ? [parts.reach, parts.source, parts.expected].filter(Boolean).join(" ")
           : "Wind in the next 3 days carries smoke from today's strongest fires away from Singapore."}
       </p>
-      <p className="mt-2 text-[13px] text-muted">From the wind forecast about 1.5 km up. Rain and changes in the wind can change this.</p>
+      <p className="mt-2 text-[13px] text-muted">From the wind forecast {WIND_HEIGHT}. Rain and changes in the wind can change this.</p>
     </div>
   );
 }

@@ -33,7 +33,7 @@ const LAYERS: { id: LayerChoice; label: string; name: string }[] = [
   { id: "off", label: "Off", name: "No colour layer" },
 ];
 
-const EMPTY_REPLAY: Replay = { lats: [], lons: [], days: [] };
+const EMPTY_REPLAY: Replay = { lats: [], lons: [], days: [], outlook: [] };
 const EMPTY_SMOKE: SmokeGrid = { lats: [], lons: [], times: [], values: [], gases: {}, wind: null };
 /** Milliseconds one step stays on screen while playing. */
 const STEP_MS = 650;

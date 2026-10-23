@@ -38,3 +38,28 @@ export const onImage = (lat: number, lon: number, box: Box = SAT_BOX) => ({
  * 2 s NASA request per visit; made with gibsMap("BlueMarble_ShadedRelief_Bathymetry,Coastlines_15m", 1000, 520, { box: SAT_BOX }).
  */
 export const RELIEF = "/relief.jpg";
+
+/** The Himawari-9 bands GIBS serves, as the picker lists them: `layer` is the GIBS layer, `note` what to say when a band has no picture. */
+export const HIMAWARI_BANDS = [
+  { id: "infrared", label: "Infrared", layer: "Himawari_AHI_Band13_Clean_Infrared", note: null },
+  { id: "visible", label: "Visible", layer: "Himawari_AHI_Band3_Red_Visible_1km", note: "Visible images are daytime only" },
+  { id: "airmass", label: "Air mass", layer: "Himawari_AHI_Air_Mass", note: null },
+] as const;
+export type HimawariBand = (typeof HIMAWARI_BANDS)[number]["id"];
+
+/** Size of a Himawari picture: about 1000 px wide keeps it fast, and the shape is that of `SAT_BOX`. */
+export const HIMAWARI_SIZE = { w: 1000, h: 520 } as const;
+const HIMAWARI_STEP = 600_000; // GIBS has a Himawari picture every 10 minutes ...
+const HIMAWARI_DELAY = 3600_000; // ... about 40 to 60 minutes after it was taken
+/** How many pictures the loop holds: the last 3 hours, every 10 minutes (18 steps, so 19 pictures). */
+export const HIMAWARI_FRAMES = 19;
+
+/** The times (ISO, "YYYY-MM-DDTHH:MM:00Z") of the loop's pictures, oldest first: the newest GIBS should have by `now` (ms), and the ones before it. */
+export function himawariTimes(now = Date.now(), count = HIMAWARI_FRAMES) {
+  const latest = Math.floor((now - HIMAWARI_DELAY) / HIMAWARI_STEP) * HIMAWARI_STEP;
+  return Array.from({ length: count }, (_, k) => `${new Date(latest - (count - 1 - k) * HIMAWARI_STEP).toISOString().slice(0, 16)}:00Z`);
+}
+
+/** One Himawari picture of `SAT_BOX` at `time` (an entry of `himawariTimes`), with coastlines. GIBS answers a time it does not have with a black picture, not an error. */
+export const himawariUrl = (layer: string, time: string) =>
+  gibsMap(`${layer},Coastlines_15m`, HIMAWARI_SIZE.w, HIMAWARI_SIZE.h, { box: SAT_BOX, time });

@@ -1,8 +1,10 @@
 // Synthetic data for local development and screenshots (HAZE_MOCK=1). Not real readings.
 import { REGIONS, type Region } from "./bands";
 import type { Inputs } from "./data";
-import type { DayPsi, HourPoint, NewsItem, SmokeGrid, Station, WeatherHour } from "./types";
+import { buildReplay } from "./replay";
+import type { DayPsi, Fire, HourPoint, NewsItem, Replay, SmokeGrid, Station, WeatherHour } from "./types";
 import { hourKey, sgDate, sgHour } from "./util";
+import type { WindFrame } from "./wind";
 
 export function mockInputs(): Inputs {
   const now = Date.parse(hourKey(new Date()));
@@ -38,6 +40,7 @@ export function mockInputs(): Inputs {
       windSpeed: 18,
       rainProb: h > 60 ? 70 : 20,
       rain: h > 60 ? 2 : 0,
+      gust: h > 60 ? 45 : 20,
     });
   }
   const st = (id: string, name: string, state: string, lat: number, lon: number, api: number, pm25: number, d: number): Station => ({
@@ -178,4 +181,24 @@ export function mockGrid(): SmokeGrid {
   const scaled = (k: number, base: number) => values.map((f) => f.map((v) => Math.round(v * k + base)));
   const gases = { pm10: scaled(1.3, 12), co: scaled(9, 120), no2: scaled(0.1, 6), so2: scaled(0.15, 3), o3: scaled(0.2, 45), dust: scaled(0.1, 4) };
   return { lats, lons, times, values, gases, wind: { u: wind((la) => 4 + 2 * Math.sin(la / 3)), v: wind((la, lo) => 3 + 2 * Math.cos(lo / 4)) } };
+}
+
+/** Synthetic replay: a steady south-westerly turning south-easterly after two days, with fires along both paths every day. */
+export function mockReplay(now = Date.now()): Replay {
+  const lats = Array.from({ length: 14 }, (_, i) => -6 + i);
+  const lons = Array.from({ length: 26 }, (_, i) => 95 + i);
+  const H = 3600_000;
+  const t0 = Math.floor(now / (3 * H)) * 3 * H;
+  const field = (v: number) => ({ lats, lons, data: lats.flatMap(() => lons.map(() => v)) });
+  const frames: WindFrame[] = Array.from({ length: 8 * 8 + 4 * 8 }, (_, k) => {
+    const t = t0 + (k - 56) * 3 * H;
+    const [u, v] = t > now + 48 * H ? [-3, 3] : [3.5, 3.5]; // m/s: blowing towards the north-east, then the north-west
+    return { t, u: field(u), v: field(v) };
+  });
+  const places = [[0, 102.45], [-0.8, 101.65], [-1.2, 106.7]];
+  const fires = Array.from({ length: 5 * 24 }, (_, i): Fire & { where: "sumatra" } => {
+    const [lat, lon] = places[i % 3];
+    return { lat: lat + ((i * 7) % 11) / 20 - 0.25, lon: lon + ((i * 5) % 13) / 20 - 0.3, frp: 10 + (i % 9) * 8, time: new Date(now - i * H).toISOString(), confidence: "n", where: "sumatra" };
+  });
+  return buildReplay(frames, fires, now);
 }

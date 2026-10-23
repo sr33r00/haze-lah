@@ -2,8 +2,14 @@ import type { HazeData } from "./types";
 
 const POINTS = ["north", "northeast", "east", "southeast", "south", "southwest", "west", "northwest"];
 
+const SHORT = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+const point = (deg: number) => Math.round((((deg % 360) + 360) % 360) / 45) % 8;
+
 /** Compass word for the direction wind blows from; Open-Meteo wind direction is degrees "from". */
-export const windFrom = (deg: number) => POINTS[Math.round((((deg % 360) + 360) % 360) / 45) % 8];
+export const windFrom = (deg: number) => POINTS[point(deg)];
+
+/** The same as a short label: "SW". */
+export const windFromShort = (deg: number) => SHORT[point(deg)];
 
 /** One line of context for the smoke map: current wind and satellite fire counts. */
 export function mapContext({ weather, fires }: HazeData): string | null {

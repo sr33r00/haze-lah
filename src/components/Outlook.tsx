@@ -6,6 +6,10 @@ import { LEVEL_TEXT, pm25Color, psiLevel, verdict, type Group } from "@/lib/band
 import { fmtDay } from "@/lib/format";
 import type { DayOutlook } from "@/lib/types";
 
+/** "Rain 94% · 3 mm · gusts 45 km/h": the chance, the day's total and its strongest gust, as far as known. */
+const rainText = (d: DayOutlook) =>
+  [`Rain ${d.rainProb}%`, d.rainMm != null && (d.rainMm < 1 ? "<1 mm" : `${Math.round(d.rainMm)} mm`), d.gustMax != null && `gusts ${d.gustMax} km/h`].filter(Boolean).join(" · ");
+
 const PARTS = ["Morning", "Afternoon", "Evening"];
 
 /** One row per day: morning/afternoon/evening strip, advice, expected PSI; peak and chance of high PM2.5 on request. */
@@ -33,9 +37,9 @@ export default function Outlook({ days, group }: { days: DayOutlook[]; group: Gr
                 <div className="mt-1.5 text-[14px] font-semibold">
                   {verdict(lv, group).headline.replace(".", "")}
                   {d.rainProb != null && d.rainProb >= 40 && (
-                    <span className="ml-2 inline-flex items-center gap-1 text-[13px] font-normal text-muted">
-                      <CloudRain size={13} aria-hidden />
-                      Rain {d.rainProb}%
+                    <span className="block text-[13px] font-normal text-muted">
+                      <CloudRain size={13} aria-hidden className="mr-1 inline align-[-2px]" />
+                      {rainText(d)}
                     </span>
                   )}
                 </div>
@@ -59,7 +63,7 @@ export default function Outlook({ days, group }: { days: DayOutlook[]; group: Gr
       >
         {open ? "Hide details" : "Show details"}
       </button>
-      {open && <p className="px-1 text-[12px] text-muted">Strips show morning, afternoon and evening. Peak is the likely range of the day&apos;s highest hour.</p>}
+      {open && <p className="px-1 text-[12px] text-muted">Strips show morning, afternoon and evening. Peak is the likely range of the day&apos;s highest hour. Rain is the day&apos;s total; gusts are the strongest at 10 m above ground.</p>}
     </div>
   );
 }

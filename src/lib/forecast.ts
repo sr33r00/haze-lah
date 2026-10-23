@@ -66,10 +66,13 @@ export function dailyOutlook(obs: HourPoint[], fc: ForecastPoint[], weather: Wea
     ...fc.map((f) => ({ t: Date.parse(f.time), v: f.pm25, lo: f.low, hi: f.high, p: f.pHigh })),
   ].sort((a, b) => a.t - b.t);
   const rain = new Map<string, number>();
+  const mm = new Map<string, number>();
+  const gust = new Map<string, number>();
   for (const w of weather) {
-    if (w.rainProb == null) continue;
     const d = sgDate(0, new Date(w.time));
-    rain.set(d, Math.max(rain.get(d) ?? 0, w.rainProb));
+    if (w.rainProb != null) rain.set(d, Math.max(rain.get(d) ?? 0, w.rainProb));
+    if (w.rain != null) mm.set(d, (mm.get(d) ?? 0) + w.rain);
+    if (w.gust != null) gust.set(d, Math.max(gust.get(d) ?? 0, w.gust));
   }
   const out: DayOutlook[] = [];
   for (let k = 0; k < days; k++) {
@@ -96,6 +99,8 @@ export function dailyOutlook(obs: HourPoint[], fc: ForecastPoint[], weather: Wea
       pHigh: Math.max(...day.map((p) => p.p)),
       parts: [part(6, 12), part(12, 18), part(18, 24)],
       rainProb: rain.get(date) ?? null,
+      rainMm: mm.get(date) ?? null,
+      gustMax: gust.has(date) ? Math.round(gust.get(date)!) : null,
     });
   }
   return out;

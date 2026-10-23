@@ -18,7 +18,7 @@ const trailOf = (tag: number): [number, number][] => [[SG.lat, SG.lon], [SG.lat,
 const replayDay = (date: string, fires: [number, number][], extra: Partial<ReplayDay> = {}): ReplayDay =>
   ({ date, arrival: `${date}T06:00:00.000Z`, trail: trailOf(1), fires, total: fires.length, wind: { u: flat(2), v: flat(-1) }, ahead: null, ...extra }) as ReplayDay;
 
-const replayOf = (days: ReplayDay[]): Replay => ({ lats: LATS, lons: LONS, days });
+const replayOf = (days: ReplayDay[]): Replay => ({ lats: LATS, lons: LONS, days, outlook: [] });
 
 // 06:00 SGT on the 23rd, every 3 h for 25 steps (72 h): covers the 23rd to the 26th (SGT).
 const times = Array.from({ length: 25 }, (_, k) => new Date(Date.parse("2026-10-22T22:00:00.000Z") + k * 3 * 3600_000).toISOString());

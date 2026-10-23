@@ -24,8 +24,8 @@ export type WindFrame = { t: number; u: Field; v: Field };
 
 const M_PER_DEG = 111_320;
 
-/** Wind at a place and time, linear in time between the two nearest frames (frames sorted by time). */
-function windAt(frames: WindFrame[], lat: number, lon: number, t: number): [number, number] | null {
+/** Wind (u, v in m/s) at a place and time, linear in time between the two nearest frames (frames sorted by time); null outside the grid. */
+export function windAt(frames: WindFrame[], lat: number, lon: number, t: number): [number, number] | null {
   const k = Math.max(0, frames.findLastIndex((f) => f.t <= t));
   const a = frames[k];
   const b = frames[Math.min(k + 1, frames.length - 1)];

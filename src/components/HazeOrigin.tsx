@@ -9,7 +9,7 @@ import type { HistoryDay } from "@/lib/historyTypes";
 import { loadDay } from "@/lib/historyClient";
 import { fireDayAt, frameAt, originSteps } from "@/lib/originSteps";
 import { PM25, bandNames, bandOf } from "@/lib/pollutants";
-import { WIND_NOTE } from "@/lib/links";
+import { WIND_HEIGHT, WIND_NOTE } from "@/lib/links";
 import { bandColor, readingDots } from "@/lib/readings";
 import { AHEAD_LABEL, FIRE_COLOR, NEW_FIRE_COLOR, TRAIL_COLOR, fetchReplay, fetchSmoke, newFires, newZonesText, trailCaption, windAtSg, windText } from "@/lib/replay";
 import { islandMax } from "@/lib/situation";
@@ -329,7 +329,7 @@ export default function HazeOrigin({
           {day && step && (
             <>
               {day.journey ? <AirJourney day={day} shareable={step.kind !== "past"} /> : <p className="text-[15px] font-bold text-fg">{trailCaption(day)}</p>}
-              <p className="mt-3">Traced back 3 days along the wind about 1.5 km up. Fires near the path are a likely, not certain, source.</p>
+              <p className="mt-3">Traced back 3 days along the wind {WIND_HEIGHT}. Fires near the path are a likely, not certain, source.</p>
               <Link href="/map?view=path" className="mt-1 inline-block py-1 text-[14px] font-semibold text-accent">
                 See it on the map
               </Link>

@@ -1,6 +1,7 @@
 import { pageMeta } from "@/lib/seo";
 import AppShell from "@/components/AppShell";
 import GroundViews from "@/components/GroundViews";
+import HimawariLoop from "@/components/HimawariLoop";
 import { Section } from "@/components/ui";
 import { getHazeData } from "@/lib/data";
 
@@ -15,6 +16,9 @@ export default async function Photos() {
   const data = await getHazeData();
   return (
     <AppShell data={data} title="Photos">
+      <Section id="space" title="From space" aside="Himawari-9">
+        <HimawariLoop />
+      </Section>
       <Section id="ground" title="On the ground">
         <GroundViews />
       </Section>

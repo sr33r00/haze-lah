@@ -16,6 +16,7 @@ type WX = {
     wind_speed_850hPa: (number | null)[];
     precipitation_probability: (number | null)[];
     precipitation: (number | null)[];
+    wind_gusts_10m: (number | null)[];
   };
 };
 
@@ -34,7 +35,7 @@ export async function fetchCamsSingapore(): Promise<HourPoint[]> {
 
 export async function fetchWeather(): Promise<WeatherHour[]> {
   const j = await getJson<WX>(
-    `https://api.open-meteo.com/v1/forecast?latitude=${SG.lat}&longitude=${SG.lon}&hourly=wind_direction_850hPa,wind_speed_850hPa,precipitation_probability,precipitation&timezone=GMT&past_days=1&forecast_days=5`,
+    `https://api.open-meteo.com/v1/forecast?latitude=${SG.lat}&longitude=${SG.lon}&hourly=wind_direction_850hPa,wind_speed_850hPa,precipitation_probability,precipitation,wind_gusts_10m&timezone=GMT&past_days=1&forecast_days=5`,
     { revalidate: 1800 },
   );
   const h = j.hourly;
@@ -44,6 +45,7 @@ export async function fetchWeather(): Promise<WeatherHour[]> {
     windSpeed: h.wind_speed_850hPa[i] ?? NaN,
     rainProb: h.precipitation_probability[i],
     rain: h.precipitation[i],
+    gust: h.wind_gusts_10m[i] ?? null,
   }));
 }
 
