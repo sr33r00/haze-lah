@@ -78,6 +78,18 @@ jobs:
           for n in "${names[@]}"; do
             curl -fsS "https://purge.jsdelivr.net/gh/sr33r00/haze-lah@main/data/history/$n.json" > /dev/null || echo "::warning::jsDelivr purge failed for $n"
           done
+          # jsDelivr resolves @main to the previous commit for a few minutes after a push, so a purge then can cache the old index
+          # again (it once kept an August-only copy, and visitors who cannot reach GitHub's raw host lost every later bar).
+          # Purge the index until the CDN's copy is the one just committed.
+          want=$(jq -r .updated data/history/index.json)
+          for try in 1 2 3 4 5 6 7 8; do
+            got=$(curl -fsS "https://cdn.jsdelivr.net/gh/sr33r00/haze-lah@main/data/history/index.json" | jq -r .updated || true)
+            [[ $got == "$want" ]] && { echo "jsDelivr index is current ($got)"; exit 0; }
+            echo "jsDelivr index is $got, want $want; purging again in 60 s"
+            sleep 60
+            curl -fsS "https://purge.jsdelivr.net/gh/sr33r00/haze-lah@main/data/history/index.json" > /dev/null || true
+          done
+          echo "::warning::jsDelivr still serves an old index.json"
       - name: Fail if some days failed
         if: steps.build.outputs.code != '0'
         env:
