@@ -32,6 +32,11 @@ test("loadIndex returns null when the JSON is not an index", async () => {
   assert.equal(await loadIndex(fake({ [INDEX_URL]: { body: { days: "x" } } }).fn), null);
 });
 
+test("loadIndex falls back to jsDelivr's copy when GitHub's raw host is blocked", async () => {
+  const body = { updated: "2026-10-23T00:00:00Z", days: [] };
+  assert.deepEqual(await loadIndex(fake({ [historyUrl("index")]: { body } }).fn), body);
+});
+
 test("loadIndex returns the index", async () => {
   const body = { updated: "2026-10-23T00:00:00Z", days: [] };
   assert.deepEqual(await loadIndex(fake({ [INDEX_URL]: { body } }).fn), body);

@@ -24,10 +24,14 @@ async function getJson(url: string, fetchFn: typeof fetch, init?: RequestInit): 
   }
 }
 
-/** The index of days, or null on any failure. It changes daily, so a stale browser copy is revalidated. */
+const asIndex = (json: unknown) => (json && json !== MISSING && Array.isArray((json as HistoryIndex).days) ? (json as HistoryIndex) : null);
+
+/**
+ * The index of days, or null on any failure. It changes daily, so a stale browser copy is revalidated. When GitHub's raw host does not
+ * answer (some content blockers stop it), jsDelivr's copy stands in: perhaps hours old, but every day the timeline plays is still there.
+ */
 export async function loadIndex(fetchFn: typeof fetch = fetch): Promise<HistoryIndex | null> {
-  const json = (await getJson(INDEX_URL, fetchFn, { cache: "no-cache" })) as HistoryIndex | typeof MISSING | null;
-  return json && json !== MISSING && Array.isArray(json.days) ? json : null;
+  return asIndex(await getJson(INDEX_URL, fetchFn, { cache: "no-cache" })) ?? asIndex(await getJson(historyUrl("index"), fetchFn));
 }
 
 /** One request per date for the session; a day that loaded, or that is definitely not there (a 404: a gap day), is remembered. */
