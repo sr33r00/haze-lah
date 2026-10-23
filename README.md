@@ -33,6 +33,16 @@ The site is independent and is not an official NEA service. For official advisor
 | [Copernicus CAMS via Open-Meteo](https://open-meteo.com/en/docs/air-quality-api) | PM2.5 and gas forecasts, and the regional smoke map | CC BY 4.0, contains modified Copernicus information |
 | [ECMWF via Open-Meteo](https://open-meteo.com) | Wind at 850 hPa and rain | CC BY 4.0 |
 
+### Readings archive
+
+Every air reading the site shows is also saved, so it is kept after the live page moves on. There is one file per Singapore day in `data/readings/<date>.json`, and `data/readings/index.json` lists the days and which sources each has. A scheduled GitHub Actions job (`.github/workflows/readings.yml`) writes yesterday's file each night.
+
+- **NEA:** every hour, for the five regions: the 24-hour PSI, the sub-indices, the 1-hour and 24-hour PM2.5, and the PM10, ozone, carbon monoxide, sulphur dioxide and nitrogen dioxide figures. It starts on 1 August 2026.
+- **Malaysian stations (APIMS):** the API and the pollutants each station reports. APIMS publishes only the latest hour and keeps no history, so these are collected hourly and they start when the collection began.
+- **Community sensors (OpenAQ):** hourly PM2.5. Needs an OpenAQ key. Without it they are left out and the day says so.
+
+A source that has nothing for a day is listed under `missing` in that day's file, never filled with zeros. Cameras and news are not saved, and neither are the model grids and wind, which are in `data/history/`.
+
 Reference only: [ASEAN Specialised Meteorological Centre](https://asmc.asean.org) and [MyCMAQ](https://mycmaq.met.gov.my).
 
 ## How the forecast works
@@ -91,7 +101,7 @@ src/lib/bands.ts      NEA bands, PSI sub-index and health advisory
 src/lib/advice.ts     practical steps by level and group
 src/lib/accuracy.ts   forecast verification
 src/components/       page sections
-scripts/              archive, scoring and alert jobs
+scripts/              archive, scoring, alert, history and readings jobs
 ```
 
 ## Contributing

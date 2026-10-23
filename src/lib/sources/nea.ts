@@ -5,7 +5,8 @@ import { getJson, num, sgDate } from "../util";
 // NEA data via data.gov.sg (Singapore Open Data Licence).
 const BASE = "https://api-open.data.gov.sg/v2/real-time/api";
 
-type Item = { timestamp: string; readings: Record<string, Record<string, number>> };
+export type NeaItem = { timestamp: string; readings: Record<string, Record<string, number>> };
+type Item = NeaItem;
 type Resp = { code: number; data: { items: Item[] } };
 
 function headers(): HeadersInit {
@@ -109,15 +110,26 @@ export async function fetchPsiDaily(days = 7): Promise<DayPsi[]> {
   return out;
 }
 
+/** Pause between two days read from the dated feeds: two requests a day, and data.gov.sg allows 6 anonymous calls per 10 s. */
+export const NEA_PAUSE_MS = 4000;
+
 /**
- * Singapore's highest 24-hr PSI and highest 1-hour PM2.5 (any region) on an SGT day, from the dated feeds; null for a figure
- * the feed has no readings for. Two requests, one after the other (data.gov.sg allows 6 anonymous calls per 10 s). Throws when
- * a request fails, so a day is never saved with figures that were only missing from a failed call.
+ * Every hourly item of an SGT day from the dated `/psi` and `/pm25` feeds, newest first as served. Two requests, one after the
+ * other. Throws when a request fails, so a day is never saved with figures that were only missing from a failed call.
  */
-export async function fetchNeaDay(date: string): Promise<{ psiMax: number | null; pm25Max: number | null }> {
+export async function fetchNeaDayFeeds(date: string): Promise<{ psi: NeaItem[]; pm25: NeaItem[] }> {
   const psi = await getJson<Resp>(`${BASE}/psi?date=${date}`, { headers: headers(), revalidate: 86400 });
   const pm25 = await getJson<Resp>(`${BASE}/pm25?date=${date}`, { headers: headers(), revalidate: 86400 });
-  const hourly = pm25.data.items.flatMap((it) => REGIONS.map((r) => num(it.readings.pm25_one_hourly?.[r])));
+  return { psi: psi.data.items, pm25: pm25.data.items };
+}
+
+/**
+ * Singapore's highest 24-hr PSI and highest 1-hour PM2.5 (any region) on an SGT day, from the dated feeds; null for a figure
+ * the feed has no readings for. Throws when a request fails (see `fetchNeaDayFeeds`).
+ */
+export async function fetchNeaDay(date: string): Promise<{ psiMax: number | null; pm25Max: number | null }> {
+  const { psi, pm25 } = await fetchNeaDayFeeds(date);
+  const hourly = pm25.flatMap((it) => REGIONS.map((r) => num(it.readings.pm25_one_hourly?.[r])));
   const readings = hourly.filter((v): v is number => v != null);
-  return { psiMax: psiPeak(psi.data.items, date)?.max ?? null, pm25Max: readings.length ? Math.max(...readings) : null };
+  return { psiMax: psiPeak(psi, date)?.max ?? null, pm25Max: readings.length ? Math.max(...readings) : null };
 }

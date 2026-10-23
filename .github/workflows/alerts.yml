@@ -34,10 +34,29 @@ jobs:
           ALERT_TEST: ${{ inputs.test_alert && '1' || '' }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+      # Malaysia's APIMS serves only each station's latest hour, so the readings archive keeps it hourly. The buffer lives in
+      # the cache between runs (the newest one is restored); scripts/readings.ts copies it to data/readings/pending/ every few
+      # hours, so commits stay few. A failure here must not stop the alerts or their commit.
+      - name: Restore the readings buffer
+        uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
+        with:
+          path: .readings-cache
+          key: readings-buffer-${{ github.run_id }}
+          restore-keys: readings-buffer-
+      - name: Capture the latest APIMS hour
+        id: capture
+        continue-on-error: true
+        run: npx tsx scripts/readings.ts --capture
       - name: Commit
+        env:
+          FLUSH: ${{ steps.capture.outputs.flush }}
         run: |
           git config user.name "haze-lah-bot"
           git config user.email "actions@users.noreply.github.com"
           git add data/alert-state.json
           git diff --cached --quiet || git commit -m "data: alert state"
+          if [ "$FLUSH" = "true" ]; then
+            git add data/readings/pending
+            git diff --cached --quiet || git commit -m "data: readings capture $(date -u +%FT%H:00Z)"
+          fi
           git pull --rebase --quiet && git push

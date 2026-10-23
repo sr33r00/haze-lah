@@ -40,3 +40,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 !.env.example
+
+# readings capture buffer (kept between runs by the workflow cache)
+/.readings-cache/

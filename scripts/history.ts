@@ -18,15 +18,12 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { addToIndex, assertFires, buildDay } from "../src/lib/history";
 import type { HistoryIndex } from "../src/lib/historyTypes";
 import { fetchFiresRange } from "../src/lib/sources/firms";
-import { fetchNeaDay } from "../src/lib/sources/nea";
+import { NEA_PAUSE_MS, fetchNeaDay } from "../src/lib/sources/nea";
 import { dayAQ, fetchHistoryAQ, fetchHistoryWind, gridQuery } from "../src/lib/sources/openmeteo";
-import { sgDate, shiftDate } from "../src/lib/util";
+import { sgDate, shiftDate, sleep } from "../src/lib/util";
 
 const DIR = "data/history";
 const CHUNK_DAYS = 10; // days built from one pair of Open-Meteo requests (wind then spans 13 days, within its 14-day unit)
-const NEA_PAUSE_MS = 4000; // two NEA requests per day; data.gov.sg allows 6 anonymous calls per 10 s
-
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 function arg(name: string, fallback: string) {
   const i = process.argv.indexOf(`--${name}`);
