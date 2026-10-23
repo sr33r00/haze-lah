@@ -33,6 +33,11 @@ const nextConfig: NextConfig = {
           { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
         ],
       },
+      {
+        // The maps' world outline changes only with a deploy: a day in the browser, then a week of revalidating in the background.
+        source: "/world.json",
+        headers: [{ key: "Cache-Control", value: "public, max-age=86400, stale-while-revalidate=604800" }],
+      },
     ];
   },
 };

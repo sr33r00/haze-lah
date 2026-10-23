@@ -44,6 +44,11 @@ function homeCamera(w: number, h: number) {
   const fit = Math.log2(Math.min(w / SPAN_X, h / SPAN_Y) * (360 / 512));
   return { zoom: fit + (narrow ? 0.4 : -0.3), pitch: narrow ? 40 : 48, center: CENTER, padding: { top: 0, left: 0, right: 0, bottom: narrow ? 90 : 0 } as PaddingOptions };
 }
+/**
+ * The zoom the globe opens at: a little out from `to`, but on the same level of NASA's tiles (MapLibre rounds a raster's zoom, and
+ * its 256 px tiles sit one level above the map's), so the intro tilts and settles without fetching two levels of tiles it then drops.
+ */
+const introZoom = (to: number) => Math.max(to - 0.6, Math.round(to + 1) - 1.49);
 const INTRO_MS = 2800;
 const MOVE_MS = 1400;
 const ease = (t: number) => 1 - (1 - t) ** 3;
@@ -246,7 +251,7 @@ export default function AirGlobe({ day, layer, satDate, dots, view, onFail }: Pr
           container: el,
           style,
           center: CENTER,
-          zoom: Math.max(1.4, homeCamera(w, h).zoom - 1.6),
+          zoom: introZoom(homeCamera(w, h).zoom),
           pitch: 0,
           minZoom: 1.2,
           maxZoom: 9,

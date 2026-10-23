@@ -3,6 +3,7 @@
 import { ArrowLeft, Spline } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { fetchBasemap } from "@/lib/basemap";
 import { fmtDateShort, fmtFullDate, fmtHour, fmtTime, fmtWeekday } from "@/lib/format";
 import type { HistoryDay, HistoryIndex } from "@/lib/historyTypes";
 import { loadDay, loadIndex, prefetchAround } from "@/lib/historyClient";
@@ -86,6 +87,7 @@ export default function MapScreen({ dots: dotData, psiDaily, summary }: Props) {
   useEffect(() => {
     // "?view=path" (the link from Now) frames the air's path; any other query, and the old "#space" anchor, the default view.
     if (new URLSearchParams(location.search).get("view") === "path") setView("path");
+    fetchBasemap().catch(() => {}); // the globe's style, asked for while the globe's code is still on its way (the globe reports a failure itself)
     fetchReplay().then(setReplay, () => setReplay(EMPTY_REPLAY));
     fetchSmoke().then(setSmoke, () => setSmoke(EMPTY_SMOKE));
     loadIndex().then(setIndex);
