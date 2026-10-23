@@ -95,6 +95,11 @@ test("sensors show PM2.5 and are dropped after 3 hours", () => {
   assert.equal(readingDots(old, "pm25", true, NOW).some((x) => x.label.endsWith("Sensor")), false);
 });
 
+test("a sensor with a time that is not a date is dropped", () => {
+  const bad = data({ sensors: [sensor({ time: "not a time" })] });
+  assert.equal(readingDots(bad, "pm25", true, NOW).some((x) => x.label.endsWith("Sensor")), false);
+});
+
 test("no NEA data gives no NEA dots", () => {
   const d = readingDots(data({ nea: null, history: null }), "pm25", true, NOW);
   assert.equal(d.some((x) => x.label.endsWith("NEA")), false);

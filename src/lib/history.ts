@@ -9,7 +9,7 @@ import type { WindFrame } from "./wind";
  * data.gov.sg dataset d_b4cf557f8750260d229c49fd768e11ed. Computed from the dataset; 2026 is excluded
  * because the current episode is in it.
  */
-export const PSI_YEAR_PEAKS: Record<number, number> = {
+const PSI_YEAR_PEAKS: Record<number, number> = {
   2014: 125,
   2015: 322,
   2016: 143,

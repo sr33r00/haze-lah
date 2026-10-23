@@ -13,7 +13,7 @@ import type { ExpressionSpecification, LayerSpecification, StyleSpecification } 
 // the antimeridian or the pole is kind "cut": filled here, its coast kept apart as "coast" lines with those edges removed.
 // Over FADE zoom levels from SWITCH the outline fades out as the vector tiles' own lines fade in.
 
-export const BASEMAP = "https://tiles.openfreemap.org/styles/dark";
+const BASEMAP = "https://tiles.openfreemap.org/styles/dark";
 const OUTLINE = "/world.json";
 const SWITCH = 6;
 const FADE = 0.5; // zoom levels over which the outline gives way to the tiles

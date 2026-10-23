@@ -19,7 +19,7 @@ type Latest = { results?: { value?: unknown; datetime?: { utc?: string }; sensor
 export type Location = { id: number; name: string; lat: number; lon: number; sensorId: number };
 
 /** Fixed, recently reporting low-cost PM2.5 locations. Reference monitors (shown from NEA) and calibration/NASA entries are dropped. */
-export function pickLocations(json: { results?: Loc[] }, now = Date.now()): Location[] {
+function pickLocations(json: { results?: Loc[] }, now = Date.now()): Location[] {
   const out: Location[] = [];
   for (const l of json.results ?? []) {
     const name = (l.name ?? "").trim();

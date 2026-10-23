@@ -4,7 +4,7 @@ import { ChevronUp } from "lucide-react";
 import { useRef, type PointerEvent, type ReactNode } from "react";
 import { GLOBE_LAYERS, rampCss as satelliteRampCss } from "@/lib/globe";
 import { OPEN_DATA_LICENCE, WIND_NOTE } from "@/lib/links";
-import { POLLUTANTS, bandNames, rampCss } from "@/lib/pollutants";
+import { bandNames, pollutant, rampCss } from "@/lib/pollutants";
 import type { Dot } from "@/lib/readings";
 import type { GlobeDay, LayerChoice } from "./frame";
 import RampBar from "../RampBar";
@@ -56,7 +56,7 @@ function keyOf(day: GlobeDay, dots: Dot[]): [keyof typeof swatch, string][] {
 /** The colour bar of the layer with its band names; the band limits are for the open card. */
 function Legend({ layer, expanded }: { layer: LayerChoice; expanded: boolean }) {
   if (layer === "off") return null;
-  const p = layer === "smoke" ? null : POLLUTANTS.find((x) => x.id === layer)!;
+  const p = layer === "smoke" ? null : pollutant(layer);
   const { ramp } = GLOBE_LAYERS.smoke;
   const title = p ? `${p.label} (${p.unit}), model` : `${ramp.unit}, NASA satellite`;
   const names = p ? (p.bands ? bandNames(p) : ["Low", "High"]) : [...ramp.ends]; // four bands, or the two ends of a ramp

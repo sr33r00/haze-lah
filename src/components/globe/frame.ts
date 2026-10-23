@@ -1,6 +1,6 @@
 import { latestFireDay, type HistoryDay } from "@/lib/history";
 import type { PollutantId } from "@/lib/pollutants";
-import { dayTrail, newFires } from "@/lib/replay";
+import { ARRIVAL_SGT, dayTrail, newFires } from "@/lib/replay";
 import type { Bar } from "@/lib/timeline";
 import type { Replay, SmokeGrid } from "@/lib/types";
 import { sgDate } from "@/lib/util";
@@ -47,14 +47,15 @@ const HOUR = 3600_000;
 
 const pairs = (fires: readonly (readonly number[])[]): Pt[] => fires.map((f) => [f[0], f[1]]);
 const withFrp = (fires: readonly (readonly number[])[]): GlobeDay["fires"] => fires.map((f) => [f[0], f[1], f[2] ?? 0]);
-const zones = (days: { fires: readonly (readonly number[])[] }[]) => newFires(days.map((d) => ({ fires: pairs(d.fires) })) as Parameters<typeof newFires>[0]);
 
-/** The forecast's 72-hour back-trail of the air reaching Singapore at 2 pm SGT on `date`: only the hours the forecast wind covers, [] without. */
+/** The forecast's 72-hour back-trail of the air reaching Singapore at 2 pm SGT on `date`: only the hours the forecast wind covers; [] without wind or when the arrival is after the last forecast hour. */
 function forecastTrail(smoke: SmokeGrid, date: string): Pt[] {
   const { wind, times, lats, lons } = smoke;
   if (!wind || !times.length) return [];
   const frames: WindFrame[] = times.map((t, i) => ({ t: Date.parse(t), u: { lats, lons, data: wind.u[i] }, v: { lats, lons, data: wind.v[i] } }));
-  const { arrival, trail } = dayTrail(frames, date, frames[frames.length - 1].t);
+  const last = frames[frames.length - 1].t;
+  if (Date.parse(`${date}T${String(ARRIVAL_SGT).padStart(2, "0")}:00:00+08:00`) > last) return []; // past the last frame: the trail would be that of an earlier hour
+  const { arrival, trail } = dayTrail(frames, date, last);
   const covered = Math.floor((arrival - frames[0].t) / HOUR);
   return covered < 1 ? [] : trail.slice(0, covered + 1);
 }
@@ -80,12 +81,12 @@ export function globeDay(source: GlobeSource, date: string, step: number, layer:
   // Fires. A day that has only just begun has few: today shows the newest day with enough, its path and wind stay today's.
   if (own) {
     const prior = before.slice(-DIM_DAYS);
-    Object.assign(out, { fires: withFrp(own.fires), older: prior.flatMap((d) => pairs(d.fires)), fresh: zones([...prior, own]) });
+    Object.assign(out, { fires: withFrp(own.fires), older: prior.flatMap((d) => pairs(d.fires)), fresh: newFires([...prior, own]) });
   } else if (live) {
     const upTo = days.slice(0, liveAt + 1);
     const shown = kind === "today" ? (latestFireDay(upTo) ?? live) : live;
     const k = upTo.indexOf(shown);
-    Object.assign(out, { fires: withFrp(shown.fires), older: upTo.slice(Math.max(0, k - DIM_DAYS), k).flatMap((d) => pairs(d.fires)), fresh: zones(upTo.slice(0, k + 1)) });
+    Object.assign(out, { fires: withFrp(shown.fires), older: upTo.slice(Math.max(0, k - DIM_DAYS), k).flatMap((d) => pairs(d.fires)), fresh: newFires(upTo.slice(0, k + 1)) });
   } else if (kind === "forecast") {
     const fireDay = latestFireDay(days) ?? days[days.length - 1];
     out.older = pairs(fireDay?.fires ?? []);

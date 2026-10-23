@@ -22,16 +22,18 @@ export async function loadIndex(fetchFn: typeof fetch = fetch): Promise<HistoryI
   return json && Array.isArray(json.days) ? json : null;
 }
 
-/** One request per date for the session; a missing or invalid day (null) is remembered too. */
+/** One request per date for the session; only a day that loaded is remembered. */
 const days = new Map<string, Promise<HistoryDay | null>>();
 
-/** A day's file, or null when it is missing or not that day's. Memoised; day files never change, so the default cache applies. */
+/** A day's file, or null when it is missing or not that day's. Memoised once loaded; day files never change, so the default cache applies. */
 export function loadDay(date: string, fetchFn: typeof fetch = fetch): Promise<HistoryDay | null> {
   let p = days.get(date);
   if (!p) {
     p = getJson(historyUrl(date), fetchFn).then((json) => {
       const day = json as HistoryDay | null;
-      return day && day.date === date ? day : null;
+      if (day && day.date === date) return day;
+      days.delete(date); // a failure is not remembered: a later call tries again
+      return null;
     });
     days.set(date, p);
   }

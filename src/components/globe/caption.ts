@@ -1,6 +1,6 @@
 import { fmtDateShort } from "@/lib/format";
 import { globeDates } from "@/lib/globe";
-import { POLLUTANTS, bandNames, bandOf } from "@/lib/pollutants";
+import { bandNames, bandOf, pollutant } from "@/lib/pollutants";
 import { aheadParts, fromDirection, newZonesText, trailCaption, windAtSg, windText } from "@/lib/replay";
 import type { ReplayDay } from "@/lib/types";
 import { SG } from "@/lib/util";
@@ -23,7 +23,7 @@ export function captionOf({ day, layer, live, fires, psi, now = Date.now() }: Ca
 
   const facts: string[] = [];
   if (ahead) facts.push(...[ahead.source, ahead.expected, path].filter((f): f is string => f != null));
-  const p = layer === "off" || layer === "smoke" ? null : POLLUTANTS.find((x) => x.id === layer)!;
+  const p = layer === "off" || layer === "smoke" ? null : pollutant(layer);
   const v = p && day.field ? sample({ ...day.grid, data: day.field }, SG.lat, SG.lon) : null;
   if (p && v != null) {
     const band = p.bands ? `, ${bandNames(p)[bandOf(p, v)]}` : "";

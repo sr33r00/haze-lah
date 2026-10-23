@@ -49,7 +49,7 @@ export async function fetchWeather(): Promise<WeatherHour[]> {
 
 // Upwind Indonesian cities near the main peatland fire areas. No open real-time
 // station feed is available for these, so we show the CAMS model estimate.
-export const UPWIND = [
+const UPWIND = [
   { id: "pekanbaru", name: "Pekanbaru", state: "Riau", lat: 0.5071, lon: 101.4478 },
   { id: "jambi", name: "Jambi", state: "Jambi", lat: -1.61, lon: 103.61 },
   { id: "palembang", name: "Palembang", state: "South Sumatra", lat: -2.9761, lon: 104.7754 },

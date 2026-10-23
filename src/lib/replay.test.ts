@@ -1,10 +1,9 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { aheadParts, newFires, newZonesText, trailCaption, windAtSg, windText } from "@/lib/replay";
-import type { ReplayDay } from "@/lib/types";
 
 /** A day with only the fires filled in; newFires reads nothing else. */
-const day = (fires: [number, number][]) => ({ fires }) as ReplayDay;
+const day = (fires: [number, number][]) => ({ fires });
 
 test("newFires returns [] without earlier days", () => {
   assert.deepEqual(newFires([day([[0, 110]])]), []);
@@ -48,4 +47,9 @@ test("newZonesText and windText", () => {
   assert.equal(newZonesText(1), "1 new fire zone");
   assert.equal(newZonesText(4), "4 new fire zones");
   assert.equal(windText({ from: "southwest", kmh: 12 }), "Wind from the southwest, 12 km/h");
+});
+
+test("newFires takes plain {fires} days, with extra values per fire", () => {
+  const zones = newFires([{ fires: [[0, 110, 40]] }, { fires: [[5, 120, 80]] }]);
+  assert.deepEqual(zones, [[5, 120]]);
 });

@@ -76,7 +76,7 @@ export const fetchReplay = () => fetchShared<Replay>(REPLAY_URL);
 export const fetchSmoke = () => fetchShared<SmokeGrid>(SMOKE_URL);
 
 /** Equirectangular distance in km; fine at these scales near the equator. */
-function km(a: [number, number], lat: number, lon: number) {
+function km(a: readonly number[], lat: number, lon: number) {
   const x = (lon - a[1]) * Math.cos((lat * Math.PI) / 180);
   return Math.hypot(lat - a[0], x) * 111.32;
 }
@@ -161,7 +161,7 @@ function aheadOf(frames: WindFrame[], fires: (Fire & { where: string })[], now: 
 }
 
 /** New fire zones: the newest day's fires with no fire within NEW_KM on any earlier day, one per ZONE_KM. Empty without earlier fires to compare with. */
-export function newFires(days: ReplayDay[]): [number, number][] {
+export function newFires(days: { fires: readonly (readonly number[])[] }[]): [number, number][] {
   const before = days.slice(0, -1).flatMap((d) => d.fires);
   if (!before.length) return [];
   const zones: [number, number][] = [];

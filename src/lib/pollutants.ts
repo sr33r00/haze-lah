@@ -45,8 +45,11 @@ export const POLLUTANTS: Pollutant[] = [
   { id: "dust", label: "Dust", unit: "µg/m³", camsVar: "dust", bands: null, source: "No health limits; plain low to high scale, 0 to 500 µg/m³ (Open-Meteo CAMS dust)" },
 ];
 
+/** The pollutant with this id. */
+export const pollutant = (id: PollutantId): Pollutant => POLLUTANTS.find((p) => p.id === id)!;
+
 /** PM2.5, the pollutant the Now page's smoke map shows. */
-export const PM25 = POLLUTANTS[0];
+export const PM25 = pollutant("pm25");
 
 /** Top of the dust ramp, µg/m³. */
 const DUST_TOP = 500;
@@ -57,9 +60,9 @@ export const BAND_NAMES = PM25_BANDS.map((b) => b.name) as string[];
 /** Band names of a pollutant: NEA's for PM2.5, else the PSI words for sub-index 0 to 50, 51 to 100, 101 to 200 and above. */
 export const bandNames = (p: Pollutant): string[] => (p.id === "pm25" ? BAND_NAMES : LEVEL_NAME.slice(0, 4));
 
-/** Band of `v`: 0 up to the first limit (inclusive), 3 above the last. Dust has no bands, so it is always 0; check `p.bands`. */
+/** Band of `v`: 0 up to the first limit (inclusive), 3 above the last. Dust has no bands, and a missing or NaN value has none either: both give 0 (check `p.bands`). */
 export function bandOf(p: Pollutant, v: number): 0 | 1 | 2 | 3 {
-  if (!p.bands) return 0;
+  if (!p.bands || !Number.isFinite(v)) return 0;
   const i = p.bands.findIndex((limit) => v <= limit);
   return (i < 0 ? 3 : i) as 0 | 1 | 2 | 3;
 }
@@ -69,7 +72,7 @@ export function bandOf(p: Pollutant, v: number): 0 | 1 | 2 | 3 {
  * (held at 4 above). Dust is linear over 0 to DUST_TOP.
  */
 function position(p: Pollutant, v: number): number {
-  if (v <= 0) return 0;
+  if (!(v > 0)) return 0; // also NaN and null
   if (!p.bands) return Math.min(4, (v / DUST_TOP) * 4);
   const edges = [0, ...p.bands, p.bands[2] * 2];
   const x = Math.min(v, edges[4]);
@@ -109,7 +112,7 @@ function rampAt(at: number): [number, number, number, number] {
   return [mix(ca[0], cb[0]), mix(ca[1], cb[1]), mix(ca[2], cb[2]), mix(aa, ab)];
 }
 
-/** Colour and opacity (a in 0..1) of a concentration in the pollutant's unit. */
+/** Colour and opacity (a in 0..1) of a concentration in the pollutant's unit; transparent for a missing or NaN value. */
 export const colorOf = (p: Pollutant, v: number): [r: number, g: number, b: number, a: number] => rampAt(position(p, v));
 
 /**

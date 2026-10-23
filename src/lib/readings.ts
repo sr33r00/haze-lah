@@ -1,6 +1,6 @@
 import { REGIONS, REGION_POINT, psiLevel, type Region } from "@/lib/bands";
 import { cap } from "@/lib/format";
-import { POLLUTANTS, bandOf, colorOf, type Pollutant, type PollutantId } from "@/lib/pollutants";
+import { PM25, bandOf, colorOf, pollutant, type Pollutant, type PollutantId } from "@/lib/pollutants";
 import type { HazeData, NeaNow, Station } from "@/lib/types";
 import { MAX_SENSOR_AGE_MS } from "@/lib/util";
 
@@ -36,9 +36,6 @@ export function dotData({ nea, history, stations, sensors }: HazeData): DotData 
     sensors,
   };
 }
-
-const pollutant = (id: PollutantId) => POLLUTANTS.find((p) => p.id === id)!;
-const PM25 = pollutant("pm25");
 
 /** NEA PSI bands (sub-index 50, 100, 200) as the four bands; PSI above 200 is band 3 (NEA, haze.gov.sg PSI table). */
 const psiBand = (psi: number) => Math.min(psiLevel(psi), 3) as 0 | 1 | 2 | 3;
@@ -80,7 +77,7 @@ export function readingDots(data: DotData, layer: PollutantId | "smoke" | "off",
     else if (s.api != null && s.country === "MY") out.push({ ...at, value: `API ${s.api}`, band: psiBand(s.api) }); // Malaysia's API has the PSI's band edges
   }
   for (const s of data.sensors) {
-    if (now - new Date(s.time).getTime() >= MAX_SENSOR_AGE_MS) continue;
+    if (!(now - new Date(s.time).getTime() < MAX_SENSOR_AGE_MS)) continue; // too old, or a time that is not a date (NaN)
     out.push(pm25Dot({ lat: s.lat, lon: s.lon, label: `${s.name}, Sensor`, kind: "measured", rank: 2 }, s.pm25));
   }
   return out;

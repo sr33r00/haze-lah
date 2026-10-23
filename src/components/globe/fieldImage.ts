@@ -1,5 +1,5 @@
 import { mercY } from "@/lib/globe";
-import { POLLUTANTS, colorOf, type PollutantId } from "@/lib/pollutants";
+import { colorOf, pollutant, type PollutantId } from "@/lib/pollutants";
 import type { SmokeGrid } from "@/lib/types";
 
 type Grid = Pick<SmokeGrid, "lats" | "lons">;
@@ -35,8 +35,8 @@ export function fieldCorners({ lats, lons }: Grid): [[number, number], [number, 
  * the map places them and the field fades out at the grid's edge. With `flat` (pixels per degree) it is a plain latitude and longitude
  * picture that runs to the edge, for an image of the grid's own box.
  */
-export function fieldPixels(grid: Grid, data: number[], pollutant: PollutantId, flat?: number) {
-  const p = POLLUTANTS.find((q) => q.id === pollutant)!;
+export function fieldPixels(grid: Grid, data: number[], id: PollutantId, flat?: number) {
+  const p = pollutant(id);
   const { lats, lons } = grid;
   const [s, n, w, e] = [lats[0], lats[lats.length - 1], lons[0], lons[lons.length - 1]];
   const width = Math.round((e - w) * (flat ?? PX_PER_DEG));

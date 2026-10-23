@@ -16,7 +16,7 @@ export type TimelineItem = {
 const NOON_SGT = (date: string) => Date.parse(`${date}T12:00:00+08:00`);
 
 /** Each time the highest 1-hr PM2.5 band across regions changes (last 48 h). */
-export function pm25Events(history: HazeData["history"]): TimelineItem[] {
+function pm25Events(history: HazeData["history"]): TimelineItem[] {
   if (!history) return [];
   const peak = new Map<string, { value: number; region: Region }>();
   for (const r of REGIONS)
@@ -48,7 +48,7 @@ export function pm25Events(history: HazeData["history"]): TimelineItem[] {
 const MIN_FIRES = 20; // ignore swings on tiny counts
 
 /** The biggest day-on-day hotspot change (25% or more) between the last two full days. */
-export function fireEvent(fires: HazeData["fires"]): TimelineItem[] {
+function fireEvent(fires: HazeData["fires"]): TimelineItem[] {
   const d = fires.daily;
   if (!fires.available || d.length < 3) return [];
   const [prev, day] = [d[d.length - 3], d[d.length - 2]]; // the last day is partial

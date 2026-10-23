@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { BAND_NAMES, POLLUTANTS, bandNames, bandOf, colorOf, rampCss } from "@/lib/pollutants";
+import { BAND_NAMES, POLLUTANTS, bandNames, bandOf, colorOf, pollutant, rampCss } from "@/lib/pollutants";
 
-const get = (id: string) => POLLUTANTS.find((p) => p.id === id)!;
+const get = pollutant;
 
 test("pm25 at 30 is band 0 and alpha below 0.2", () => {
   const pm = get("pm25");
@@ -80,4 +80,16 @@ test("band names: PM2.5 uses NEA's, others the PSI words", () => {
 
 test("rampCss is a gradient", () => {
   for (const p of POLLUTANTS) assert.match(rampCss(p), /^linear-gradient\(to right, /);
+});
+
+test("pollutant(id) finds each pollutant by its id", () => {
+  for (const p of POLLUTANTS) assert.equal(pollutant(p.id), p);
+});
+
+test("a missing or NaN value is band 0 and transparent, not garbage", () => {
+  for (const p of POLLUTANTS)
+    for (const v of [NaN, null as unknown as number, undefined as unknown as number]) {
+      assert.equal(bandOf(p, v), 0);
+      assert.deepEqual(colorOf(p, v), [0, 0, 0, 0]);
+    }
 });

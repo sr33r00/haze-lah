@@ -46,11 +46,23 @@ test("loadDay memoises (fetch called once for two calls)", async () => {
   assert.equal(f.calls.length, 1);
 });
 
-test("loadDay returns null for a missing day, and stays missing", async () => {
+test("loadDay returns null for a missing day, and tries again on the next call", async () => {
   const f = fake({ [historyUrl("2026-01-02")]: { status: 404 } });
   assert.equal(await loadDay("2026-01-02", f.fn), null);
   assert.equal(await loadDay("2026-01-02", f.fn), null);
-  assert.equal(f.calls.length, 1);
+  assert.equal(f.calls.length, 2);
+});
+
+test("a failed fetch is not remembered: a later call can succeed", async () => {
+  const body = { date: "2026-01-05" };
+  let up = false;
+  const fn = (async () => {
+    if (!up) throw new Error("network");
+    return { ok: true, status: 200, json: async () => body } as Response;
+  }) as unknown as typeof fetch;
+  assert.equal(await loadDay("2026-01-05", fn), null);
+  up = true;
+  assert.deepEqual(await loadDay("2026-01-05", fn), body);
 });
 
 test("loadDay returns null when the file is for another date", async () => {

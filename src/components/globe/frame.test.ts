@@ -154,6 +154,13 @@ test("forecast trail comes from the forecast wind and covers only the hours that
   assert.deepEqual(globeDay({ replay, smoke: smokeOf({ u: 0.5, v: 0 }) }, "2026-10-22", 0, "pm25", "2026-10-21").trail, []);
 });
 
+test("a forecast date whose 14:00 is after the last forecast hour has no trail, not a clamped one", () => {
+  const replay = replayOf([replayDay(TODAY, firesAt(40, 0, 100))]);
+  // The frames end at 06:00 SGT on the 26th: the 26th's 14:00 is not covered, the 25th's is.
+  assert.deepEqual(globeDay({ replay, smoke: smokeOf({ u: 0.5, v: 0 }) }, "2026-10-26", 0, "pm25", TODAY).trail, []);
+  assert.ok(globeDay({ replay, smoke: smokeOf({ u: 0.5, v: 0 }) }, "2026-10-25", 0, "pm25", TODAY).trail.length > 1);
+});
+
 test("a day with nothing to show is empty, not an error", () => {
   const day = globeDay({}, "2026-09-10", 0, "pm25", TODAY);
   assert.deepEqual([day.fires, day.older, day.fresh, day.trail, day.ahead, day.field, day.wind], [[], [], [], [], [], null, null]);
