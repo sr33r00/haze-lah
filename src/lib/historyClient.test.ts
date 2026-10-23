@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { HISTORY_BASE, historyUrl, loadDay, loadIndex, prefetchAround } from "@/lib/historyClient";
+import { HISTORY_BASE, INDEX_URL, historyUrl, loadDay, loadIndex, prefetchAround } from "@/lib/historyClient";
 
 /** A fake fetch that answers each URL from `routes` (a status and a JSON body) and counts the calls. */
 function fake(routes: Record<string, { status?: number; body?: unknown }>) {
@@ -15,9 +15,9 @@ function fake(routes: Record<string, { status?: number; body?: unknown }>) {
   return { fn, calls };
 }
 
-test("historyUrl joins the base and the date", () => {
+test("historyUrl joins the base and the date; the index comes from GitHub's raw host", () => {
   assert.equal(historyUrl("2026-10-01"), `${HISTORY_BASE}2026-10-01.json`);
-  assert.equal(historyUrl("index"), `${HISTORY_BASE}index.json`);
+  assert.ok(INDEX_URL.startsWith("https://raw.githubusercontent.com/") && INDEX_URL.endsWith("/data/history/index.json"));
 });
 
 test("loadIndex returns null when fetch rejects", async () => {
@@ -25,16 +25,16 @@ test("loadIndex returns null when fetch rejects", async () => {
 });
 
 test("loadIndex returns null on 404", async () => {
-  assert.equal(await loadIndex(fake({ [historyUrl("index")]: { status: 404 } }).fn), null);
+  assert.equal(await loadIndex(fake({ [INDEX_URL]: { status: 404 } }).fn), null);
 });
 
 test("loadIndex returns null when the JSON is not an index", async () => {
-  assert.equal(await loadIndex(fake({ [historyUrl("index")]: { body: { days: "x" } } }).fn), null);
+  assert.equal(await loadIndex(fake({ [INDEX_URL]: { body: { days: "x" } } }).fn), null);
 });
 
 test("loadIndex returns the index", async () => {
   const body = { updated: "2026-10-23T00:00:00Z", days: [] };
-  assert.deepEqual(await loadIndex(fake({ [historyUrl("index")]: { body } }).fn), body);
+  assert.deepEqual(await loadIndex(fake({ [INDEX_URL]: { body } }).fn), body);
 });
 
 test("loadDay memoises (fetch called once for two calls)", async () => {

@@ -3,8 +3,12 @@ import type { HistoryDay, HistoryIndex } from "@/lib/historyTypes";
 /** The daily history files the globe's timeline plays, served from the repo by jsDelivr (no per-visitor server route). */
 export const HISTORY_BASE = "https://cdn.jsdelivr.net/gh/sr33r00/haze-lah@main/data/history/";
 
-/** The URL of a day's file (`YYYY-MM-DD`) or of the index (`index`). */
+/** The URL of a day's file (`YYYY-MM-DD`). */
 export const historyUrl = (name: string) => `${HISTORY_BASE}${name}.json`;
+
+/** The index changes daily, and jsDelivr can keep an old copy of a branch file for hours even after a purge, so it comes
+ * from GitHub's raw host (cached 5 minutes, open to any origin). Day files never change once written, so they stay on jsDelivr. */
+export const INDEX_URL = "https://raw.githubusercontent.com/sr33r00/haze-lah/main/data/history/index.json";
 
 /** What `getJson` answers for a 404: the file is not there, and asking again will not change that. */
 const MISSING = Symbol("missing");
@@ -22,7 +26,7 @@ async function getJson(url: string, fetchFn: typeof fetch, init?: RequestInit): 
 
 /** The index of days, or null on any failure. It changes daily, so a stale browser copy is revalidated. */
 export async function loadIndex(fetchFn: typeof fetch = fetch): Promise<HistoryIndex | null> {
-  const json = (await getJson(historyUrl("index"), fetchFn, { cache: "no-cache" })) as HistoryIndex | typeof MISSING | null;
+  const json = (await getJson(INDEX_URL, fetchFn, { cache: "no-cache" })) as HistoryIndex | typeof MISSING | null;
   return json && json !== MISSING && Array.isArray(json.days) ? json : null;
 }
 

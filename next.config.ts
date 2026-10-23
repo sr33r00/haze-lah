@@ -9,7 +9,7 @@ const csp = [
   "img-src 'self' data: blob: https://tile.openstreetmap.org https://gibs.earthdata.nasa.gov https://imgproxy.windy.com https://images.data.gov.sg",
   "font-src 'self'",
   // cdn.jsdelivr.net serves the globe's history files (data/history of the repo). OpenFreeMap serves the globe's map to MapLibre as data, not images: the style, the tile list, the vector tiles and the font glyphs. MapLibre's worker is a file of this origin.
-  "connect-src 'self' https://tiles.openfreemap.org https://gibs.earthdata.nasa.gov https://cdn.jsdelivr.net",
+  "connect-src 'self' https://tiles.openfreemap.org https://gibs.earthdata.nasa.gov https://cdn.jsdelivr.net https://raw.githubusercontent.com",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",
