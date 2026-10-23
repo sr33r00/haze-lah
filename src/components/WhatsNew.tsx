@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useRef } from "react";
-import { BMC_LABEL, BMC_URL } from "@/lib/links";
 import { RELEASE, RELEASE_LABEL } from "@/lib/releases";
+import CoffeeButton from "./CoffeeButton";
 
 const SEEN = "seen-release";
 const DELAY = 1200; // ms: let the page settle first
@@ -57,17 +57,15 @@ export default function WhatsNew() {
             </li>
           ))}
         </ul>
-        <p className="mt-2 text-[13px] leading-snug text-muted">
-          Haze Lah is free for everyone. Supporters help keep it running.{" "}
-          <a href={BMC_URL} target="_blank" rel="noreferrer" className="font-semibold text-accent underline">
-            {BMC_LABEL}
-          </a>
-        </p>
+        <div className="mt-3 flex flex-col items-center gap-3 text-center">
+          <p className="text-balance text-[13px] leading-snug text-muted">Haze Lah is free for everyone. Supporters help keep it running.</p>
+          <CoffeeButton />
+        </div>
         <button
           type="button"
           autoFocus
           onClick={close}
-          className="mt-3 min-h-11 w-full rounded-full bg-accent px-5 text-[15px] font-semibold text-bg transition-opacity hover:opacity-90"
+          className="mt-4 min-h-11 w-full rounded-full bg-accent px-5 text-[15px] font-semibold text-bg transition-opacity hover:opacity-90"
         >
           Got it
         </button>
