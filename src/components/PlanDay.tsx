@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, TriangleAlert } from "lucide-react";
 import { TONE_COLOR, type Group } from "@/lib/bands";
 import { BREATH_SOURCES, fmtDust } from "@/lib/breath";
 import { CIGARETTE_SOURCES } from "@/lib/cigarettes";
@@ -41,7 +41,7 @@ function ChipSelect({ label, value, options, onChange }: { label: string; value:
 }
 
 /** One day's answer: the time, the advice and the four numbers behind it. */
-function AnswerCard({ slot, wide }: { slot: Slot; wide: boolean }) {
+function AnswerCard({ slot }: { slot: Slot }) {
   const ok = isOk(slot.rating);
   const stats = [
     ["PM2.5", `about ${Math.round(slot.pm25)}`],
@@ -61,7 +61,7 @@ function AnswerCard({ slot, wide }: { slot: Slot; wide: boolean }) {
         <span aria-hidden className="size-2.5 shrink-0 rounded-full" style={{ background: TONE_COLOR[slot.rating.tone].bg }} />
         {slot.rating.text}
       </p>
-      <dl className={`mt-3 grid grid-cols-2 gap-x-4 gap-y-2 ${wide ? "sm:grid-cols-4" : ""}`}>
+      <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-4">
         {stats.map(([name, value]) => (
           <div key={name}>
             <dt className="text-[11px] text-muted">{name}</dt>
@@ -73,7 +73,7 @@ function AnswerCard({ slot, wide }: { slot: Slot; wide: boolean }) {
   );
 }
 
-/** Pick what you want to do and for how long; get the cleanest time today and tomorrow, and the coming hours as a strip with those times outlined. */
+/** Pick what you want to do and for how long; get the next cleanest time (today, or tomorrow once today is over), and the coming hours as a strip with it outlined. */
 export default function PlanDay({ hourly, group }: { hourly: ForecastPoint[]; group: Group }) {
   const [activity, choose] = useStored<Activity>("activity", ACTIVITIES, "out");
   const usual = ACTIVITY[activity].hours;
@@ -82,7 +82,8 @@ export default function PlanDay({ hourly, group }: { hourly: ForecastPoint[]; gr
 
   if (!hourly.length) return <p className="px-4 text-[15px] text-muted">Forecast unavailable.</p>;
   const now = Date.now();
-  const slots = bestSlots(hourly, activity, group, now, len);
+  // Only the next window: further ahead the forecast is less sure, so tomorrow shows once today's hours are over.
+  const slots = bestSlots(hourly, activity, group, now, len).slice(0, 1);
   const hours = planStrip(hourly, activity, group, slots, now);
   const n = hours.length;
   const pct = (i: number) => `${(i / n) * 100}%`;
@@ -110,13 +111,13 @@ export default function PlanDay({ hourly, group }: { hourly: ForecastPoint[]; gr
         {slots.length === 0 ? (
           <p className="text-[15px] text-muted">No forecast for these hours yet.</p>
         ) : (
-          <div className={`grid gap-3 ${slots.length > 1 ? "sm:grid-cols-2" : ""}`}>
-            {slots.map((s) => (
-              <AnswerCard key={s.day} slot={s} wide={slots.length === 1} />
-            ))}
-          </div>
+          <AnswerCard slot={slots[0]} />
         )}
       </div>
+      <p className="mt-2 flex gap-2 text-[13px] text-muted">
+        <TriangleAlert aria-hidden size={16} className="mt-px shrink-0" />
+        <span>This is a forecast and may be wrong. Winds can change suddenly, and the haze changes with them.</span>
+      </p>
 
       {n > 0 && (
         <div className="mt-4">
