@@ -177,6 +177,7 @@ export type HazeData = {
     available: boolean;
     method: string;
     biasFactor: number | null;
+    sigma: number | null; // typical error of the correction, as a log ratio (e^sigma - 1 is the typical relative error)
     hourly: ForecastPoint[];
     days: DayOutlook[];
   };

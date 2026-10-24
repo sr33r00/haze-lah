@@ -77,6 +77,7 @@ async function buildHazeData(mock: boolean): Promise<HazeData> {
       available: !!fc,
       method: FORECAST_METHOD,
       biasFactor: fc ? Math.round(fc.bias * 100) / 100 : null,
+      sigma: fc ? Math.round(fc.sigma * 100) / 100 : null,
       hourly: fc?.points ?? [],
       days: fc && inp.history ? dailyOutlook(inp.history.island, fc.points, inp.weather) : [],
     },
