@@ -1,0 +1,51 @@
+name: Bug report
+description: Something is broken, shows the wrong number or looks wrong
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you see, and what did you expect? Screenshots help.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open Forecast
+        2. Drag the 48-hour graph
+        3. ...
+    validations:
+      required: true
+  - type: dropdown
+    id: page
+    attributes:
+      label: Where?
+      options:
+        - Now
+        - Forecast
+        - Photos
+        - Air globe (/map)
+        - News
+        - Guide
+        - About
+        - Alerts (Telegram)
+        - Public API
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: Device and browser
+      placeholder: e.g. iPhone 15, Safari 18
+    validations:
+      required: true
+  - type: input
+    id: when
+    attributes:
+      label: Date and time (Singapore)
+      description: Readings change hourly, so this helps us check the data.

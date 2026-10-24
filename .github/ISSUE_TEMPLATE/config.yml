@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Haze Lah live site
+    url: https://www.hazelah.app
+    about: Check whether the problem is still there before reporting it.
+  - name: Official haze advisories (NEA)
+    url: https://www.haze.gov.sg
+    about: Haze Lah is not an official service. For official advice, use haze.gov.sg.
+  - name: Report a security problem
+    url: https://github.com/sr33r00/haze-lah/security/policy
+    about: Please do not report security problems in a public issue. Follow the security policy.

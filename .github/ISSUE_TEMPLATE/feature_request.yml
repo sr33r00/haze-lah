@@ -1,0 +1,30 @@
+name: Feature request
+description: Suggest an idea or an improvement
+title: "[Idea] "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do?
+      description: Describe the problem, not only the solution.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would help?
+      description: A sketch or a screenshot is welcome. Haze Lah keeps its screens simple, so say what it could replace as well as what it could add.
+    validations:
+      required: true
+  - type: textarea
+    id: source
+    attributes:
+      label: Data or source
+      description: If it needs new data or a health claim, link the official or published source.
+  - type: checkboxes
+    id: help
+    attributes:
+      label: Contribution
+      options:
+        - label: I would like to work on this myself
