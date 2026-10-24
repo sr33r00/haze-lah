@@ -89,7 +89,7 @@ These sit beside the pages in `src/app/`. Caching values are copied from each fi
 
 | Route | File | Purpose | Caching |
 |---|---|---|---|
-| `/api/haze` | `api/haze/route.ts` | The whole `HazeData` as JSON, open to any origin (`Access-Control-Allow-Origin: *`). The alert job reads it. | `revalidate = 1800`; `s-maxage=1800, stale-while-revalidate=600` |
+| `/api/haze` | `api/haze/route.ts` | The whole `HazeData` as JSON, open to any origin (`Access-Control-Allow-Origin: *`), with `aqiStations` empty (AQICN's terms). The alert job reads it. | `revalidate = 1800`; `s-maxage=1800, stale-while-revalidate=600` |
 | `/api/smoke` | `api/smoke/route.ts` | Regional CAMS grid (PM2.5 and gases) and wind, 1° steps, every 3 h for 72 h. | `force-dynamic`; `max-age=300, s-maxage=3600, stale-while-revalidate=10800`. Upstream requests are kept 3 h in the fetch cache. |
 | `/api/replay` | `api/replay/route.ts` | Back-trail of the air, fires, wind outlook, "smoke on the way" (`getReplay` in `src/lib/replayData.ts`). | `force-dynamic`; `max-age=300, s-maxage=1800, stale-while-revalidate=3600` |
 | `/api/globe/[layer]` | `api/globe/[layer]/route.ts` | The server-built satellite smoke picture for one day, as WebP. `?date=` must be one of the last 8 days. | `force-dynamic`, `maxDuration = 60`. Header depends on age: recent day `max-age=3600, s-maxage=21600, stale-while-revalidate=86400`; a day older than 2 days `max-age=86400, s-maxage=604800, stale-while-revalidate=2592000`; an incomplete picture `s-maxage=300`. Shared logic in `api/globe/shared.ts`. |

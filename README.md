@@ -100,6 +100,9 @@ All variables are optional. Copy `.env.example` to `.env.local` to set them. Key
 | `LTA_DATAMALL_KEY` | [LTA DataMall](https://datamall.lta.gov.sg) key: about 90 traffic cameras instead of 8 |
 | `WINDY_WEBCAMS_KEY` | [Windy webcams](https://api.windy.com/keys) API key (free tier) for webcam photos |
 | `HAZE_MOCK` | `1` renders synthetic demo data (offline development) |
+| `FIRMS_SOURCE` | FIRMS product for the live fires (default `VIIRS_SNPP_NRT`) |
+| `ACCURACY_URL` | Forecast accuracy file (default `data/accuracy.json` on GitHub's raw host) |
+| `HAZE_JSON_URL` | JSON the alert script reads (default `${SITE_URL}/api/haze`) |
 | `NEXT_PUBLIC_ALERTS_URL` | Telegram channel link (`https://t.me/...`) for the "Get alerts" button |
 | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` | Bot and channel used by `scripts/alert.ts` to post alerts |
 | `RESEND_API_KEY`, `FEEDBACK_EMAIL` | Free [Resend](https://resend.com) key and the address that receives the feedback form |
@@ -112,7 +115,7 @@ No key needed. Use it kindly: responses are cached, so there is no point in poll
 
 | Endpoint | Returns |
 |---|---|
-| `/api/haze` | Everything the Now page uses: NEA readings, stations, sensors, fires, news, PSI history and the forecast. Sent with `Access-Control-Allow-Origin: *`; cached for 30 minutes |
+| `/api/haze` | Everything the Now page uses: NEA readings, stations, sensors, fires, news, PSI history and the forecast (AQICN's stations are left out, per its terms). Sent with `Access-Control-Allow-Origin: *`; cached for 30 minutes |
 | `/api/smoke` | The regional smoke grid: PM2.5, six other pollutants and the wind, as numbers per time step. No CORS header |
 | `/api/replay` | The last days of fires and the path of the air, plus the wind outlook. No CORS header |
 

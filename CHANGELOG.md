@@ -6,7 +6,10 @@ The in-app "What's new" sheet shows the highlights of the current release. Data-
 
 ## [Unreleased]
 
-Nothing yet.
+### Changed
+
+- The public `/api/haze` JSON no longer includes AQICN's stations (`aqiStations` is empty), as AQICN's terms forbid redistributing its data. The Now map still shows them.
+- `.env.example` and the README list `FIRMS_SOURCE`, `ACCURACY_URL` and `HAZE_JSON_URL`.
 
 ## [1.5.0] - 2026-10-24
 

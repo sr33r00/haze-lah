@@ -19,6 +19,7 @@ AQICN station data is a live-only source.
 ## Consequences
 
 - There is no history of AQICN stations, so the globe timeline cannot replay them.
-- The data does pass through the shared 30-minute cache and the live `/api/haze` response. That is the same live path as the page itself; it is not stored in the repository.
+- The data passes through the shared 30-minute cache, the same live path as the page itself; it is not stored in the repository.
+- The public `/api/haze` response, open to any origin, sends `aqiStations` as an empty list, so the endpoint does not republish AQICN's data.
 - Any new feature that stores or exports page data must leave `aqiStations` out. Check this when you add one.
 - A new place that shows AQICN data needs the credit line there.
