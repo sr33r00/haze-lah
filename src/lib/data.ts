@@ -84,7 +84,11 @@ async function buildHazeData(mock: boolean): Promise<HazeData> {
   };
 }
 
-/** Pages and the API share one build, kept for 30 minutes so a page render costs no source calls or forecast work. */
+// Build machines sometimes lose a source (timeouts, 429s) that the live server in sin1 gets fine, so a deploy's prerender
+// keeps its data 5 minutes: Next.js gives the pages that revalidate, and their first refresh runs on the live server.
+const BUILDING = process.env.NEXT_PHASE === "phase-production-build";
+
+/** Pages and the API share one build, kept for 30 minutes (5 at build) so a page render costs no source calls or forecast work. */
 const cachedHazeData = unstable_cache(
   async () => {
     const data = await buildHazeData(false);
@@ -92,8 +96,8 @@ const cachedHazeData = unstable_cache(
     if (!data.nea || !data.history) throw new Error("NEA data missing");
     return data;
   },
-  ["haze-data"],
-  { revalidate: 1800 },
+  [BUILDING ? "haze-data-build" : "haze-data"],
+  { revalidate: BUILDING ? 300 : 1800 },
 );
 
 /** All the data behind the pages; `generatedAt` is when it was built. Mock mode (HAZE_MOCK=1) is never cached. */
