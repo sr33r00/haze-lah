@@ -92,6 +92,16 @@ export function dayWord(t: string, now: Date) {
   return date === sgDate(0, now) ? "today" : date === sgDate(1, now) ? "tomorrow" : fmtWeekday(date, "long");
 }
 
+/** The day's main wind direction (degrees the wind blows from, 0 to 359): the circular mean of that SGT day's outlook steps, or null without any. */
+export function dayWind(outlook: OutlookStep[] | null, date: string): number | null {
+  const steps = (outlook ?? []).filter((o) => sgDate(0, new Date(o.t)) === date);
+  if (!steps.length) return null;
+  const rad = (o: OutlookStep) => (o.deg * Math.PI) / 180;
+  const x = steps.reduce((sum, o) => sum + Math.sin(rad(o)), 0);
+  const y = steps.reduce((sum, o) => sum + Math.cos(rad(o)), 0);
+  return (Math.round((Math.atan2(x, y) * 180) / Math.PI) + 360) % 360;
+}
+
 /** The sentence that opens the forecast page: when the next 48 hours peak and the best daylight window. */
 export function answerText(
   peak: { t: string; pm25: number } | null,

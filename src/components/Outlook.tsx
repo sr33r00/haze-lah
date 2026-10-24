@@ -4,7 +4,9 @@ import { CloudRain } from "lucide-react";
 import { useState } from "react";
 import { LEVEL_TEXT, pm25Color, psiLevel, verdict, type Group } from "@/lib/bands";
 import { fmtDay } from "@/lib/format";
-import type { DayOutlook } from "@/lib/types";
+import { windFrom } from "@/lib/context";
+import { dayWind } from "@/lib/forecastHours";
+import type { DayOutlook, OutlookStep } from "@/lib/types";
 
 /** "Rain 94% · 3 mm · gusts 45 km/h": the chance, the day's total and its strongest gust, as far as known. */
 const rainText = (d: DayOutlook) =>
@@ -12,8 +14,14 @@ const rainText = (d: DayOutlook) =>
 
 const PARTS = ["Morning", "Afternoon", "Evening"];
 
-/** One row per day: morning/afternoon/evening strip, advice, expected PSI; peak and chance of high PM2.5 on request. */
-export default function Outlook({ days, group }: { days: DayOutlook[]; group: Group }) {
+/** "12% chance above 55, wind from the southwest": the chance of a high hour and, when the wind outlook has the day, its main direction. */
+const chanceText = (d: DayOutlook, outlook: OutlookStep[] | null) => {
+  const deg = dayWind(outlook, d.date);
+  return `${Math.round(d.pHigh * 100)}% chance above 55${deg != null ? `, wind from the ${windFrom(deg)}` : ""}`;
+};
+
+/** One row per day: morning/afternoon/evening strip, advice, expected PSI, chance of high PM2.5 and the wind; the peak hour on request. */
+export default function Outlook({ days, group, outlook = null }: { days: DayOutlook[]; group: Group; outlook?: OutlookStep[] | null }) {
   const [open, setOpen] = useState(false);
   if (!days.length) return <p className="px-4 text-[15px] text-muted">The forecast is not available right now.</p>;
   return (
@@ -42,6 +50,7 @@ export default function Outlook({ days, group }: { days: DayOutlook[]; group: Gr
                       {rainText(d)}
                     </span>
                   )}
+                  <span className="block text-[13px] font-normal text-muted">{chanceText(d, outlook)}</span>
                 </div>
               </div>
               <div className="tabular text-right text-[17px] font-bold" style={{ color: LEVEL_TEXT[lv] }}>
@@ -49,7 +58,7 @@ export default function Outlook({ days, group }: { days: DayOutlook[]; group: Gr
               </div>
               {open && (
                 <div className="col-span-3 mt-1 text-[12px] text-muted">
-                  Peak hour {d.low === d.high ? d.high : `${d.low}–${d.high}`} µg/m³, {Math.round(d.pHigh * 100)}% chance above 55
+                  Peak hour {d.low === d.high ? d.high : `${d.low}–${d.high}`} µg/m³
                 </div>
               )}
             </li>

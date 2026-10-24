@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import type { Accuracy, LeadScore } from "@/lib/accuracy";
-import { answerText, bestWindow, instrumentHours, peakAhead, skillRows, skillSentence, type InstrumentHour } from "@/lib/forecastHours";
+import { answerText, bestWindow, dayWind, instrumentHours, peakAhead, skillRows, skillSentence, type InstrumentHour } from "@/lib/forecastHours";
 import type { ForecastPoint, HourPoint, OutlookStep, WeatherHour } from "@/lib/types";
 
 const NOW = new Date("2026-10-24T01:30:00Z"); // 9:30am SGT, Sat 24 Oct
@@ -135,4 +135,15 @@ test("skillSentence handles winning at every lead, winning at none, and no rows"
   const lose = skillRows(accuracy([lead(6, 20, 36, 15), lead(24, 30, 37, 26)]));
   assert.equal(skillSentence(lose), "Assuming no change is the better guide at every lead time tested so far.");
   assert.equal(skillSentence([]), null);
+});
+
+test("dayWind averages directions on the circle (350° and 10° give 0°) and is null for a day with no steps", () => {
+  // 08:00 and 11:00 SGT on Sat 24 Oct are 00:00Z and 03:00Z; 08:00 SGT on the 25th is 00:00Z on the 25th.
+  const at = (t: string, deg: number): OutlookStep => ({ ...step(0), t, deg });
+  const steps = [at("2026-10-24T00:00:00Z", 350), at("2026-10-24T03:00:00Z", 10), at("2026-10-25T00:00:00Z", 90)];
+  assert.equal(dayWind(steps, "2026-10-24"), 0);
+  assert.equal(dayWind(steps, "2026-10-25"), 90);
+  assert.equal(dayWind(steps, "2026-10-26"), null);
+  assert.equal(dayWind([], "2026-10-24"), null);
+  assert.equal(dayWind(null, "2026-10-24"), null);
 });

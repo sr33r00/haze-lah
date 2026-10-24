@@ -1,9 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import type { LeadScore } from "@/lib/accuracy";
+import { fetchReplay } from "@/lib/replay";
 import { HISTORY_URL, sinceWhen } from "@/lib/psiRecords";
-import type { DayOutlook, DayPsi, ForecastPoint, NeaPm25History } from "@/lib/types";
+import type { DayOutlook, DayPsi, ForecastPoint, NeaPm25History, OutlookStep } from "@/lib/types";
 import Chart from "./Chart";
 import Outlook from "./Outlook";
 import PsiWeek from "./PsiWeek";
@@ -21,6 +23,10 @@ export default function ForecastView(props: {
 }) {
   const { group } = usePrefs();
   const { skill24 } = props;
+  const [outlook, setOutlook] = useState<OutlookStep[] | null>(null);
+  useEffect(() => {
+    fetchReplay().then((r) => setOutlook(r.outlook?.length ? r.outlook : null), () => {}); // the request WindOutlook makes too
+  }, []);
   const weekPeak = Math.max(0, ...props.psiDaily.map((d) => d.max));
   const since = sinceWhen(weekPeak);
   return (
@@ -46,7 +52,7 @@ export default function ForecastView(props: {
       </Section>
 
       <Section className="lg:col-start-1" title="Next 5 days">
-        <Outlook days={props.days} group={group} />
+        <Outlook days={props.days} group={group} outlook={outlook} />
       </Section>
 
       <Section className="lg:col-start-2 lg:row-start-3" title="Last 7 days" aside="Peak 24-hr PSI">
