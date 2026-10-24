@@ -82,9 +82,10 @@ export default function PlanDay({ hourly, group }: { hourly: ForecastPoint[]; gr
 
   if (!hourly.length) return <p className="px-4 text-[15px] text-muted">Forecast unavailable.</p>;
   const now = Date.now();
-  // Only the next window: further ahead the forecast is less sure, so tomorrow shows once today's hours are over.
-  const slots = bestSlots(hourly, activity, group, now, len).slice(0, 1);
-  const hours = planStrip(hourly, activity, group, slots, now);
+  const hours = planStrip(hourly, activity, group, now);
+  // Only the next window, and only inside the strip's hours: further ahead the forecast is less sure.
+  const until = hours.length ? Date.parse(hours[0].time) + hours.length * 3600_000 : 0;
+  const slots = bestSlots(hourly.filter((p) => Date.parse(p.time) < until), activity, group, now, len).slice(0, 1);
   const n = hours.length;
   const pct = (i: number) => `${(i / n) * 100}%`;
   // Bar height is PM2.5, on a scale that always reaches NEA band III (150).
@@ -122,7 +123,8 @@ export default function PlanDay({ hourly, group }: { hourly: ForecastPoint[]; gr
       {n > 0 && (
         <div className="mt-4">
           <div aria-hidden className="relative h-4 text-[11px] font-semibold text-muted">
-            {(midnight < 0 || midnight >= 3) && <span className="absolute left-0">Now</span>}
+            {/* "Now" needs about a tenth of the strip before the Tomorrow label. */}
+            {(midnight < 0 || midnight / n >= 0.1) && <span className="absolute left-0">Now</span>}
             {/* Near the right edge the label would run past the strip; the divider still shows. */}
             {midnight > 0 && midnight < n - 4 && (
               <span className="absolute pl-1" style={{ left: pct(midnight) }}>

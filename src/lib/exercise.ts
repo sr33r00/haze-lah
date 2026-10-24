@@ -114,18 +114,17 @@ export function bestSlots(hourly: ForecastPoint[], activity: Activity, group: Gr
 /** One bar of the plan's hour strip: the forecast PM2.5 and how the chosen activity rates in it. */
 export type StripHour = { time: string; pm25: number; rating: Rating };
 
+/** How far ahead Plan your day looks, in hours: the forecast's error grows with lead time (data/accuracy.json). */
+export const PLAN_HOURS = 16;
+
 /**
- * The hours to draw: from the current hour (an hour that ended more than an hour ago is dropped, as in `bestSlots`)
- * for 24 hours, or on to the end of tomorrow's slot when that is later; at most 48. Each hour carries the activity's own rating.
+ * The hours to plan in: from the current hour (an hour that ended more than an hour ago is dropped, as in `bestSlots`)
+ * for `PLAN_HOURS`. Each hour carries the activity's own rating.
  */
-export function planStrip(hourly: ForecastPoint[], activity: Activity, group: Group, slots: Slot[], now = Date.now()): StripHour[] {
-  const upcoming = hourly.filter((p) => Date.parse(p.time) >= now - 3600_000);
-  if (!upcoming.length) return [];
-  const tomorrow = slots.find((s) => s.day === "tomorrow");
-  const until = Math.max(Date.parse(upcoming[0].time) + 24 * 3600_000, tomorrow ? Date.parse(tomorrow.end) : 0);
-  return upcoming
-    .filter((p) => Date.parse(p.time) < until)
-    .slice(0, 48)
+export function planStrip(hourly: ForecastPoint[], activity: Activity, group: Group, now = Date.now()): StripHour[] {
+  return hourly
+    .filter((p) => Date.parse(p.time) >= now - 3600_000)
+    .slice(0, PLAN_HOURS)
     .map((p) => ({ time: p.time, pm25: p.pm25, rating: rate(p.pm25, activity, group) }));
 }
 

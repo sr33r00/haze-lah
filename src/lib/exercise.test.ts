@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { bestSlots, planStrip, rate, ratingLegend } from "@/lib/exercise";
+import { PLAN_HOURS, bestSlots, planStrip, rate, ratingLegend } from "@/lib/exercise";
 import type { ForecastPoint } from "@/lib/types";
 
 const START = Date.parse("2026-10-23T22:00:00Z"); // 6am SGT, Sat 24 Oct
@@ -52,41 +52,22 @@ test("only usual start hours are offered, and the session must fit the forecast"
 test("the strip starts at the current hour and drops hours that have ended", () => {
   const now = START + 3 * 3600_000 + 20 * 60_000; // 9:20am
   const h = hourly(() => 20);
-  const strip = planStrip(h, "run", "healthy", bestSlots(h, "run", "healthy", now), now);
+  const strip = planStrip(h, "run", "healthy", now);
   assert.equal(strip[0].time, h[3].time);
 });
 
-test("the strip runs to the end of tomorrow's slot, or 24 hours without one", () => {
-  const h = hourly((i) => (i < 30 ? 100 : 10)); // tomorrow is cleanest from 12pm (index 30)
-  const slots = bestSlots(h, "run", "healthy", NOW);
-  const strip = planStrip(h, "run", "healthy", slots, NOW);
-  assert.equal(strip.length, 31);
-  const tomorrow = slots.find((s) => s.day === "tomorrow")!;
-  assert.ok(Date.parse(strip[strip.length - 1].time) + 3600_000 >= Date.parse(tomorrow.end));
-  assert.equal(planStrip(h, "run", "healthy", [], NOW).length, 24);
-});
-
-test("the strip is capped at 48 hours", () => {
-  const h = hourly(() => 20, undefined, 72);
-  const [today] = bestSlots(h, "run", "healthy", NOW);
-  const far = { ...today, day: "tomorrow" as const, end: new Date(START + 60 * 3600_000).toISOString() };
-  assert.equal(planStrip(h, "run", "healthy", [far], NOW).length, 48);
-});
-
-test("the strip keeps 24 hours when tomorrow's slot ends sooner", () => {
-  // In the evening tomorrow's early run (ending 5 hours from now) must not shrink the strip.
+test("the strip covers the next 16 hours, or what is left of the forecast", () => {
   const h = hourly(() => 20);
-  const [today] = bestSlots(h, "run", "healthy", NOW);
-  const early = { ...today, day: "tomorrow" as const, end: new Date(START + 5 * 3600_000).toISOString() };
-  assert.equal(planStrip(h, "run", "healthy", [early], NOW).length, 24);
+  assert.equal(planStrip(h, "run", "healthy", NOW).length, PLAN_HOURS);
+  assert.equal(planStrip(h.slice(0, 10), "run", "healthy", NOW).length, 10);
 });
 
 test("each strip hour carries the chosen activity's rating", () => {
   const h = hourly((i) => 20 + i * 5);
-  const run = planStrip(h, "run", "healthy", [], NOW);
+  const run = planStrip(h, "run", "healthy", NOW);
   run.forEach((s, i) => assert.deepEqual(s.rating, rate(h[i].pm25, "run", "healthy")));
-  const out = planStrip(h, "out", "healthy", [], NOW);
-  assert.notDeepEqual(run[16].rating, out[16].rating); // PM2.5 100: "Better indoors" for a run, "Cut back" for going out
+  const out = planStrip(h, "out", "healthy", NOW);
+  assert.notDeepEqual(run[15].rating, out[15].rating); // PM2.5 95: "Keep it short and easy" for a run, not the going-out words
 });
 
 test("the legend lists the distinct answers of the activity, mildest first", () => {
