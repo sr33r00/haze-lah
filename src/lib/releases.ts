@@ -1,4 +1,4 @@
-import { Footprints, type LucideIcon } from "lucide-react";
+import { ChartLine, Footprints, Globe, type LucideIcon } from "lucide-react";
 import { fmtFullDate } from "./format";
 
 /** One change in a release: a row in the "What's new" sheet and on the About page. */
@@ -14,6 +14,18 @@ export const RELEASE: { version: string; date: string; items: ReleaseItem[] } = 
       text: "Pick running, cycling, football or a walk and how long you'll be out. Get the steadiest time today and tomorrow, and how much fine dust you'd breathe, in cigarettes.",
       href: "/#plan",
       icon: Footprints,
+    },
+    {
+      title: "New forecast",
+      text: "One answer up top, then a 48-hour graph you can drag: PM2.5 with its likely range, the wind and the rain. See how accurate the forecast has been.",
+      href: "/forecast",
+      icon: ChartLine,
+    },
+    {
+      title: "Fly in from space",
+      text: "The globe now opens on the whole Earth and flies down to Singapore, and it loads faster. Tap anywhere to skip.",
+      href: "/map",
+      icon: Globe,
     },
   ],
 };
