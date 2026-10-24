@@ -1,15 +1,15 @@
 import type { NextConfig } from "next";
 
-// Everything is served from this origin except OpenStreetMap map tiles, OpenFreeMap vector tiles, NASA satellite images, Windy webcam images and data.gov.sg traffic camera photos.
+// Everything is served from this origin except OpenStreetMap map tiles, OpenFreeMap vector tiles, NASA satellite images, Windy webcam images, data.gov.sg traffic camera photos and Cloudflare Web Analytics.
 const csp = [
   "default-src 'self'",
   // Next.js inline bootstrap scripts; the page renders no user input. Dev mode also needs eval.
-  `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : ""}`,
+  `script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com${process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : ""}`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https://tile.openstreetmap.org https://gibs.earthdata.nasa.gov https://imgproxy.windy.com https://images.data.gov.sg",
   "font-src 'self'",
   // cdn.jsdelivr.net serves the globe's history files (data/history of the repo). OpenFreeMap serves the globe's map to MapLibre as data, not images: the style, the tile list, the vector tiles and the font glyphs. MapLibre's worker is a file of this origin.
-  "connect-src 'self' https://tiles.openfreemap.org https://gibs.earthdata.nasa.gov https://cdn.jsdelivr.net https://raw.githubusercontent.com",
+  "connect-src 'self' https://tiles.openfreemap.org https://gibs.earthdata.nasa.gov https://cdn.jsdelivr.net https://raw.githubusercontent.com https://cloudflareinsights.com",
   // Ko-fi's donation panel in the support dialog.
   "frame-src https://ko-fi.com",
   "object-src 'none'",

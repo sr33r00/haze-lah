@@ -1,0 +1,27 @@
+// The site Worker (vinext). The separate NEA refresh Worker has its own config in workers/nea-refresh.
+//
+// Secrets are not in this file. Upload each with `npx wrangler secret put <NAME>`:
+//   FIRMS_MAP_KEY, OPENAQ_API_KEY, WAQI_TOKEN, WINDY_WEBCAMS_KEY, REFRESH_SECRET, TELEGRAM_BOT_TOKEN, FEEDBACK_CHAT_ID
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "haze-lah",
+  // Cloudflare rejects a date in the future.
+  "compatibility_date": "2026-10-24",
+  "compatibility_flags": ["nodejs_compat"],
+  "main": "vinext/server/fetch-handler",
+  "workers_dev": true,
+  "observability": {
+    "enabled": true,
+    "logs": { "enabled": true },
+    "traces": { "enabled": true }
+  },
+  "assets": {
+    "directory": "dist/client",
+    "html_handling": "none",
+    "not_found_handling": "none",
+    "binding": "ASSETS",
+    "run_worker_first": ["/*", "!/_next/static/*", "!/*/_next/static/*"]
+  },
+  // The data cache (ISR pages, unstable_cache and revalidateTag) behind kvDataAdapter() in vite.config.ts: namespace haze-lah-cache.
+  "kv_namespaces": [{ "binding": "VINEXT_KV_CACHE", "id": "48f28b2a5e24498fb3fe8091c06e5594" }]
+}

@@ -49,3 +49,10 @@ AGENTS.md
 CLAUDE.md
 docs/superpowers/
 .claude/
+
+# local issue tracker (specs, tickets)
+/.scratch/
+# vinext build output
+/dist/
+.vinext/
+.wrangler/

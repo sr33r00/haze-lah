@@ -9,7 +9,7 @@ const MAX_AQI = 999; // above this a station is faulty
 // NEA's own regional monitors ("North, Singapore" ...): the map already shows NEA's regions, so these would sit on top of them.
 const NEA_REGION = /^(North|South|East|West|Central), Singapore$/i;
 
-/** The token AQICN needs (a Vercel env var), or undefined. */
+/** The token AQICN needs (a Worker secret), or undefined. */
 export const waqiToken = () => process.env.WAQI_TOKEN || undefined;
 
 type Entry = { lat?: unknown; lon?: unknown; uid?: unknown; aqi?: unknown; station?: { name?: unknown; time?: unknown } };

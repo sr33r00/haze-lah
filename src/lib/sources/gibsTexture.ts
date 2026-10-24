@@ -1,8 +1,8 @@
 import { unstable_cache } from "next/cache";
-import sharp from "sharp";
 import { GLOBE_LAYERS, globeDays, isSettled, rampRgb, rampT, type GlobeLayer } from "../globe";
 import { gibsMap } from "../satellite";
 import { getText } from "../util";
+import { createImageCodec } from "./imageCodec";
 
 // Pollution pictures for the map, built from NASA GIBS satellite passes. GIBS only serves each pass as a coloured
 // picture, so the colours are turned back into values, the passes averaged and smoothed, and the result coloured
@@ -27,6 +27,8 @@ const H = 720;
 const SIZE = 2048; // the finished picture is this many pixels square, in Web Mercator: smooth and about 100 KB as WebP when zoomed to a city
 const SIGMA = 5; // pixels of smoothing, about 1.25 degrees
 
+const codec = createImageCodec(async () => (await import("./codecWasm")).default);
+
 /** Pixel colour (r << 16 | g << 8 | b) to the middle of the value range it stands for. */
 async function valueLookup(colormap: string) {
   const xml = await getText(`${COLORMAPS}/${colormap}.xml`, { revalidate: 86400 });
@@ -41,13 +43,13 @@ async function valueLookup(colormap: string) {
 }
 
 /** A GIBS picture as raw RGBA pixels, or null when it could not be fetched (tried twice). Not in Next's fetch cache (2 MB limit). */
-async function fetchPng(url: string, w: number, h: number): Promise<Buffer | null> {
+async function fetchPng(url: string, w: number, h: number): Promise<Uint8ClampedArray | null> {
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
       const res = await fetch(url, { cache: "no-store", signal: AbortSignal.timeout(20_000) });
       if (!res.ok) throw new Error(`GIBS ${res.status}`);
-      const { data, info } = await sharp(Buffer.from(await res.arrayBuffer())).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
-      if (info.width !== w || info.height !== h) throw new Error("GIBS: unexpected size");
+      const { data, width, height } = await codec.decodePng(await res.arrayBuffer());
+      if (width !== w || height !== h) throw new Error("GIBS: unexpected size");
       return data;
     } catch (e) {
       console.error("[haze] gibs pass:", url, e);
@@ -95,7 +97,7 @@ function smooth(values: Float32Array, have: Float32Array, w: number, h: number) 
 }
 
 /** The mean of every valid value per pixel over `passes` (raw RGBA pictures of `n` pixels), and which pixels had any. */
-function meanValues(passes: Buffer[], lookup: Map<number, number>, n: number) {
+function meanValues(passes: Uint8ClampedArray[], lookup: Map<number, number>, n: number) {
   const sum = new Float32Array(n);
   const count = new Float32Array(n);
   for (const px of passes) {
@@ -179,16 +181,14 @@ async function buildPicture(layer: GlobeLayer, date: string): Promise<{ webp: st
   const value = toMercator(smooth(mean, have, W, H).value);
 
   const colours = Array.from({ length: 256 }, (_, i) => rampRgb(ramp, i / 255));
-  const rgba = Buffer.alloc(SIZE * SIZE * 4);
+  const rgba = new Uint8ClampedArray(SIZE * SIZE * 4);
   for (let i = 0; i < SIZE * SIZE; i++) {
     const t = Number.isNaN(value[i]) ? 0 : rampT(ramp, value[i]);
     rgba.set(colours[Math.round(t * 255)], i * 4);
     rgba[i * 4 + 3] = Number.isNaN(value[i]) ? 0 : ramp.soft ? Math.round(255 * Math.min(1, t / ramp.soft)) : 255;
   }
-  const webp = await sharp(rgba, { raw: { width: SIZE, height: SIZE, channels: 4 } })
-    .webp({ quality: 80, alphaQuality: 90, smartSubsample: true })
-    .toBuffer();
-  return { webp: webp.toString("base64"), complete: got.length === passes.length };
+  const webp = await codec.encodeWebp({ data: rgba, width: SIZE, height: SIZE });
+  return { webp: Buffer.from(webp).toString("base64"), complete: got.length === passes.length };
 }
 
 const SETTLED_S = 7 * 86400; // a day older than 2 days will not change
