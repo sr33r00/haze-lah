@@ -31,16 +31,17 @@ const UNIT_OPTIONS = [
   { id: "aqi", label: "US AQI" },
 ] as const;
 
-/** A band scale as hard-stop colour steps of equal width, with the ranges it covers. */
-function scale(colors: readonly string[], names: string[]) {
+/** A band scale as hard-stop colour steps of equal width, with the ranges it covers and what each means. */
+function scale(colors: readonly string[], names: string[], meanings: string[]) {
   const n = colors.length;
-  return { names, background: `linear-gradient(to right, ${colors.map((c, i) => `${c} ${(i / n) * 100}% ${((i + 1) / n) * 100}%`).join(", ")})` };
+  return { names, meanings, background: `linear-gradient(to right, ${colors.map((c, i) => `${c} ${(i / n) * 100}% ${((i + 1) / n) * 100}%`).join(", ")})` };
 }
 const range = (from: number, max: number) => (max === Infinity ? `${from}+` : `${from}–${max}`);
 const PM25_SCALE = {
   ...scale(
     PM25_COLORS,
     PM25_BANDS.map((b, i) => (i === 0 ? `≤${b.max}` : range(PM25_BANDS[i - 1].max + 1, b.max))),
+    PM25_BANDS.map((b) => b.name),
   ),
   label: `NEA 1-hour PM2.5 in µg/m³: ${PM25_BANDS.map((b, i) => `${b.name} ${i === 0 ? "up to" : "above"} ${i === 0 ? b.max : PM25_BANDS[i - 1].max}`).join(", ")}`,
 };
@@ -48,6 +49,7 @@ const AQI_SCALE = {
   ...scale(
     US_AQI_BANDS.map((b) => b.color),
     US_AQI_BANDS.map((b) => range(b.from, b.max)),
+    US_AQI_BANDS.map((b) => ("short" in b ? b.short : b.name)),
   ),
   label: `US AQI: ${US_AQI_BANDS.map((b) => `${b.name} ${range(b.from, b.max)}`).join(", ")}`,
 };

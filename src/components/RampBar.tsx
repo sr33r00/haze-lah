@@ -1,5 +1,5 @@
-/** A pollutant colour bar with its band names under it (any number of bands, each name centred under its equal share of the bar, or the two ends of a ramp). `background` is a CSS gradient, `bar` and `names` the theme's classes. */
-export default function RampBar({ background, names, bar, text, label }: { background: string; names: string[]; bar: string; text: string; label?: string }) {
+/** A pollutant colour bar with its band names under it (any number of bands, each name centred under its equal share of the bar, or the two ends of a ramp). `meanings`, one per band, go under the names in plain weight, with room for two lines. `background` is a CSS gradient, `bar` and `names` the theme's classes. */
+export default function RampBar({ background, names, meanings, bar, text, label }: { background: string; names: string[]; meanings?: string[]; bar: string; text: string; label?: string }) {
   const bands = names.length > 2;
   return (
     <>
@@ -9,8 +9,11 @@ export default function RampBar({ background, names, bar, text, label }: { backg
       className={`mt-1 text-[11px] font-semibold leading-4 ${text} ${bands ? "grid text-center" : "flex justify-between"}`}
       style={bands ? { gridTemplateColumns: `repeat(${names.length}, 1fr)` } : undefined}
     >
-        {names.map((n) => (
-          <span key={n}>{n}</span>
+        {names.map((n, i) => (
+          <span key={n}>
+            {n}
+            {meanings && <span className="block min-h-8 font-normal leading-4">{meanings[i]}</span>}
+          </span>
         ))}
       </div>
     </>
