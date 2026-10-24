@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { answerText, bestWindow, instrumentHours, peakAhead, type InstrumentHour } from "@/lib/forecastHours";
+import type { Accuracy, LeadScore } from "@/lib/accuracy";
+import { answerText, bestWindow, instrumentHours, peakAhead, skillRows, skillSentence, type InstrumentHour } from "@/lib/forecastHours";
 import type { ForecastPoint, HourPoint, OutlookStep, WeatherHour } from "@/lib/types";
 
 const NOW = new Date("2026-10-24T01:30:00Z"); // 9:30am SGT, Sat 24 Oct
@@ -88,4 +89,39 @@ test("answerText writes the weekday further out, am and pm on both ends across n
   assert.equal(answerText(peak, null, NOW).headline, "Worst Tuesday around 2pm, near 90 µg/m³.");
   assert.equal(answerText(peak, null, NOW).detail, "No clear window in the next 48 hours.");
   assert.equal(answerText(peak, { from: "2026-10-25T03:00:00Z", to: "2026-10-25T06:00:00Z" }, NOW).detail, "Best window: tomorrow 11am–2pm.");
+});
+
+/** One lead of accuracy.json with the given mean absolute errors (ours, Copernicus, persistence) and forecast count. */
+const lead = (h: number, ours: number | null, cams: number | null, persistence: number | null, n = 40): LeadScore => {
+  const stats = (mae: number | null) => ({ n, mae, rmse: mae, bias: 0 });
+  return { lead: h, ours: stats(ours), cams: stats(cams), persistence: stats(persistence), event: { n, precision: null, recall: null, f1: null } };
+};
+const accuracy = (leads: LeadScore[]): Accuracy => ({ updated: "2026-10-24T00:29:12.373Z", forecasts: 45, from: null, to: null, leads, hazyDays: { days: 0, hazy: 0, ours: { hits: 0, clearRight: 0 }, persistence: { hits: 0, clearRight: 0 } } });
+
+test("skillRows drops leads with too few forecasts and is empty without a file", () => {
+  const a = accuracy([lead(6, 20.1, 36.5, 14.8, 42), lead(24, 24.3, 37.4, 26.1, 19), lead(48, null, 40, 30, 40), lead(72, 30, 41, 31, 20)]);
+  assert.deepEqual(skillRows(a), [
+    { lead: 6, ours: 20.1, cams: 36.5, persistence: 14.8 },
+    { lead: 72, ours: 30, cams: 41, persistence: 31 },
+  ]);
+  assert.deepEqual(skillRows(a, 10).map((r) => r.lead), [6, 24, 72]);
+  assert.deepEqual(skillRows(null), []);
+});
+
+test("skillSentence gives exact copy for the current accuracy.json leads", () => {
+  const rows = skillRows(accuracy([lead(6, 20.1, 36.5, 14.8, 42), lead(24, 24.3, 37.4, 26.1, 39)]));
+  assert.equal(skillSentence(rows), "For the next 6 hours, today's reading is the better guide. From 24 hours ahead, this forecast beats both Copernicus and assuming no change.");
+});
+
+test("skillSentence names the longest losing lead before the first win, and a win needs both rivals beaten", () => {
+  const rows = skillRows(accuracy([lead(6, 20, 36, 15), lead(24, 30, 25, 40), lead(48, 20, 30, 25), lead(72, 20, 30, 25)]));
+  assert.equal(skillSentence(rows), "For the next 24 hours, today's reading is the better guide. From 48 hours ahead, this forecast beats both Copernicus and assuming no change.");
+});
+
+test("skillSentence handles winning at every lead, winning at none, and no rows", () => {
+  const win = skillRows(accuracy([lead(6, 10, 36, 15), lead(24, 24, 37, 26)]));
+  assert.equal(skillSentence(win), "This forecast beats Copernicus and assuming no change at every lead time.");
+  const lose = skillRows(accuracy([lead(6, 20, 36, 15), lead(24, 30, 37, 26)]));
+  assert.equal(skillSentence(lose), "Assuming no change is the better guide at every lead time tested so far.");
+  assert.equal(skillSentence([]), null);
 });
