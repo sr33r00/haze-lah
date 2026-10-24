@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from "next";
-import { Analytics } from "@vercel/analytics/next";
 import "@fontsource-variable/atkinson-hyperlegible-next";
 import "./globals.css";
 import JsonLd from "@/components/JsonLd";
@@ -70,6 +69,9 @@ export const viewport: Viewport = {
 // Applies a saved light/dark choice before first paint; static string, no user input.
 const THEME_SCRIPT = `try{var t=localStorage.getItem("theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}`;
 
+// Cloudflare Web Analytics token, read at build time; no beacon without it (local development, forks).
+const CF_BEACON = process.env.NEXT_PUBLIC_CF_BEACON;
+
 const INSTALL_SCRIPT = `addEventListener("beforeinstallprompt",function(e){e.preventDefault();window.__installEvent=e;window.dispatchEvent(new Event("installready"))})`;
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
@@ -85,8 +87,8 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           <JsonLd key={d["@type"]} data={d} />
         ))}
         {children}
-        {/* Cookieless page-view counts; served from this origin under /_vercel/insights. */}
-        <Analytics />
+        {/* Cookieless page-view counts. */}
+        {CF_BEACON && <script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon={JSON.stringify({ token: CF_BEACON })} />}
       </body>
     </html>
   );

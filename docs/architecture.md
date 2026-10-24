@@ -58,7 +58,7 @@ Solid lines are the live path. Dotted lines are the scheduled jobs and the brows
 
 ## Request flow
 
-1. A visitor opens a page such as `/`. The page is a React Server Component with `export const revalidate = 1800`, so Next.js serves a stored copy and rebuilds it in the background at most every 30 minutes.
+1. A visitor opens a page such as `/`. The page is a React Server Component with `export const revalidate = 1800`, so the framework serves a stored copy (in Workers KV on Cloudflare) and rebuilds it in the background at most every 30 minutes.
 2. When a rebuild happens, the page calls `getHazeData()`.
 3. `getHazeData()` returns `cachedHazeData()`, a `unstable_cache` wrapper (key `haze-data`, `revalidate: 1800`) around `buildHazeData(false)`.
 4. `buildHazeData` calls `fetchInputs()`, which starts 11 fetchers from `src/lib/sources/` at once with `Promise.allSettled`. Each one that fails is logged on the server and its name is added to `errors`.
@@ -131,9 +131,20 @@ Every visitor sees the same readings, so there is no reason to fetch them again 
 | Camera and webcam lists | Server memory and CDN | 60 s in memory for the DataMall list; 5 min at the CDN |
 | Forecast accuracy | `fetchAccuracy` fetch of `data/accuracy.json` | 1 hour |
 
-Why 30 minutes: NEA publishes hourly, so a shorter time buys nothing. A Cloudflare Worker (`workers/nea-refresh`) checks NEA a few times an hour and, only when NEA has new data, calls `POST /api/refresh` (`REFRESH_SECRET`), which revalidates the `haze-data` tag and the pages. No checking runs on Vercel. The fast sources are not cached one by one (`getJson` in `src/lib/util.ts` defaults to `revalidate: 0`) because they are read only when the 30-minute build runs; caching them too would add storage writes with no gain. The reasoning is in [ADR 0002](decisions/0002-shared-30-minute-cache.md).
+Why 30 minutes: NEA publishes hourly, so a shorter time buys nothing. A Cloudflare Worker (`workers/nea-refresh`) checks NEA a few times an hour and, only when NEA has new data, calls `POST /api/refresh` (`REFRESH_SECRET`), which revalidates the `haze-data` tag and the pages. No checking runs on the site itself. The fast sources are not cached one by one (`getJson` in `src/lib/util.ts` defaults to `revalidate: 0`) because they are read only when the 30-minute build runs; caching them too would add storage writes with no gain. The reasoning is in [ADR 0002](decisions/0002-shared-30-minute-cache.md).
 
 The 5-minute camera lists are the exception: they must be newer than the page, so the browser asks for them.
+
+## Hosting
+
+The site runs as one Cloudflare Worker (`haze-lah`, config in `wrangler.jsonc`) built with [vinext](https://github.com/cloudflare/vinext), Cloudflare's Vite-based implementation of the Next.js API. The app code is unchanged Next.js App Router code.
+
+- **Build.** `npm run build` runs `vite build` (`vite.config.ts`): the vinext and Cloudflare plugins write the Worker to `dist/server` and the static files to `dist/client`, which the platform serves as assets. `npm run deploy` builds and deploys; `npm run preview` runs the built Worker locally in workerd.
+- **Cache.** `kvDataAdapter()` in `vite.config.ts` keeps the data cache in the Workers KV namespace bound as `VINEXT_KV_CACHE` (`haze-lah-cache`). That is where the ISR pages, `unstable_cache` entries (such as the `haze-data` tag and the satellite pictures) and `revalidateTag` / `revalidatePath` live, so they persist across Worker invocations.
+- **Secrets** (`FIRMS_MAP_KEY`, `OPENAQ_API_KEY`, `WAQI_TOKEN`, `WINDY_WEBCAMS_KEY`, `REFRESH_SECRET`, `TELEGRAM_BOT_TOKEN`, `FEEDBACK_CHAT_ID`) are Worker secrets, read with `process.env` (the `nodejs_compat` flag fills it from the Worker's secrets).
+- **Analytics.** Cloudflare Web Analytics. The beacon is added to the root layout only when `NEXT_PUBLIC_CF_BEACON` is set at build time.
+- **Images and share pictures.** `next/og` works through `@vercel/og`'s WebAssembly build. PNG decoding and WebP encoding for the satellite picture are WebAssembly too (see below).
+- **NEA refresh Worker.** `workers/nea-refresh` is a separate Worker with its own config; it calls `POST /api/refresh` on the site.
 
 ## Failure handling
 
@@ -149,7 +160,7 @@ The 5-minute camera lists are the exception: they must be newer than the page, s
 ## Security
 
 - **Headers** are set for every path in `next.config.ts`: `Content-Security-Policy`, `Strict-Transport-Security`, `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy` (geolocation for this site only; camera, microphone and USB off; payment only for the Ko-fi frame) and `Cross-Origin-Opener-Policy`.
-- **CSP.** `default-src 'self'`. Images come from this origin, `data:`, `blob:`, OpenStreetMap tiles, NASA GIBS, Windy and data.gov.sg photos. Network calls (`connect-src`) go to this origin, OpenFreeMap, NASA GIBS, jsDelivr and GitHub's raw host. The only frame is Ko-fi's donation panel. `frame-ancestors 'none'` stops other sites framing the page. `'unsafe-inline'` is allowed for scripts and styles because Next.js writes inline bootstrap scripts; the pages render no user input. Dev mode also allows `eval`.
+- **CSP.** `default-src 'self'`. Images come from this origin, `data:`, `blob:`, OpenStreetMap tiles, NASA GIBS, Windy and data.gov.sg photos. Network calls (`connect-src`) go to this origin, OpenFreeMap, NASA GIBS, jsDelivr, GitHub's raw host and Cloudflare Web Analytics (`cloudflareinsights.com`; its beacon script comes from `static.cloudflareinsights.com`). The only frame is Ko-fi's donation panel. `frame-ancestors 'none'` stops other sites framing the page. `'unsafe-inline'` is allowed for scripts and styles because Next.js writes inline bootstrap scripts; the pages render no user input. Dev mode also allows `eval`.
 - **Keys stay on the server.** Every key is read with `process.env` in `src/lib/sources/` or `src/app/api/`, never in a client component. The only variable the browser sees is `NEXT_PUBLIC_ALERTS_URL`, which is a public link. DataMall photos pass through `/api/camera/[id]` so the key and the real link are never sent out.
 - **Safe links.** `safeUrl` in `src/lib/sources/news.ts` only passes links on NEA, MSS, CNA and Straits Times hosts, upgraded to https; anything else becomes a fallback link.
 - **Feedback form.** `POST /api/feedback` trims and caps the message (2000 characters) and contact (200), ignores a request whose hidden `website` field is filled (a bot trap), and allows 5 messages per 10 minutes per client address. That limit is kept in memory per server instance, so it stops one person flooding the inbox but is not a hard guarantee. Telegram messages are sent as plain text. With neither Resend nor Telegram configured the route answers `503`.
@@ -158,7 +169,7 @@ The 5-minute camera lists are the exception: they must be newer than the page, s
 
 ## Server-built satellite picture
 
-NASA GIBS serves each satellite pass only as a coloured picture. `src/lib/sources/gibsTexture.ts` turns the colours back into values using GIBS's colour-map file, averages the day's passes, smooths them (Gaussian, about 1.25 degrees), reprojects to Web Mercator (2048 x 2048), colours the result with the site's own ramp and encodes it as WebP with `sharp`. The browser downloads one small picture per day instead of many large ones. See [ADR 0006](decisions/0006-server-built-satellite-pictures.md).
+NASA GIBS serves each satellite pass only as a coloured picture. `src/lib/sources/gibsTexture.ts` turns the colours back into values using GIBS's colour-map file, averages the day's passes, smooths them (Gaussian, about 1.25 degrees), reprojects to Web Mercator (2048 x 2048), colours the result with the site's own ramp and encodes it as WebP with WebAssembly codecs (`@jsquash/png` to read the passes, `@jsquash/webp` to write the result, wrapped in `src/lib/sources/imageCodec.ts`) because `sharp` is a native module and does not run on Workers. The browser downloads one small picture per day instead of many large ones. See [ADR 0006](decisions/0006-server-built-satellite-pictures.md).
 
 ## Module map
 

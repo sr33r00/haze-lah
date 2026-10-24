@@ -13,7 +13,7 @@ export default defineConfig({
     env: {
       // The newest NEA reading the site has already been told about.
       STATE: bindings.kv({ id: "510a5a1f23a34e18bd2b20d3ddca4b37" }),
-      SITE_URL: bindings.text("https://www.hazelah.app"),
+      SITE_URL: bindings.text("https://hazelah.app"),
       REFRESH_SECRET: bindings.secret(),
     },
     observability: { enabled: true, logs: { enabled: true }, traces: { enabled: true } },

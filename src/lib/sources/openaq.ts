@@ -37,7 +37,7 @@ export function pickLocations(json: { results?: Loc[] }, since: number): Locatio
   return out;
 }
 
-/** The key OpenAQ needs (a Vercel env var and a GitHub secret), or undefined. */
+/** The key OpenAQ needs (a Worker secret and a GitHub secret), or undefined. */
 export const openaqKey = () => process.env.OPENAQ_API_KEY || undefined;
 
 const auth = (key: string) => ({ headers: { "X-API-Key": key } });

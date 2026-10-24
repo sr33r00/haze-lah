@@ -6,6 +6,10 @@ The in-app "What's new" sheet shows the highlights of the current release. Data-
 
 ## [Unreleased]
 
+### Changed
+
+- Hosting moves to Cloudflare Workers (vinext). Visitor analytics move from Vercel Web Analytics to Cloudflare Web Analytics, and the satellite smoke picture is built with WebAssembly image codecs instead of `sharp`.
+
 ### Fixed
 
 - New NEA readings now appear within about 5 minutes of NEA publishing them, instead of up to about 40: a Cloudflare Worker watches NEA and refreshes the site only when there is new data.
