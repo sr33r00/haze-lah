@@ -6,7 +6,7 @@ export type ReleaseItem = { title: string; text: string; href: string; icon: Luc
 
 /** The current release, shown once to each visitor in the "What's new" sheet and listed on the About page. Keep `version` in step with package.json. */
 export const RELEASE: { version: string; date: string; items: ReleaseItem[] } = {
-  version: "1.6.0",
+  version: "1.6.1",
   date: "2026-10-24",
   items: [
     {
@@ -30,5 +30,5 @@ export const RELEASE: { version: string; date: string; items: ReleaseItem[] } = 
   ],
 };
 
-/** "Version 1.6.0, 24 Oct 2026". */
+/** "Version 1.6.1, 24 Oct 2026". */
 export const RELEASE_LABEL = `Version ${RELEASE.version}, ${fmtFullDate(RELEASE.date)}`;

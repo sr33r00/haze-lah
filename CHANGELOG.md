@@ -8,6 +8,16 @@ The in-app "What's new" sheet shows the highlights of the current release. Data-
 
 Nothing yet.
 
+## [1.6.1] - 2026-10-24
+
+### Fixed
+
+- A deploy whose build machine missed a source (such as AQICN's stations) now refreshes within 5 minutes instead of 30.
+
+### Changed
+
+- What's new also lists the new forecast and the globe's fly-in.
+
 ## [1.6.0] - 2026-10-24
 
 ### Changed
@@ -146,7 +156,8 @@ Nothing yet.
 - Forecast smoke map, fire counts and a wind dial, "Plan your day", NEA news timeline and 7-day PSI history.
 - Feedback issue form.
 
-[Unreleased]: https://github.com/sr33r00/haze-lah/compare/v1.6.0...HEAD
+[Unreleased]: https://github.com/sr33r00/haze-lah/compare/v1.6.1...HEAD
+[1.6.1]: https://github.com/sr33r00/haze-lah/compare/v1.6.0...v1.6.1
 [1.6.0]: https://github.com/sr33r00/haze-lah/compare/abc6ebe...v1.6.0
 [1.5.0]: https://github.com/sr33r00/haze-lah/commit/abc6ebe
 [1.4.0]: https://github.com/sr33r00/haze-lah/commit/305c8ae
