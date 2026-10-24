@@ -1,6 +1,6 @@
 import { BREATH_M3_PER_DAY, NORMAL_PM25 } from "./breath";
 import { cigarettes, PM25_PER_CIGARETTE } from "./cigarettes";
-import { pm25Band, pm25Step, verdictFor, type Group } from "./bands";
+import { PM25_BANDS, pm25Band, pm25Step, verdictFor, type Group } from "./bands";
 import type { ForecastPoint } from "./types";
 import { sgDate, sgHour } from "./util";
 
@@ -11,13 +11,14 @@ export type Activity = "out" | "run" | "cycle" | "play" | "football";
  * Air: US EPA, Exposure Factors Handbook (2011), Chapter 6, Table 6-2 (mean, m³/min × 60), by EPA's MET bands:
  * light (1.5 to 3) 1.2E-02 for adults, high (over 6) 4.9E-02 for adults aged 31 to under 41,
  * moderate (3 to 6) 2.7E-02 for adults and 2.2E-02 for children aged 6 to under 11.
+ * `phrase` completes "I want to ...".
  */
-export const ACTIVITY: Record<Activity, { label: string; hours: number; from: number; to: number; strenuous: boolean; m3PerHour: number }> = {
-  out: { label: "Going out", hours: 3, from: 7, to: 19, strenuous: false, m3PerHour: 0.72 },
-  run: { label: "Run", hours: 1, from: 5, to: 21, strenuous: true, m3PerHour: 2.94 },
-  cycle: { label: "Cycle", hours: 2, from: 6, to: 18, strenuous: true, m3PerHour: 1.62 },
-  play: { label: "Kids play", hours: 1, from: 7, to: 18, strenuous: true, m3PerHour: 1.32 },
-  football: { label: "Football", hours: 1.5, from: 7, to: 20, strenuous: true, m3PerHour: 2.94 },
+export const ACTIVITY: Record<Activity, { phrase: string; hours: number; from: number; to: number; strenuous: boolean; m3PerHour: number }> = {
+  out: { phrase: "go out", hours: 3, from: 7, to: 19, strenuous: false, m3PerHour: 0.72 },
+  run: { phrase: "run", hours: 1, from: 5, to: 21, strenuous: true, m3PerHour: 2.94 },
+  cycle: { phrase: "cycle", hours: 2, from: 6, to: 18, strenuous: true, m3PerHour: 1.62 },
+  play: { phrase: "take the kids out to play", hours: 1, from: 7, to: 18, strenuous: true, m3PerHour: 1.32 },
+  football: { phrase: "play football", hours: 1.5, from: 7, to: 20, strenuous: true, m3PerHour: 2.94 },
 };
 /** Session lengths offered, in hours. Covers every activity's usual length. */
 export const DURATIONS = [0.5, 1, 1.5, 2, 3];
@@ -107,5 +108,38 @@ export function bestSlots(hourly: ForecastPoint[], activity: Activity, group: Gr
     }
     if (best) out.push(best.slot);
   });
+  return out;
+}
+
+/** One bar of the plan's hour strip: the forecast PM2.5 and how the chosen activity rates in it. */
+export type StripHour = { time: string; pm25: number; rating: Rating };
+
+/**
+ * The hours to draw: from the current hour (an hour that ended more than an hour ago is dropped, as in `bestSlots`)
+ * for 24 hours, or on to the end of tomorrow's slot when that is later; at most 48. Each hour carries the activity's own rating.
+ */
+export function planStrip(hourly: ForecastPoint[], activity: Activity, group: Group, slots: Slot[], now = Date.now()): StripHour[] {
+  const upcoming = hourly.filter((p) => Date.parse(p.time) >= now - 3600_000);
+  if (!upcoming.length) return [];
+  const tomorrow = slots.find((s) => s.day === "tomorrow");
+  const until = Math.max(Date.parse(upcoming[0].time) + 24 * 3600_000, tomorrow ? Date.parse(tomorrow.end) : 0);
+  return upcoming
+    .filter((p) => Date.parse(p.time) < until)
+    .slice(0, 48)
+    .map((p) => ({ time: p.time, pm25: p.pm25, rating: rate(p.pm25, activity, group) }));
+}
+
+/** The lowest PM2.5 of each NEA 1-hr band (I to IV), to read the ratings off. */
+const BAND_PM25 = PM25_BANDS.map((_, i) => (i ? PM25_BANDS[i - 1].max + 1 : 0));
+
+/** The distinct answers the chosen activity can give, mildest first, each with every colour it is drawn in. */
+export function ratingLegend(activity: Activity, group: Group): { text: string; tones: Rating["tone"][] }[] {
+  const out: { text: string; tones: Rating["tone"][] }[] = [];
+  for (const pm of BAND_PM25) {
+    const r = rate(pm, activity, group);
+    const item = out.find((o) => o.text === r.text);
+    if (!item) out.push({ text: r.text, tones: [r.tone] });
+    else if (!item.tones.includes(r.tone)) item.tones.push(r.tone);
+  }
   return out;
 }

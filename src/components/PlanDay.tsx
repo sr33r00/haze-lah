@@ -1,79 +1,181 @@
 "use client";
 
+import { ChevronDown } from "lucide-react";
 import { TONE_COLOR, type Group } from "@/lib/bands";
 import { BREATH_SOURCES, fmtDust } from "@/lib/breath";
 import { CIGARETTE_SOURCES } from "@/lib/cigarettes";
-import { ACTIVITIES, ACTIVITY, DURATIONS, PLAN_NOTES, bestSlots, isOk, type Activity } from "@/lib/exercise";
-import { fmtHour, fmtTime } from "@/lib/format";
-import { planHours } from "@/lib/plan";
+import { ACTIVITIES, ACTIVITY, DURATIONS, PLAN_NOTES, bestSlots, isOk, planStrip, ratingLegend, type Activity, type Slot } from "@/lib/exercise";
+import { cap, fmtHour, fmtHourRange, fmtTimeRange } from "@/lib/format";
 import type { ForecastPoint } from "@/lib/types";
+import { sgHour } from "@/lib/util";
 import InfoNote from "./InfoNote";
 import { useStored } from "./usePrefs";
 
-const LEGEND = ["go", "easy", "limit", "stay"] as const;
-const LEGEND_NAME = { go: "Go ahead", easy: "Cut back", limit: "Keep short", stay: "Stay indoors" };
 const DURATION_KEYS = DURATIONS.map(String);
 const durationLabel = (h: number) => (h < 1 ? `${h * 60} min` : `${h} h`);
-const PILL = "min-h-[44px] min-w-0 flex-1 rounded-full px-1 text-[13px] font-semibold leading-tight transition-colors";
-// SGT is a whole-hour offset, so UTC minutes are local minutes.
-const fmtAt = (t: string) => (new Date(t).getUTCMinutes() ? fmtTime(t) : fmtHour(t));
+// SGT is a whole-hour offset, so UTC minutes are local minutes: a 1.5 h session ends on the half hour.
+const fmtSlot = (s: Slot) => (new Date(s.end).getUTCMinutes() ? fmtTimeRange : fmtHourRange)(s.start, s.end);
 
-/** "About 0.7 cigarettes", or "Under 0.1 cigarettes" when it rounds to nothing. */
-const cigText = (n: number) => (n < 0.1 ? "Under 0.1 cigarettes" : `About ${n} ${n === 1 ? "cigarette" : "cigarettes"}`);
+/** "0.7 cigarettes", or "under 0.1" when it rounds to nothing. */
+const cigText = (n: number) => (n < 0.1 ? "under 0.1" : `${n} ${n === 1 ? "cigarette" : "cigarettes"}`);
 
-/** Pick an activity, get its cleanest time today and tomorrow; the next 24 hours as a strip with that time outlined. */
+/** A native select dressed as a chip, for use inside a sentence. */
+function ChipSelect({ label, value, options, onChange }: { label: string; value: string; options: [value: string, text: string][]; onChange: (v: string) => void }) {
+  return (
+    <span className="relative inline-flex max-w-full">
+      <select
+        aria-label={label}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="min-h-[44px] max-w-full cursor-pointer appearance-none rounded-full bg-surface py-2 pl-4 pr-10 text-[17px] font-semibold text-fg"
+      >
+        {options.map(([v, text]) => (
+          <option key={v} value={v}>
+            {text}
+          </option>
+        ))}
+      </select>
+      <ChevronDown aria-hidden size={18} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-muted" />
+    </span>
+  );
+}
+
+/** One day's answer: the time, the advice and the four numbers behind it. */
+function AnswerCard({ slot, wide }: { slot: Slot; wide: boolean }) {
+  const ok = isOk(slot.rating);
+  const stats = [
+    ["PM2.5", `about ${Math.round(slot.pm25)}`],
+    ["Dust breathed", fmtDust(slot.dustUg)],
+    ["Like smoking", cigText(slot.cigarettes)],
+    ["Vs a normal day", `${slot.timesNormal.toFixed(1)}×`],
+  ];
+  return (
+    <div className="rounded-2xl bg-surface p-4">
+      <p className="text-[12px] font-semibold uppercase tracking-wide text-muted">
+        {cap(slot.day)} · {ok ? "Best time" : "Least hazy time"}
+      </p>
+      <p className="tabular mt-1 text-[22px] font-bold leading-tight">
+        {fmtSlot(slot)}
+      </p>
+      <p className="mt-1 flex items-center gap-2 text-[15px] font-semibold">
+        <span aria-hidden className="size-2.5 shrink-0 rounded-full" style={{ background: TONE_COLOR[slot.rating.tone].bg }} />
+        {slot.rating.text}
+      </p>
+      <dl className={`mt-3 grid grid-cols-2 gap-x-4 gap-y-2 ${wide ? "sm:grid-cols-4" : ""}`}>
+        {stats.map(([name, value]) => (
+          <div key={name}>
+            <dt className="text-[11px] text-muted">{name}</dt>
+            <dd className="tabular text-[15px] font-semibold">{value}</dd>
+          </div>
+        ))}
+      </dl>
+    </div>
+  );
+}
+
+/** Pick what you want to do and for how long; get the cleanest time today and tomorrow, and the coming hours as a strip with those times outlined. */
 export default function PlanDay({ hourly, group }: { hourly: ForecastPoint[]; group: Group }) {
   const [activity, choose] = useStored<Activity>("activity", ACTIVITIES, "out");
   const usual = ACTIVITY[activity].hours;
   const [chosen, chooseLength] = useStored(`duration-${activity}`, DURATION_KEYS, String(usual));
   const len = Number(chosen);
 
-  const hours = planHours(hourly, group);
-  if (!hours.length) return <p className="px-4 text-[15px] text-muted">Forecast unavailable.</p>;
-  const slots = bestSlots(hourly, activity, group, Date.now(), len);
-  const mark = slots.find((s) => s.startIndex < hours.length);
+  if (!hourly.length) return <p className="px-4 text-[15px] text-muted">Forecast unavailable.</p>;
+  const now = Date.now();
+  const slots = bestSlots(hourly, activity, group, now, len);
+  const hours = planStrip(hourly, activity, group, slots, now);
+  const n = hours.length;
+  const pct = (i: number) => `${(i / n) * 100}%`;
   // Bar height is PM2.5, on a scale that always reaches NEA band III (150).
   const top = Math.max(150, ...hours.map((h) => h.pm25));
+  // The first bar after SGT midnight starts tomorrow; with no earlier bar there is nothing to divide.
+  const midnight = hours.findIndex((h, i) => i > 0 && sgHour(h.time) === 0);
+  const outlines = slots.flatMap((s) => {
+    const start = hours.findIndex((h) => h.time === s.start);
+    return start < 0 ? [] : [{ day: s.day, left: pct(start), width: pct(Math.min((Date.parse(s.end) - Date.parse(s.start)) / 3600_000, n - start)) }];
+  });
 
   return (
     <div className="px-4">
-      <div role="group" aria-label="Activity" className="flex gap-1 rounded-full bg-surface p-1">
-        {ACTIVITIES.map((a) => (
-          <button key={a} onClick={() => choose(a)} aria-pressed={a === activity} className={`${PILL} ${a === activity ? "bg-fg text-bg" : "text-muted hover:text-fg"}`}>
-            {ACTIVITY[a].label}
-          </button>
-        ))}
-      </div>
-      <div role="group" aria-label="How long" className="mt-2 flex flex-wrap gap-1 rounded-3xl bg-surface p-1">
-        {DURATIONS.map((d) => (
-          <button key={d} onClick={() => chooseLength(String(d))} aria-pressed={d === len} className={`${PILL} ${d === len ? "bg-fg text-bg" : "text-muted hover:text-fg"}`}>
-            {durationLabel(d)}
-            {d === usual && " "}
-            {d === usual && <span className="block text-[10px] font-normal leading-none">usual</span>}
-          </button>
-        ))}
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-2 text-[17px]">
+        <span>I want to</span>
+        <ChipSelect label="Activity" value={activity} options={ACTIVITIES.map((a) => [a, ACTIVITY[a].phrase])} onChange={(v) => choose(v as Activity)} />
+        <span className="inline-flex items-center gap-x-2">
+          for
+          <ChipSelect label="How long" value={String(len)} options={DURATIONS.map((d) => [String(d), d === usual ? `${durationLabel(d)} (usual)` : durationLabel(d)])} onChange={chooseLength} />
+        </span>
       </div>
 
-      <ul aria-live="polite" className="mt-3 divide-y divide-line">
-        {slots.length === 0 && <li className="py-2 text-[15px] text-muted">No forecast for these hours yet.</li>}
-        {slots.map((s) => (
-          <li key={s.day} className="flex items-baseline gap-3 py-2">
-            <span className="w-[4.75rem] shrink-0 text-[13px] font-semibold capitalize text-muted">{s.day}</span>
-            <span className="min-w-0 flex-1">
-              {/* When even the cleanest hours are too smoky, say so first; the time is then only the least bad. */}
-              <span className="tabular block text-[17px] font-bold">{isOk(s.rating) ? `${fmtHour(s.start)} to ${fmtAt(s.end)}` : s.rating.text}</span>
-              <span className="flex flex-wrap items-center gap-x-1.5 text-[13px]">
-                <span aria-hidden className="size-2.5 shrink-0 rounded-full" style={{ background: TONE_COLOR[s.rating.tone].bg }} />
-                <span className="font-semibold">{isOk(s.rating) ? s.rating.text : `Least haze ${fmtHour(s.start)} to ${fmtAt(s.end)}`}</span>
-                <span className="text-muted">· PM2.5 about {Math.round(s.pm25)}</span>
+      <div aria-live="polite" className="mt-3">
+        {slots.length === 0 ? (
+          <p className="text-[15px] text-muted">No forecast for these hours yet.</p>
+        ) : (
+          <div className={`grid gap-3 ${slots.length > 1 ? "sm:grid-cols-2" : ""}`}>
+            {slots.map((s) => (
+              <AnswerCard key={s.day} slot={s} wide={slots.length === 1} />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {n > 0 && (
+        <div className="mt-4">
+          <div aria-hidden className="relative h-4 text-[11px] font-semibold text-muted">
+            {(midnight < 0 || midnight >= 3) && <span className="absolute left-0">Now</span>}
+            {/* Near the right edge the label would run past the strip; the divider still shows. */}
+            {midnight > 0 && midnight < n - 4 && (
+              <span className="absolute pl-1" style={{ left: pct(midnight) }}>
+                Tomorrow
               </span>
-              <span className="tabular block text-[13px] text-muted">
-                {fmtDust(s.dustUg)} fine dust breathed · {cigText(s.cigarettes)} · {s.timesNormal.toFixed(1)}× a normal day
-              </span>
-            </span>
-          </li>
-        ))}
-      </ul>
+            )}
+          </div>
+          <div className="relative">
+            <ol
+              aria-label={`Next ${n} hours to ${ACTIVITY[activity].phrase}${activity === "play" ? "" : `, for ${group === "healthy" ? "healthy adults" : "your group"}`}: ${hours.map((h) => `${fmtHour(h.time)} ${h.rating.text}`).join(", ")}`}
+              className="flex h-12 items-end gap-px"
+            >
+              {hours.map((h, i) => (
+                <li key={h.time} className="flex h-full min-w-0 flex-1 items-end">
+                  <div
+                    className="w-full origin-bottom animate-grow rounded-t-sm"
+                    style={{ height: `${Math.max(12, (h.pm25 / top) * 100)}%`, background: TONE_COLOR[h.rating.tone].bg, animationDelay: `${i * 20}ms` }}
+                    title={`${fmtHour(h.time)}: PM2.5 ${Math.round(h.pm25)}`}
+                  />
+                </li>
+              ))}
+            </ol>
+            {outlines.map((o) => (
+              <div
+                key={o.day}
+                aria-hidden
+                className="pointer-events-none absolute -bottom-1 -top-1 rounded-md border-2 border-fg transition-[left,width] duration-300 motion-reduce:transition-none"
+                style={{ left: o.left, width: o.width }}
+              />
+            ))}
+            {midnight > 0 && <div aria-hidden className="pointer-events-none absolute -top-4 bottom-0 w-px bg-muted" style={{ left: pct(midnight) }} />}
+          </div>
+          <div aria-hidden className="relative mt-1 h-4 text-[11px] text-muted">
+            {hours.map((h, i) =>
+              sgHour(h.time) % 6 === 0 && i > 0 && i < n - 1 ? (
+                <span key={h.time} className="absolute -translate-x-1/2 whitespace-nowrap" style={{ left: pct(i + 0.5) }}>
+                  {fmtHour(h.time)}
+                </span>
+              ) : null,
+            )}
+          </div>
+          <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-muted">
+            {ratingLegend(activity, group).map((r) => (
+              <li key={r.text} className="flex items-center gap-1.5">
+                {r.tones.map((t) => (
+                  <span key={t} aria-hidden className="size-2.5 rounded-sm" style={{ background: TONE_COLOR[t].bg }} />
+                ))}
+                {r.text}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       <div className="mt-1">
         <InfoNote lead={<span>How the best time is worked out</span>}>
           {PLAN_NOTES.map((t) => (
@@ -88,41 +190,6 @@ export default function PlanDay({ hourly, group }: { hourly: ForecastPoint[]; gr
           </p>
         </InfoNote>
       </div>
-
-      <ol
-        aria-label={`Next 24 hours for ${group === "healthy" ? "healthy adults" : "your group"}: ${hours.map((h) => `${fmtHour(h.time)} ${h.verdict.headline}`).join(" ")}`}
-        className="relative mt-3 flex gap-px"
-      >
-        {hours.map((h, i) => (
-          <li key={h.time} className="min-w-0 flex-1 text-center">
-            <div className="flex h-12 items-end">
-              <div
-                className="w-full origin-bottom animate-grow rounded-t-sm"
-                style={{ height: `${Math.max(12, (h.pm25 / top) * 100)}%`, background: TONE_COLOR[h.verdict.tone].bg, animationDelay: `${i * 20}ms` }}
-                title={`${fmtHour(h.time)}: PM2.5 ${Math.round(h.pm25)}`}
-              />
-            </div>
-            <div aria-hidden className="mt-1 h-4 text-[11px] text-muted">
-              {i % 3 === 0 && <span className="whitespace-nowrap">{fmtHour(h.time)}</span>}
-            </div>
-          </li>
-        ))}
-        {mark && (
-          <li
-            aria-hidden
-            className="pointer-events-none absolute -top-1 h-14 rounded-md border-2 border-fg transition-[left,width] duration-300 motion-reduce:transition-none"
-            style={{ left: `${(mark.startIndex / hours.length) * 100}%`, width: `${(Math.min(len, hours.length - mark.startIndex) / hours.length) * 100}%` }}
-          />
-        )}
-      </ol>
-      <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-muted">
-        {LEGEND.map((t) => (
-          <li key={t} className="flex items-center gap-1.5">
-            <span className="h-2.5 w-2.5 rounded-sm" style={{ background: TONE_COLOR[t].bg }} />
-            {LEGEND_NAME[t]}
-          </li>
-        ))}
-      </ul>
     </div>
   );
 }
