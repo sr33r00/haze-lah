@@ -49,6 +49,12 @@ export async function fetchNeaNow(): Promise<NeaNow> {
   };
 }
 
+/** Timestamp of NEA's newest 1-hour PM2.5 reading (one request), or null when it has none. */
+export async function fetchNeaLatestHour(): Promise<string | null> {
+  const j = await getJson<Resp>(`${BASE}/pm25`, { headers: headers(), revalidate: 0 });
+  return j.data.items.reduce<string | null>((a, it) => (!a || Date.parse(it.timestamp) > Date.parse(a) ? it.timestamp : a), null);
+}
+
 /** 1-hour PM2.5 for yesterday and today (SGT), oldest first. */
 export async function fetchNeaPm25History(): Promise<NeaPm25History> {
   const days = [sgDate(-1), sgDate(0)];

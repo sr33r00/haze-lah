@@ -6,7 +6,9 @@ The in-app "What's new" sheet shows the highlights of the current release. Data-
 
 ## [Unreleased]
 
-Nothing yet.
+### Fixed
+
+- New NEA readings now appear within about 5 minutes of NEA publishing them, instead of up to about 40.
 
 ## [1.6.2] - 2026-10-24
 

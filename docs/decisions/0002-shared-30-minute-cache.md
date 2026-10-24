@@ -26,3 +26,7 @@ The values are listed in [architecture](../architecture.md#caching-strategy).
 - The number of upstream calls does not grow with the number of visitors.
 - A page render costs no source calls or forecast work.
 - Anything new that is fast-changing and visitor-independent should follow the camera pattern (fetched by the browser) rather than being baked into a page.
+
+## Addendum 2026-10-25: refresh on demand
+
+NEA publishes each hour's PM2.5 about 15 minutes past the hour, but the fixed 30-minute clock could show it up to about 40 minutes late. The 30-minute `revalidate` stays as the backstop (a shorter one would cost ISR writes and CPU on the free plan). On top of it, `/api/refresh` (`src/app/api/refresh/route.ts`) is called every 5 minutes by cron-job.org with `REFRESH_SECRET`. It reads NEA's newest hour with one request and compares it with the cached build; when NEA is ahead it revalidates the `haze-data` tag and all pages, then loads the home page once so the rebuild starts at once. `Freshness` now refreshes a visible tab that is over 10 minutes old, at most every 10 minutes.

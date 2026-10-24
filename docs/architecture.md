@@ -114,7 +114,7 @@ These sit beside the pages in `src/app/`. Caching values are copied from each fi
 - **Camera lists.** `useCameras` fetches `/api/cameras` when a page loads, and `GroundViews` fetches `/api/webcams`. They are not part of the page data because the photo links last about 5 to 10 minutes and the pages are rebuilt only every 30.
 - **Replay, smoke grid and wind outlook.** `fetchReplay` and `fetchSmoke` in `src/lib/replay.ts` share one request per URL in the browser. `HazeOrigin`, `MapScreen`, `FromSpace` and `ForecastView` use them. The home and map pages add a `<link rel="preload">` so the request starts early.
 - **History.** `src/lib/historyClient.ts` loads the globe's daily files. See [data pipelines](data-pipelines.md#how-the-browser-loads-history).
-- **Refresh.** `Freshness` redraws "updated N min ago" every minute and calls `router.refresh()` when the data is over 30 minutes old and the tab is visible.
+- **Refresh.** `Freshness` redraws "updated N min ago" every minute and calls `router.refresh()` (at most every 10 minutes) when the data is over 10 minutes old and the tab is visible.
 
 ## Caching strategy
 
@@ -131,7 +131,7 @@ Every visitor sees the same readings, so there is no reason to fetch them again 
 | Camera and webcam lists | Server memory and CDN | 60 s in memory for the DataMall list; 5 min at the CDN |
 | Forecast accuracy | `fetchAccuracy` fetch of `data/accuracy.json` | 1 hour |
 
-Why 30 minutes: NEA publishes hourly, so a shorter time buys nothing. The fast sources are not cached one by one (`getJson` in `src/lib/util.ts` defaults to `revalidate: 0`) because they are read only when the 30-minute build runs; caching them too would add storage writes with no gain. The reasoning is in [ADR 0002](decisions/0002-shared-30-minute-cache.md).
+Why 30 minutes: NEA publishes hourly, so a shorter time buys nothing. `/api/refresh` (cron-job.org every 5 minutes, `REFRESH_SECRET`) revalidates the `haze-data` tag and the pages as soon as NEA publishes a newer hour. The fast sources are not cached one by one (`getJson` in `src/lib/util.ts` defaults to `revalidate: 0`) because they are read only when the 30-minute build runs; caching them too would add storage writes with no gain. The reasoning is in [ADR 0002](decisions/0002-shared-30-minute-cache.md).
 
 The 5-minute camera lists are the exception: they must be newer than the page, so the browser asks for them.
 

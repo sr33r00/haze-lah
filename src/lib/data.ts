@@ -107,10 +107,13 @@ async function buildHazeData(mock: boolean): Promise<HazeData> {
 // keeps its data 5 minutes: Next.js gives the pages that revalidate, and their first refresh runs on the live server.
 const BUILDING = process.env.NEXT_PHASE === "phase-production-build";
 
+/** Cache tag on the shared data build; `/api/refresh` revalidates it when NEA publishes a new hour. */
+export const HAZE_DATA_TAG = "haze-data";
+
 /** NEA publishes PM2.5 hourly; 3 hours allows for one late hour. An older newest reading means a source failed. */
 const MAX_READING_AGE_MS = 3 * 3600_000;
 
-/** Pages and the API share one build, kept for 30 minutes (5 at build) so a page render costs no source calls or forecast work. */
+/** Pages and the API share one build, kept for 30 minutes (5 at build), or until `/api/refresh` sees a newer NEA hour, so a page render costs no source calls or forecast work. */
 const cachedHazeData = unstable_cache(
   async () => {
     const data = await buildHazeData(false);
@@ -123,11 +126,11 @@ const cachedHazeData = unstable_cache(
     return data;
   },
   [BUILDING ? "haze-data-build" : "haze-data"],
-  { revalidate: BUILDING ? 300 : 1800 },
+  { revalidate: BUILDING ? 300 : 1800, tags: [HAZE_DATA_TAG] },
 );
 
 // A partial build is kept 1 minute, so the pages built from it (their revalidate drops to match) retry the sources soon.
-const partialHazeData = unstable_cache(() => buildHazeData(false), ["haze-data-partial"], { revalidate: 60 });
+const partialHazeData = unstable_cache(() => buildHazeData(false), ["haze-data-partial"], { revalidate: 60, tags: [HAZE_DATA_TAG] });
 
 /** All the data behind the pages; `generatedAt` is when it was built. Mock mode (HAZE_MOCK=1) is never cached. */
 export async function getHazeData(): Promise<HazeData> {
