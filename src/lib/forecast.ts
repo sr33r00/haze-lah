@@ -7,6 +7,11 @@ export const FORECAST_METHOD =
 
 export const HIGH_PM25 = 55; // top of NEA 1-hr PM2.5 Band I (Normal)
 
+/** The forecast from the current hour: hours that ended more than an hour before `now` are dropped. The hero and Plan your day both start here. */
+export function fromHour<T extends { time: string }>(hourly: T[], now = Date.now()): T[] {
+  return hourly.filter((p) => Date.parse(p.time) >= now - 3600_000);
+}
+
 /** Standard normal CDF (Abramowitz–Stegun 7.1.26). */
 function phi(x: number) {
   const t = 1 / (1 + 0.3275911 * (Math.abs(x) / Math.SQRT2));

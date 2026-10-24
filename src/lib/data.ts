@@ -1,5 +1,5 @@
 import { unstable_cache } from "next/cache";
-import { FORECAST_METHOD, buildForecast, dailyOutlook } from "./forecast";
+import { FORECAST_METHOD, buildForecast, dailyOutlook, fromHour } from "./forecast";
 import { mockInputs } from "./mock";
 import { fetchApims } from "./sources/apims";
 import { fetchFires } from "./sources/firms";
@@ -74,8 +74,7 @@ async function fetchSavedForecast(): Promise<SavedForecast | null> {
     const res = await fetch(FORECAST_URL, { next: { revalidate: 300 }, signal: AbortSignal.timeout(8000) });
     if (!res.ok) return null;
     const saved = (await res.json()) as SavedForecast;
-    const from = Date.now() - 3600_000;
-    const hourly = saved.hourly.filter((p) => Date.parse(p.time) >= from);
+    const hourly = fromHour(saved.hourly);
     return hourly.length ? { ...saved, hourly } : null;
   } catch {
     return null;
@@ -108,12 +107,19 @@ async function buildHazeData(mock: boolean): Promise<HazeData> {
 // keeps its data 5 minutes: Next.js gives the pages that revalidate, and their first refresh runs on the live server.
 const BUILDING = process.env.NEXT_PHASE === "phase-production-build";
 
+/** NEA publishes PM2.5 hourly; 3 hours allows for one late hour. An older newest reading means a source failed. */
+const MAX_READING_AGE_MS = 3 * 3600_000;
+
 /** Pages and the API share one build, kept for 30 minutes (5 at build) so a page render costs no source calls or forecast work. */
 const cachedHazeData = unstable_cache(
   async () => {
     const data = await buildHazeData(false);
-    // Without NEA or the live forecast (a saved one does not count) there is nothing worth keeping for 30 minutes: throwing stops the cache storing it.
-    if (!data.nea || !data.history || !data.forecast.available || data.forecast.savedFrom) throw new Error("NEA data or forecast missing");
+    // Without NEA, the live forecast (a saved one does not count) or a fresh PM2.5 reading (today's request failed, so the forecast starts in the past)
+    // there is nothing worth keeping for 30 minutes: throwing stops the cache storing it.
+    const newest = data.history?.island.at(-1);
+    if (!data.nea || !newest || !data.forecast.available || data.forecast.savedFrom || Date.now() - Date.parse(newest.time) > MAX_READING_AGE_MS) {
+      throw new Error("NEA data or forecast missing or stale");
+    }
     return data;
   },
   [BUILDING ? "haze-data-build" : "haze-data"],

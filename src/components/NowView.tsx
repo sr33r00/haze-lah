@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { tips } from "@/lib/advice";
 import { trend3h } from "@/lib/format";
+import { fromHour } from "@/lib/forecast";
 import { adviceStep, psiLevel } from "@/lib/bands";
 import { currentReading, islandMax } from "@/lib/situation";
 import type { AqiStation, DayOutlook, ForecastPoint, NeaNow, NeaPm25History, Sensor, Station } from "@/lib/types";
@@ -19,6 +20,7 @@ import RegionChips from "./RegionChips";
 import SupportCard from "./SupportCard";
 import { Section, cap } from "./ui";
 import { useCameras } from "./useCameras";
+import { useNow } from "./useNow";
 import { usePrefs } from "./usePrefs";
 
 const SgMap = dynamic(() => import("./SgMap"), {
@@ -27,8 +29,9 @@ const SgMap = dynamic(() => import("./SgMap"), {
 });
 
 /** The Now tab: the answer for the chosen region, what to do, what is in the air and where it came from. */
-export default function NowView({ history, nea, hourly, days, sensors, aqiStations, stations }: { history: NeaPm25History | null; nea: NeaNow | null; hourly: ForecastPoint[]; days: DayOutlook[]; sensors: Sensor[]; aqiStations: AqiStation[]; stations: Station[] }) {
+export default function NowView({ generatedAt, history, nea, hourly, days, sensors, aqiStations, stations }: { generatedAt: string; history: NeaPm25History | null; nea: NeaNow | null; hourly: ForecastPoint[]; days: DayOutlook[]; sensors: Sensor[]; aqiStations: AqiStation[]; stations: Station[] }) {
   const cameras = useCameras() ?? [];
+  const now = useNow(generatedAt);
   const { region, setRegion, group, setGroup, locating, locate } = usePrefs(nea ? islandMax(nea.psi24)?.region : undefined);
 
   const { latest, psi, level } = currentReading({ history, nea }, region);
@@ -50,7 +53,7 @@ export default function NowView({ history, nea, hourly, days, sensors, aqiStatio
             trend={trend3h(history?.regions[region])}
             group={group}
             onGroup={setGroup}
-            next={hourly.slice(0, 6)}
+            next={fromHour(hourly, now).slice(0, 6)}
           />
         </div>
         <div className="order-3">
@@ -76,7 +79,7 @@ export default function NowView({ history, nea, hourly, days, sensors, aqiStatio
 
       <div className="contents lg:block">
         <Section id="plan" className="order-4 !mt-8 lg:!mt-3" title="Plan your day">
-          <PlanDay hourly={hourly} group={group} />
+          <PlanDay hourly={hourly} group={group} now={now} />
         </Section>
 
         {level != null && step != null && (

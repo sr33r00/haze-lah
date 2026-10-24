@@ -1,6 +1,7 @@
 import { BREATH_M3_PER_DAY, NORMAL_PM25 } from "./breath";
 import { cigarettes, PM25_PER_CIGARETTE } from "./cigarettes";
 import { PM25_BANDS, pm25Band, pm25Step, verdictFor, type Group } from "./bands";
+import { fromHour } from "./forecast";
 import type { ForecastPoint } from "./types";
 import { sgDate, sgHour } from "./util";
 
@@ -70,10 +71,11 @@ export function rate(pm: number, activity: Activity, group: Group): Rating {
 
 /**
  * The steadiest session today (from now) and tomorrow: the start whose worst likely hour (highest `high`) is lowest,
- * then the lower weighted mean PM2.5, then the earlier start. A final part-hour counts by its fraction.
+ * then the lower weighted mean PM2.5, then the earlier start. `startIndex` counts from the current hour. A final part-hour counts by its fraction.
  */
-export function bestSlots(hourly: ForecastPoint[], activity: Activity, group: Group, now = Date.now(), hours = ACTIVITY[activity].hours): Slot[] {
+export function bestSlots(forecast: ForecastPoint[], activity: Activity, group: Group, now = Date.now(), hours = ACTIVITY[activity].hours): Slot[] {
   const a = ACTIVITY[activity];
+  const hourly = fromHour(forecast, now);
   const weights = Array.from({ length: Math.ceil(hours) }, (_, k) => Math.min(1, hours - k));
   const days = [sgDate(0, new Date(now)), sgDate(1, new Date(now))];
   const out: Slot[] = [];
@@ -82,7 +84,7 @@ export function bestSlots(hourly: ForecastPoint[], activity: Activity, group: Gr
     for (let i = 0; i + weights.length <= hourly.length; i++) {
       const t = hourly[i].time;
       const h = sgHour(t);
-      if (sgDate(0, new Date(t)) !== date || h < a.from || h > a.to || Date.parse(t) < now - 3600_000) continue;
+      if (sgDate(0, new Date(t)) !== date || h < a.from || h > a.to) continue;
       const run = hourly.slice(i, i + weights.length);
       if (run.some((p, k) => Date.parse(p.time) !== Date.parse(t) + k * 3600_000)) continue;
       const pm = run.reduce((s, p, k) => s + p.pm25 * weights[k], 0) / hours;
@@ -118,12 +120,10 @@ export type StripHour = { time: string; pm25: number; rating: Rating };
 export const PLAN_HOURS = 16;
 
 /**
- * The hours to plan in: from the current hour (an hour that ended more than an hour ago is dropped, as in `bestSlots`)
- * for `PLAN_HOURS`. Each hour carries the activity's own rating.
+ * The hours to plan in: from the current hour (`fromHour`) for `PLAN_HOURS`. Each hour carries the activity's own rating.
  */
 export function planStrip(hourly: ForecastPoint[], activity: Activity, group: Group, now = Date.now()): StripHour[] {
-  return hourly
-    .filter((p) => Date.parse(p.time) >= now - 3600_000)
+  return fromHour(hourly, now)
     .slice(0, PLAN_HOURS)
     .map((p) => ({ time: p.time, pm25: p.pm25, rating: rate(p.pm25, activity, group) }));
 }

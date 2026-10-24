@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronDown, TriangleAlert } from "lucide-react";
-import { TONE_COLOR, type Group } from "@/lib/bands";
+import { PM25_BANDS, TONE_COLOR, type Group } from "@/lib/bands";
 import { BREATH_SOURCES, fmtDust } from "@/lib/breath";
 import { CIGARETTE_SOURCES } from "@/lib/cigarettes";
 import { ACTIVITIES, ACTIVITY, DURATIONS, PLAN_NOTES, bestSlots, isOk, planStrip, ratingLegend, type Activity, type Slot } from "@/lib/exercise";
@@ -19,7 +19,7 @@ const fmtSlot = (s: Slot) => (new Date(s.end).getUTCMinutes() ? fmtTimeRange : f
 /** "0.7 cigarettes", or "under 0.1" when it rounds to nothing. */
 const cigText = (n: number) => (n < 0.1 ? "under 0.1" : `${n} ${n === 1 ? "cigarette" : "cigarettes"}`);
 
-/** A native select dressed as a chip, for use inside a sentence. */
+/** A native select dressed as a chip, for use inside a sentence. The page-background fill sets it apart from the card it sits in. */
 function ChipSelect({ label, value, options, onChange }: { label: string; value: string; options: [value: string, text: string][]; onChange: (v: string) => void }) {
   return (
     <span className="relative inline-flex max-w-full">
@@ -27,7 +27,7 @@ function ChipSelect({ label, value, options, onChange }: { label: string; value:
         aria-label={label}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="min-h-[44px] max-w-full cursor-pointer appearance-none rounded-full bg-surface py-2 pl-4 pr-10 text-[17px] font-semibold text-fg"
+        className="min-h-[44px] max-w-full cursor-pointer appearance-none rounded-full bg-bg py-2 pl-4 pr-10 text-[17px] font-semibold text-fg"
       >
         {options.map(([v, text]) => (
           <option key={v} value={v}>
@@ -40,9 +40,26 @@ function ChipSelect({ label, value, options, onChange }: { label: string; value:
   );
 }
 
-/** One day's answer: the time, the advice and the four numbers behind it. */
-function AnswerCard({ slot }: { slot: Slot }) {
-  const ok = isOk(slot.rating);
+/** The answer: which day, the time range and how the air rates then. */
+function Answer({ slot }: { slot: Slot }) {
+  return (
+    <>
+      <p className="text-[12px] font-semibold uppercase tracking-wide text-muted">
+        {cap(slot.day)} · {isOk(slot.rating) ? "Best time" : "Least hazy time"}
+      </p>
+      <div className="mt-1 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+        <p className="tabular text-[28px] font-bold leading-tight">{fmtSlot(slot)}</p>
+        <p className="flex items-center gap-2 text-[15px] font-semibold">
+          <span aria-hidden className="size-2.5 shrink-0 rounded-full" style={{ background: TONE_COLOR[slot.rating.tone].bg }} />
+          {slot.rating.text}
+        </p>
+      </div>
+    </>
+  );
+}
+
+/** The four numbers behind the answer. */
+function Stats({ slot }: { slot: Slot }) {
   const stats = [
     ["PM2.5", `about ${Math.round(slot.pm25)}`],
     ["Dust breathed", fmtDust(slot.dustUg)],
@@ -50,55 +67,49 @@ function AnswerCard({ slot }: { slot: Slot }) {
     ["Vs a normal day", `${slot.timesNormal.toFixed(1)}×`],
   ];
   return (
-    <div className="rounded-2xl bg-surface p-4">
-      <p className="text-[12px] font-semibold uppercase tracking-wide text-muted">
-        {cap(slot.day)} · {ok ? "Best time" : "Least hazy time"}
-      </p>
-      <p className="tabular mt-1 text-[22px] font-bold leading-tight">
-        {fmtSlot(slot)}
-      </p>
-      <p className="mt-1 flex items-center gap-2 text-[15px] font-semibold">
-        <span aria-hidden className="size-2.5 shrink-0 rounded-full" style={{ background: TONE_COLOR[slot.rating.tone].bg }} />
-        {slot.rating.text}
-      </p>
-      <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-4">
-        {stats.map(([name, value]) => (
-          <div key={name}>
-            <dt className="text-[11px] text-muted">{name}</dt>
-            <dd className="tabular text-[15px] font-semibold">{value}</dd>
-          </div>
-        ))}
-      </dl>
-    </div>
+    <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-4">
+      {stats.map(([name, value]) => (
+        <div key={name}>
+          <dt className="text-[11px] text-muted">{name}</dt>
+          <dd className="tabular text-[15px] font-semibold">{value}</dd>
+        </div>
+      ))}
+    </dl>
   );
 }
 
-/** Pick what you want to do and for how long; get the next cleanest time (today, or tomorrow once today is over), and the coming hours as a strip with it outlined. */
-export default function PlanDay({ hourly, group }: { hourly: ForecastPoint[]; group: Group }) {
+/** The smallest top of the strip's scale (PM2.5), so a flat clean day is not drawn tall. */
+const MIN_TOP = 60;
+
+/**
+ * Pick what you want to do and for how long, in one card: the next cleanest time (today, or tomorrow once today is over),
+ * the coming hours as a strip with it outlined, the numbers behind it and a forecast caveat. `now` (see `useNow`) is the time to plan from.
+ */
+export default function PlanDay({ hourly, group, now }: { hourly: ForecastPoint[]; group: Group; now: number }) {
   const [activity, choose] = useStored<Activity>("activity", ACTIVITIES, "out");
   const usual = ACTIVITY[activity].hours;
   const [chosen, chooseLength] = useStored(`duration-${activity}`, DURATION_KEYS, String(usual));
   const len = Number(chosen);
 
   if (!hourly.length) return <p className="px-4 text-[15px] text-muted">Forecast unavailable.</p>;
-  const now = Date.now();
   const hours = planStrip(hourly, activity, group, now);
   // Only the next window, and only inside the strip's hours: further ahead the forecast is less sure.
   const until = hours.length ? Date.parse(hours[0].time) + hours.length * 3600_000 : 0;
-  const slots = bestSlots(hourly.filter((p) => Date.parse(p.time) < until), activity, group, now, len).slice(0, 1);
+  const slot = bestSlots(hourly.filter((p) => Date.parse(p.time) < until), activity, group, now, len)[0];
   const n = hours.length;
   const pct = (i: number) => `${(i / n) * 100}%`;
-  // Bar height is PM2.5, on a scale that always reaches NEA band III (150).
-  const top = Math.max(150, ...hours.map((h) => h.pm25));
+  // Bar height is PM2.5, on a scale that fits the tallest bar (never below MIN_TOP); NEA band I's top is marked when in range.
+  const top = Math.max(MIN_TOP, ...hours.map((h) => h.pm25 * 1.1));
+  const bandI = PM25_BANDS[0].max;
   // The first bar after SGT midnight starts tomorrow; with no earlier bar there is nothing to divide.
   const midnight = hours.findIndex((h, i) => i > 0 && sgHour(h.time) === 0);
-  const outlines = slots.flatMap((s) => {
-    const start = hours.findIndex((h) => h.time === s.start);
-    return start < 0 ? [] : [{ day: s.day, left: pct(start), width: pct(Math.min((Date.parse(s.end) - Date.parse(s.start)) / 3600_000, n - start)) }];
-  });
+  const outline = (() => {
+    const start = slot ? hours.findIndex((h) => h.time === slot.start) : -1;
+    return slot && start >= 0 ? { left: pct(start), width: pct(Math.min((Date.parse(slot.end) - Date.parse(slot.start)) / 3600_000, n - start)) } : null;
+  })();
 
   return (
-    <div className="px-4">
+    <div className="mx-4 rounded-3xl bg-surface p-4">
       <div className="flex flex-wrap items-center gap-x-2 gap-y-2 text-[17px]">
         <span>I want to</span>
         <ChipSelect label="Activity" value={activity} options={ACTIVITIES.map((a) => [a, ACTIVITY[a].phrase])} onChange={(v) => choose(v as Activity)} />
@@ -108,20 +119,12 @@ export default function PlanDay({ hourly, group }: { hourly: ForecastPoint[]; gr
         </span>
       </div>
 
-      <div aria-live="polite" className="mt-3">
-        {slots.length === 0 ? (
-          <p className="text-[15px] text-muted">No forecast for these hours yet.</p>
-        ) : (
-          <AnswerCard slot={slots[0]} />
-        )}
+      <div aria-live="polite" className="mt-4">
+        {slot ? <Answer slot={slot} /> : <p className="text-[15px] text-muted">No forecast for these hours yet.</p>}
       </div>
-      <p className="mt-2 flex gap-2 text-[13px] text-muted">
-        <TriangleAlert aria-hidden size={16} className="mt-px shrink-0" />
-        <span>This is a forecast and may be wrong. Winds can change suddenly, and the haze changes with them.</span>
-      </p>
 
       {n > 0 && (
-        <div className="mt-4">
+        <div className="mt-4 pr-6">
           <div aria-hidden className="relative h-4 text-[11px] font-semibold text-muted">
             {/* "Now" needs about a tenth of the strip before the Tomorrow label. */}
             {(midnight < 0 || midnight / n >= 0.1) && <span className="absolute left-0">Now</span>}
@@ -135,7 +138,7 @@ export default function PlanDay({ hourly, group }: { hourly: ForecastPoint[]; gr
           <div className="relative">
             <ol
               aria-label={`Next ${n} hours to ${ACTIVITY[activity].phrase}${activity === "play" ? "" : `, for ${group === "healthy" ? "healthy adults" : "your group"}`}: ${hours.map((h) => `${fmtHour(h.time)} ${h.rating.text}`).join(", ")}`}
-              className="flex h-12 items-end gap-px"
+              className="flex h-16 items-end gap-px"
             >
               {hours.map((h, i) => (
                 <li key={h.time} className="flex h-full min-w-0 flex-1 items-end">
@@ -147,14 +150,18 @@ export default function PlanDay({ hourly, group }: { hourly: ForecastPoint[]; gr
                 </li>
               ))}
             </ol>
-            {outlines.map((o) => (
+            {bandI < top && (
+              <div aria-hidden className="pointer-events-none absolute inset-x-0 border-t border-dashed border-muted/60" style={{ bottom: `${(bandI / top) * 100}%` }}>
+                <span className="absolute left-full top-0 -translate-y-1/2 pl-1 text-[10px] leading-none text-muted">{bandI}</span>
+              </div>
+            )}
+            {outline && (
               <div
-                key={o.day}
                 aria-hidden
                 className="pointer-events-none absolute -bottom-1 -top-1 rounded-md border-2 border-fg transition-[left,width] duration-300 motion-reduce:transition-none"
-                style={{ left: o.left, width: o.width }}
+                style={outline}
               />
-            ))}
+            )}
             {midnight > 0 && <div aria-hidden className="pointer-events-none absolute -top-4 bottom-0 w-px bg-muted" style={{ left: pct(midnight) }} />}
           </div>
           <div aria-hidden className="relative mt-1 h-4 text-[11px] text-muted">
@@ -166,20 +173,29 @@ export default function PlanDay({ hourly, group }: { hourly: ForecastPoint[]; gr
               ) : null,
             )}
           </div>
-          <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-muted">
-            {ratingLegend(activity, group).map((r) => (
-              <li key={r.text} className="flex items-center gap-1.5">
-                {r.tones.map((t) => (
-                  <span key={t} aria-hidden className="size-2.5 rounded-sm" style={{ background: TONE_COLOR[t].bg }} />
-                ))}
-                {r.text}
-              </li>
-            ))}
-          </ul>
         </div>
       )}
 
-      <div className="mt-1">
+      {slot && <Stats slot={slot} />}
+
+      {n > 0 && (
+        <ul className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-muted">
+          {ratingLegend(activity, group).map((r) => (
+            <li key={r.text} className="flex items-center gap-1.5">
+              {r.tones.map((t) => (
+                <span key={t} aria-hidden className="size-2.5 rounded-sm" style={{ background: TONE_COLOR[t].bg }} />
+              ))}
+              {r.text}
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <div className="mt-4 space-y-2 border-t border-line pt-3">
+        <p className="flex gap-2 text-[13px] text-muted">
+          <TriangleAlert aria-hidden size={16} className="mt-px shrink-0" />
+          <span>This is a forecast and may be wrong. Winds can change suddenly, and the haze changes with them.</span>
+        </p>
         <InfoNote lead={<span>How the best time is worked out</span>}>
           {PLAN_NOTES.map((t) => (
             <p key={t}>{t}</p>
