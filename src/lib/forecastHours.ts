@@ -87,7 +87,7 @@ export function bestWindow(hours: InstrumentHour[], fromHour = 7, toHour = 19, m
 }
 
 /** "today", "tomorrow" or the weekday of a moment, counted from `now`, in Singapore. */
-function dayWord(t: string, now: Date) {
+export function dayWord(t: string, now: Date) {
   const date = sgDate(0, new Date(t));
   return date === sgDate(0, now) ? "today" : date === sgDate(1, now) ? "tomorrow" : fmtWeekday(date, "long");
 }
