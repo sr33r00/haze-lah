@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import type { Accuracy, LeadScore } from "@/lib/accuracy";
-import { answerText, bestWindow, dayWind, instrumentHours, peakAhead, skillRows, skillSentence, type InstrumentHour } from "@/lib/forecastHours";
+import { answerText, bestWindow, dayWind, instrumentHours, peakAhead, readoutLines, readoutText, skillRows, skillSentence, type InstrumentHour } from "@/lib/forecastHours";
 import type { ForecastPoint, HourPoint, OutlookStep, WeatherHour } from "@/lib/types";
 
 const NOW = new Date("2026-10-24T01:30:00Z"); // 9:30am SGT, Sat 24 Oct
@@ -89,6 +89,39 @@ test("answerText writes the weekday further out, am and pm on both ends across n
   assert.equal(answerText(peak, null, NOW).headline, "Worst Tuesday around 2pm, near 90 µg/m³.");
   assert.equal(answerText(peak, null, NOW).detail, "No clear window in the next 48 hours.");
   assert.equal(answerText(peak, { from: "2026-10-25T03:00:00Z", to: "2026-10-25T06:00:00Z" }, NOW).detail, "Best window: tomorrow 11am–2pm.");
+});
+
+const TOMORROW_2PM = "2026-10-25T06:00:00Z";
+const hour = (over: Partial<InstrumentHour> = {}): InstrumentHour => ({ t: TOMORROW_2PM, observed: null, pm25: 118.4, low: 84.2, high: 160.1, raw: 64.3, pHigh: 0.71, rainProb: 30, wind: { t: TOMORROW_2PM, from: "SW", deg: 225, kmh: 22, near: 1240, area: "Riau" }, ...over });
+
+test("readoutLines gives exact short copy for a forecast hour", () => {
+  assert.deepEqual(readoutLines(hour(), NOW), {
+    line1: "Tomorrow 2pm  PM2.5 118 (84–160)  71% above 55",
+    line2: "Copernicus 64, wind SW 22 km/h",
+    fires: "over 1,240 fires in Riau",
+    rain: "Rain 30%",
+  });
+});
+
+test("readoutLines drops the parts it has no data for, and says one fire in the singular", () => {
+  const bare = readoutLines(hour({ low: null, high: null, raw: null, pHigh: null, rainProb: null, wind: null }), NOW);
+  assert.deepEqual(bare, { line1: "Tomorrow 2pm  PM2.5 118", line2: "", fires: "", rain: "" });
+  const one = readoutLines(hour({ wind: { t: TOMORROW_2PM, from: "N", deg: 0, kmh: 8, near: 1, area: "" } }), NOW);
+  assert.equal(one.fires, "over 1 fire");
+  assert.equal(one.line2, "Copernicus 64, wind N 8 km/h");
+  assert.equal(readoutLines(hour({ wind: { t: TOMORROW_2PM, from: "N", deg: 0, kmh: 8, near: 0, area: "" } }), NOW).fires, "");
+});
+
+test("readoutLines shows a measured-only hour with its value, and a past hour as today", () => {
+  const past = hour({ t: "2026-10-24T00:00:00Z", pm25: null, low: null, high: null, raw: null, pHigh: null, wind: null, observed: 31.6 });
+  assert.deepEqual(readoutLines(past, NOW), { line1: "Today 8am  Measured 32 µg/m³", line2: "", fires: "", rain: "Rain 30%" });
+});
+
+test("readoutText reads the wind out in full and joins the lines as sentences", () => {
+  assert.equal(
+    readoutText(hour(), NOW),
+    "Tomorrow 2pm, PM2.5 118 (84–160), 71% above 55. Copernicus 64, from the southwest at 22 km/h, over 1,240 fires in Riau. Rain 30%",
+  );
 });
 
 /** One lead of accuracy.json with the given mean absolute errors (ours, Copernicus, persistence) and forecast count. */

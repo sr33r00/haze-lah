@@ -13,7 +13,6 @@ export const revalidate = 1800;
 
 export default async function Forecast() {
   const [data, accuracy] = await Promise.all([getHazeData(), fetchAccuracy()]);
-  const day = accuracy?.leads.find((l) => l.lead === 24);
   return (
     <AppShell data={data} title="Forecast">
       <ForecastView
@@ -21,7 +20,10 @@ export default async function Forecast() {
         hourly={data.forecast.hourly}
         days={data.forecast.days}
         psiDaily={data.psiDaily}
-        skill24={day && day.ours.n >= 20 ? day : null}
+        weather={data.weather}
+        accuracy={accuracy}
+        bias={data.forecast.biasFactor}
+        sigma={data.forecast.sigma}
       />
     </AppShell>
   );

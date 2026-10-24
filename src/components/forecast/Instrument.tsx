@@ -4,18 +4,20 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { PM25_BANDS, PM25_COLORS, pm25Color } from "@/lib/bands";
 import { fmtHour, fmtWeekday } from "@/lib/format";
 import { HIGH_PM25 } from "@/lib/forecast";
-import { peakAhead, type InstrumentHour } from "@/lib/forecastHours";
+import { peakAhead, readoutText, type InstrumentHour } from "@/lib/forecastHours";
 import { FIRE_COLOR } from "@/lib/replay";
 import { sgDate, sgHour } from "@/lib/util";
-import Readout, { readoutText } from "./Readout";
+import Readout from "./Readout";
 
 const HOUR = 3600_000;
 const PAD = 14; // px kept free at the left of the plot
 const PAD_R = 28; // and at the right, where the 55 line is labelled
-const WIDE = 640; // px; from this width the PM2.5 lane is taller
+const WIDE = 640; // px; from this width the PM2.5 lane is taller (the wrapper's `@[640px]` class below says the same in CSS)
 const LANE = { pm: 140, pmWide: 200, wind: 28, rain: 22 } as const; // px
 const GAP = { pmWind: 8, windRain: 4 } as const;
 const AXIS_H = 22;
+/** Height of the whole SVG at a plot-lane height; the wrapper reserves it by CSS before the first measure, so nothing jumps. */
+const heightFor = (pmH: number) => 6 + pmH + GAP.pmWind + LANE.wind + GAP.windRain + LANE.rain + AXIS_H;
 const SERIES_GAP = 1.5 * HOUR; // a longer hole in the hours breaks a line instead of bridging it
 const HALO = { stroke: "var(--bg)", strokeWidth: 3, strokeLinejoin: "round", paintOrder: "stroke" } as const; // so a label reads on a line
 const LABEL = { fontSize: 11, fill: "var(--muted)" } as const;
@@ -95,7 +97,7 @@ export default function Instrument({ hours, windFailed }: { hours: InstrumentHou
   const windY = pmY + pmH + GAP.pmWind;
   const rainY = windY + LANE.wind + GAP.windRain;
   const bottom = rainY + LANE.rain;
-  const height = bottom + AXIS_H;
+  const height = heightFor(pmH);
   const peakVal = Math.max(0, ...hours.flatMap((h) => [h.pm25, h.high, h.observed].filter((v): v is number => v != null)));
   const yMax = Math.max(80, Math.ceil((peakVal * 1.1) / 10) * 10);
   const y = (v: number): number => pmY + pmH - (Math.min(v, yMax) / yMax) * pmH;
@@ -112,7 +114,6 @@ export default function Instrument({ hours, windFailed }: { hours: InstrumentHou
   const nowX = nowIdx >= 0 ? x(times[nowIdx]) : null;
   const barW = Math.max(1, (plotW * HOUR) / span - 1.5);
   const ticks = hours.flatMap((h, i) => (sgHour(h.t) % 6 === 0 ? [{ h, x: x(times[i]), midnight: sgHour(h.t) === 0 }] : []));
-  const hasWind = hours.some((h) => h.pm25 != null && h.wind);
   const bands = PM25_BANDS.map((b, i) => ({ lo: i ? PM25_BANDS[i - 1].max : 0, hi: Math.min(b.max, yMax), color: PM25_COLORS[i] })).filter((b) => b.lo < yMax);
 
   const onKey = (e: React.KeyboardEvent) => {
@@ -140,78 +141,81 @@ export default function Instrument({ hours, windFailed }: { hours: InstrumentHou
           fromPointer(e.clientX);
         }}
         onPointerMove={(e) => e.currentTarget.hasPointerCapture(e.pointerId) && fromPointer(e.clientX)}
-        className="mt-2 w-full cursor-ew-resize touch-pan-y select-none rounded-lg outline-offset-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--accent)]"
+        style={{ "--h": `${heightFor(LANE.pm)}px`, "--h-wide": `${heightFor(LANE.pmWide)}px` } as React.CSSProperties}
+        className="@container mt-2 w-full cursor-ew-resize touch-pan-y select-none rounded-lg outline-offset-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--accent)]"
       >
-        <svg width={w} height={height} className="tabular block" aria-hidden>
-          {w > 0 && (
-            <>
-              {bands.map((b, i) => (
-                <rect key={i} x={PAD} width={plotW} y={y(b.hi)} height={y(b.lo) - y(b.hi)} fill={b.color} fillOpacity={0.14} />
-              ))}
-              {ticks.map(({ x: tx, midnight }, i) => (
-                <line key={i} x1={tx} x2={tx} y1={pmY} y2={bottom} stroke={midnight ? "var(--muted)" : "var(--line)"} strokeOpacity={midnight ? 0.45 : 1} />
-              ))}
-              <line x1={PAD} x2={PAD + plotW} y1={y(HIGH_PM25)} y2={y(HIGH_PM25)} stroke="var(--muted)" strokeDasharray="4 4" />
-              <text x={PAD + plotW + 5} y={y(HIGH_PM25) + 4} {...LABEL}>
-                {HIGH_PM25}
-              </text>
-              <text x={PAD} y={pmY + 12} {...LABEL} {...HALO}>
-                PM2.5 µg/m³
-              </text>
-              {ribbon.map((r, i) => (
-                <path key={i} d={`${path(r)}Z`} fill="var(--fg)" fillOpacity={0.18} />
-              ))}
-              {measured.map((r, i) => (
-                <path key={i} d={path(r.map((q) => q.p))} fill="none" stroke="var(--fg)" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
-              ))}
-              {forecast.map((r, i) => (
-                <path key={i} d={path(r.map((q) => q.p))} fill="none" stroke="var(--fg)" strokeWidth={2} strokeDasharray="5 4" strokeLinejoin="round" />
-              ))}
-              {nowX != null && (
-                <>
-                  <line x1={nowX} x2={nowX} y1={pmY} y2={pmY + pmH} stroke="var(--fg)" strokeOpacity={0.6} />
-                  <text x={nowX + (nowX > w - 44 ? -4 : 4)} y={pmY + pmH - 6} textAnchor={nowX > w - 44 ? "end" : "start"} {...LABEL} {...HALO}>
-                    Now
-                  </text>
-                </>
-              )}
-
-              {windFailed || !hasWind ? (
-                <text x={PAD} y={windY + LANE.wind / 2 + 4} {...LABEL}>
-                  Wind outlook unavailable
+        <div className="h-[var(--h)] @[640px]:h-[var(--h-wide)]">
+          <svg width={w} height={height} className="tabular block" aria-hidden>
+            {w > 0 && (
+              <>
+                {bands.map((b, i) => (
+                  <rect key={i} x={PAD} width={plotW} y={y(b.hi)} height={y(b.lo) - y(b.hi)} fill={b.color} fillOpacity={0.14} />
+                ))}
+                {ticks.map(({ x: tx, midnight }, i) => (
+                  <line key={i} x1={tx} x2={tx} y1={pmY} y2={bottom} stroke={midnight ? "var(--muted)" : "var(--line)"} strokeOpacity={midnight ? 0.45 : 1} />
+                ))}
+                <line x1={PAD} x2={PAD + plotW} y1={y(HIGH_PM25)} y2={y(HIGH_PM25)} stroke="var(--muted)" strokeDasharray="4 4" />
+                <text x={PAD + plotW + 5} y={y(HIGH_PM25) + 4} {...LABEL}>
+                  {HIGH_PM25}
                 </text>
-              ) : (
-                <>
+                <text x={PAD} y={pmY + 12} {...LABEL} {...HALO}>
+                  PM2.5 µg/m³
+                </text>
+                {ribbon.map((r, i) => (
+                  <path key={i} d={`${path(r)}Z`} fill="var(--fg)" fillOpacity={0.18} />
+                ))}
+                {measured.map((r, i) => (
+                  <path key={i} d={path(r.map((q) => q.p))} fill="none" stroke="var(--fg)" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
+                ))}
+                {forecast.map((r, i) => (
+                  <path key={i} d={path(r.map((q) => q.p))} fill="none" stroke="var(--fg)" strokeWidth={2} strokeDasharray="5 4" strokeLinejoin="round" />
+                ))}
+                {nowX != null && (
+                  <>
+                    <line x1={nowX} x2={nowX} y1={pmY} y2={pmY + pmH} stroke="var(--fg)" strokeOpacity={0.6} />
+                    <text x={nowX + (nowX > w - 44 ? -4 : 4)} y={pmY + pmH - 6} textAnchor={nowX > w - 44 ? "end" : "start"} {...LABEL} {...HALO}>
+                      Now
+                    </text>
+                  </>
+                )}
+  
+                {windFailed ? (
                   <text x={PAD} y={windY + LANE.wind / 2 + 4} {...LABEL}>
-                    Wind
+                    Wind outlook unavailable
                   </text>
-                  {hours.map((h, i) =>
-                    h.wind && h.pm25 != null ? <Arrow key={h.t} x={x(times[i])} y={windY + LANE.wind / 2} deg={h.wind.deg} color={h.wind.near > 0 ? FIRE_COLOR : "var(--muted)"} /> : null,
-                  )}
-                </>
-              )}
-
-              <line x1={PAD} x2={PAD + plotW} y1={bottom} y2={bottom} stroke="var(--line)" />
-              {hours.map((h, i) =>
-                h.rainProb != null && h.rainProb > 0 ? (
-                  <rect key={h.t} x={x(times[i]) - barW / 2} width={barW} y={bottom - (h.rainProb / 100) * LANE.rain} height={(h.rainProb / 100) * LANE.rain} fill="var(--accent)" fillOpacity={0.45} />
-                ) : null,
-              )}
-              <text x={PAD} y={rainY + 10} {...LABEL} {...HALO}>
-                Rain
-              </text>
-
-              {ticks.map(({ h, x: tx, midnight }, i) => (
-                <text key={i} x={tx} y={bottom + 16} textAnchor={tx < PAD + 10 ? "start" : tx > w - PAD_R - 10 ? "end" : "middle"} {...LABEL} fontWeight={midnight ? 700 : 400} fill={midnight ? "var(--fg)" : "var(--muted)"}>
-                  {midnight ? fmtWeekday(sgDate(0, new Date(h.t))) : fmtHour(h.t)}
+                ) : (
+                  <>
+                    <text x={PAD} y={windY + LANE.wind / 2 + 4} {...LABEL}>
+                      Wind
+                    </text>
+                    {hours.map((h, i) =>
+                      h.wind && h.pm25 != null ? <Arrow key={h.t} x={x(times[i])} y={windY + LANE.wind / 2} deg={h.wind.deg} color={h.wind.near > 0 ? FIRE_COLOR : "var(--muted)"} /> : null,
+                    )}
+                  </>
+                )}
+  
+                <line x1={PAD} x2={PAD + plotW} y1={bottom} y2={bottom} stroke="var(--line)" />
+                {hours.map((h, i) =>
+                  h.rainProb != null && h.rainProb > 0 ? (
+                    <rect key={h.t} x={x(times[i]) - barW / 2} width={barW} y={bottom - (h.rainProb / 100) * LANE.rain} height={(h.rainProb / 100) * LANE.rain} fill="var(--accent)" fillOpacity={0.45} />
+                  ) : null,
+                )}
+                <text x={PAD} y={rainY + 10} {...LABEL} {...HALO}>
+                  Rain
                 </text>
-              ))}
-
-              <line x1={selX} x2={selX} y1={pmY} y2={bottom} stroke="var(--fg)" />
-              {selV != null && <circle cx={selX} cy={y(selV)} r={5.5} fill={pm25Color(selV)} stroke="var(--surface)" strokeWidth={2} />}
-            </>
-          )}
-        </svg>
+  
+                {ticks.map(({ h, x: tx, midnight }, i) => (
+                  <text key={i} x={tx} y={bottom + 16} textAnchor={tx < PAD + 10 ? "start" : tx > w - PAD_R - 10 ? "end" : "middle"} {...LABEL} fontWeight={midnight ? 700 : 400} fill={midnight ? "var(--fg)" : "var(--muted)"}>
+                    {midnight ? fmtWeekday(sgDate(0, new Date(h.t))) : fmtHour(h.t)}
+                  </text>
+                ))}
+  
+                <line x1={selX} x2={selX} y1={pmY} y2={bottom} stroke="var(--fg)" />
+                {selV != null && <circle cx={selX} cy={y(selV)} r={5.5} fill={pm25Color(selV)} stroke="var(--bg)" strokeWidth={2} />}
+              </>
+            )}
+          </svg>
+        </div>
       </div>
     </div>
   );

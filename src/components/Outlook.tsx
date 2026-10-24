@@ -1,10 +1,11 @@
 "use client";
 
-import { CloudRain } from "lucide-react";
+import { ArrowUp, CloudRain } from "lucide-react";
 import { useState } from "react";
 import { LEVEL_TEXT, pm25Color, psiLevel, verdict, type Group } from "@/lib/bands";
 import { fmtDay } from "@/lib/format";
-import { windFrom } from "@/lib/context";
+import { windFrom, windFromShort } from "@/lib/context";
+import { HIGH_PM25 } from "@/lib/forecast";
 import { dayWind } from "@/lib/forecastHours";
 import type { DayOutlook, OutlookStep } from "@/lib/types";
 
@@ -14,13 +15,10 @@ const rainText = (d: DayOutlook) =>
 
 const PARTS = ["Morning", "Afternoon", "Evening"];
 
-/** "12% chance above 55, wind from the southwest": the chance of a high hour and, when the wind outlook has the day, its main direction. */
-const chanceText = (d: DayOutlook, outlook: OutlookStep[] | null) => {
-  const deg = dayWind(outlook, d.date);
-  return `${Math.round(d.pHigh * 100)}% chance above 55${deg != null ? `, wind from the ${windFrom(deg)}` : ""}`;
-};
-
-/** One row per day: morning/afternoon/evening strip, advice, expected PSI, chance of high PM2.5 and the wind; the peak hour on request. */
+/**
+ * One row per day: morning/afternoon/evening strip, advice, chance of high PM2.5 and expected PSI; the peak hour on request.
+ * Where the wind outlook covers the day, its main direction sits under the PSI, a line the row already has room for, so it never changes the row's height.
+ */
 export default function Outlook({ days, group, outlook = null }: { days: DayOutlook[]; group: Group; outlook?: OutlookStep[] | null }) {
   const [open, setOpen] = useState(false);
   if (!days.length) return <p className="px-4 text-[15px] text-muted">The forecast is not available right now.</p>;
@@ -29,6 +27,7 @@ export default function Outlook({ days, group, outlook = null }: { days: DayOutl
       <ul className="divide-y divide-line rounded-3xl bg-surface px-4">
         {days.map((d, i) => {
           const lv = psiLevel(d.psiMax);
+          const deg = dayWind(outlook, d.date);
           return (
             <li key={d.date} className="grid grid-cols-[3.6rem_1fr_auto] items-center gap-x-3 py-3.5">
               <div className="text-[15px] font-bold">{fmtDay(d.date, i)}</div>
@@ -50,11 +49,19 @@ export default function Outlook({ days, group, outlook = null }: { days: DayOutl
                       {rainText(d)}
                     </span>
                   )}
-                  <span className="block text-[13px] font-normal text-muted">{chanceText(d, outlook)}</span>
+                  <span className="block text-[13px] font-normal text-muted">{Math.round(d.pHigh * 100)}% chance above {HIGH_PM25}</span>
                 </div>
               </div>
-              <div className="tabular text-right text-[17px] font-bold" style={{ color: LEVEL_TEXT[lv] }}>
-                PSI {d.psiMax}
+              <div className="tabular text-right">
+                <div className="text-[17px] font-bold" style={{ color: LEVEL_TEXT[lv] }}>
+                  PSI {d.psiMax}
+                </div>
+                {deg != null && (
+                  <div className="text-[13px] text-muted" role="img" aria-label={`Wind from the ${windFrom(deg)}`}>
+                    <ArrowUp size={12} aria-hidden className="mr-0.5 inline align-[-1px]" style={{ transform: `rotate(${deg + 180}deg)` }} />
+                    {windFromShort(deg)}
+                  </div>
+                )}
               </div>
               {open && (
                 <div className="col-span-3 mt-1 text-[12px] text-muted">

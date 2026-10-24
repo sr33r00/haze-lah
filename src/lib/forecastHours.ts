@@ -1,5 +1,6 @@
 import type { Accuracy } from "./accuracy";
-import { fmtHour, fmtHourRange, fmtWeekday } from "./format";
+import { windFrom, windFromShort } from "./context";
+import { cap, fmtHour, fmtHourRange, fmtWeekday } from "./format";
 import { HIGH_PM25 } from "./forecast";
 import type { ForecastPoint, HourPoint, OutlookStep, WeatherHour } from "./types";
 import { hourKey, sgDate, sgHour } from "./util";
@@ -112,6 +113,30 @@ export function answerText(
     headline: peak ? `Worst ${dayWord(peak.t, now)} around ${fmtHour(peak.t)}, near ${peak.pm25} µg/m³.` : "No forecast for the next 48 hours.",
     detail: window ? `Best window: ${dayWord(window.from, now)} ${fmtHourRange(window.from, window.to)}.` : "No clear window in the next 48 hours.",
   };
+}
+
+/**
+ * The readout for one hour, as lines: time with PM2.5, its likely range and the chance of passing 55; the model's value and
+ * the wind; the fires it crosses; the rain chance. A part with nothing to say is "". `long` spells the wind out ("from the
+ * southwest at 22 km/h") for a screen reader; the default is short ("wind SW 22 km/h") so a line fits at 360 px.
+ */
+export function readoutLines(h: InstrumentHour, now = new Date(), long = false) {
+  const when = `${cap(dayWord(h.t, now))} ${fmtHour(h.t)}`;
+  const rain = h.rainProb != null ? `Rain ${Math.round(h.rainProb)}%` : "";
+  if (h.pm25 == null) return { line1: h.observed != null ? `${when}  Measured ${Math.round(h.observed)} µg/m³` : when, line2: "", fires: "", rain };
+  const range = h.low != null && h.high != null ? ` (${Math.round(h.low)}–${Math.round(h.high)})` : "";
+  const chance = h.pHigh != null ? `  ${Math.round(h.pHigh * 100)}% above ${HIGH_PM25}` : "";
+  const w = h.wind;
+  const wind = w && (long ? `from the ${windFrom(w.deg)} at ${w.kmh} km/h` : `wind ${windFromShort(w.deg)} ${w.kmh} km/h`);
+  const line2 = [h.raw != null && `Copernicus ${Math.round(h.raw)}`, wind].filter(Boolean).join(", ");
+  const fires = w && w.near > 0 ? `over ${w.near.toLocaleString("en-SG")} ${w.near === 1 ? "fire" : "fires"}${w.area ? ` in ${w.area}` : ""}` : "";
+  return { line1: `${when}  PM2.5 ${Math.round(h.pm25)}${range}${chance}`, line2, fires, rain };
+}
+
+/** The readout as sentences, for a screen reader. */
+export function readoutText(h: InstrumentHour, now?: Date) {
+  const { line1, line2, fires, rain } = readoutLines(h, now, true);
+  return [line1.replace(/ {2,}/g, ", "), [line2, fires].filter(Boolean).join(", "), rain].filter(Boolean).join(". ");
 }
 
 /** Mean absolute error (µg/m³) of this forecast, Copernicus and "assuming no change" at one lead time in hours. */

@@ -1,61 +1,65 @@
 "use client";
 
-import Link from "next/link";
-import { useEffect, useState } from "react";
-import type { LeadScore } from "@/lib/accuracy";
-import { fetchReplay } from "@/lib/replay";
+import { useEffect, useMemo, useState } from "react";
+import type { Accuracy } from "@/lib/accuracy";
+import { answerText, bestWindow, instrumentHours, peakAhead } from "@/lib/forecastHours";
 import { HISTORY_URL, sinceWhen } from "@/lib/psiRecords";
-import type { DayOutlook, DayPsi, ForecastPoint, NeaPm25History, OutlookStep } from "@/lib/types";
-import Chart from "./Chart";
+import { OUTLOOK_NOTE, fetchReplay } from "@/lib/replay";
+import type { DayOutlook, DayPsi, ForecastPoint, NeaPm25History, OutlookStep, WeatherHour } from "@/lib/types";
+import Instrument from "./forecast/Instrument";
+import Skill from "./forecast/Skill";
 import Outlook from "./Outlook";
 import PsiWeek from "./PsiWeek";
 import { Section } from "./ui";
 import { usePrefs } from "./usePrefs";
-import WindOutlook from "./WindOutlook";
 
-/** The Forecast tab: 48 hours, where the wind comes from, 5 days and the past week. */
+/** The Forecast tab: the answer, the 48-hour instrument, 5 days, how sure we are and the past week. */
 export default function ForecastView(props: {
   history: NeaPm25History | null;
   hourly: ForecastPoint[];
+  weather: WeatherHour[];
   days: DayOutlook[];
   psiDaily: DayPsi[];
-  skill24: LeadScore | null;
+  accuracy: Accuracy | null;
+  bias: number | null;
+  sigma: number | null;
 }) {
   const { group } = usePrefs();
-  const { skill24 } = props;
-  const [outlook, setOutlook] = useState<OutlookStep[] | null>(null);
+  const { history, hourly, weather } = props;
+  // The wind outlook comes from the browser-side replay, fetched once and shared by the instrument and the 5 days.
+  const [outlook, setOutlook] = useState<{ steps: OutlookStep[] | null; failed: boolean }>({ steps: null, failed: false });
   useEffect(() => {
-    fetchReplay().then((r) => setOutlook(r.outlook?.length ? r.outlook : null), () => {}); // the request WindOutlook makes too
+    fetchReplay().then(
+      (r) => setOutlook(r.outlook?.length ? { steps: r.outlook, failed: false } : { steps: null, failed: true }),
+      () => setOutlook({ steps: null, failed: true }),
+    );
   }, []);
+  const hours = useMemo(() => instrumentHours(history?.island ?? [], hourly, weather, outlook.steps), [history, hourly, weather, outlook.steps]);
+  const answer = useMemo(() => answerText(peakAhead(hours), bestWindow(hours), new Date()), [hours]);
   const weekPeak = Math.max(0, ...props.psiDaily.map((d) => d.max));
   const since = sinceWhen(weekPeak);
   return (
-    <div className="lg:grid lg:grid-cols-2 lg:gap-x-8">
-      <Section className="lg:col-span-2" title="Next 48 hours" aside="PM2.5 µg/m³, island-wide">
-        {props.history ? (
-          <Chart observed={props.history.island} forecast={props.hourly.slice(0, 48)} />
-        ) : (
-          <p className="px-4 text-[15px] text-muted">NEA readings are unavailable right now.</p>
-        )}
-        {skill24 && (
-          <p className="mt-2 px-4 text-[13px] text-muted">
-            Track record: 24 hours ahead, off by {skill24.ours.mae} µg/m³ on average, against {skill24.persistence.mae} for assuming no change.{" "}
-            <Link href="/about#accuracy" className="font-semibold text-accent underline">
-              See accuracy
-            </Link>
-          </p>
-        )}
+    <div className="lg:grid lg:grid-cols-[20rem_minmax(0,1fr)] lg:gap-x-8">
+      <div className="mt-6 px-4 lg:mt-10 lg:pt-1">
+        <p className="text-balance text-[22px] font-bold leading-snug tracking-tight">{answer.headline}</p>
+        <p className="mt-1 text-[15px] text-muted">{answer.detail}</p>
+      </div>
+
+      <Section title="Next 48 hours" aside="PM2.5 µg/m³, island-wide">
+        <div className="px-4">
+          <Instrument hours={hours} windFailed={outlook.failed} />
+          <p className="mt-2 text-[13px] text-muted">{OUTLOOK_NOTE}</p>
+        </div>
       </Section>
 
-      <Section className="lg:col-span-2" title="Where the wind comes from" aside="Next 3 days">
-        <WindOutlook />
-      </Section>
+      <div className="lg:col-span-2 lg:grid lg:grid-cols-2 lg:gap-x-8">
+        <Section title="Next 5 days">
+          <Outlook days={props.days} group={group} outlook={outlook.steps} />
+        </Section>
+        <Skill accuracy={props.accuracy} bias={props.bias} sigma={props.sigma} />
+      </div>
 
-      <Section className="lg:col-start-1" title="Next 5 days">
-        <Outlook days={props.days} group={group} outlook={outlook} />
-      </Section>
-
-      <Section className="lg:col-start-2 lg:row-start-3" title="Last 7 days" aside="Peak 24-hr PSI">
+      <Section className="lg:col-span-2" title="Last 7 days" aside="Peak 24-hr PSI">
         <PsiWeek days={props.psiDaily} />
         {since && (
           <p className="mt-2 px-4 text-[13px] text-muted">
