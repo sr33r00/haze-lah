@@ -24,6 +24,7 @@ export default async function Forecast() {
         accuracy={accuracy}
         bias={data.forecast.biasFactor}
         sigma={data.forecast.sigma}
+        savedFrom={data.forecast.savedFrom}
       />
     </AppShell>
   );

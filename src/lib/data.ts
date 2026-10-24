@@ -8,7 +8,7 @@ import { fetchNeaNow, fetchNeaPm25History, fetchPsiDaily } from "./sources/nea";
 import { fetchCamsSingapore, fetchUpwindModel, fetchWeather } from "./sources/openmeteo";
 import { fetchCommunitySensors } from "./sources/openaq";
 import { fetchAqiStations } from "./sources/waqi";
-import type { AqiStation, DayPsi, FireSummary, HazeData, HourPoint, NeaNow, NewsItem, NeaPm25History, Sensor, Station, WeatherHour } from "./types";
+import type { AqiStation, DayPsi, FireSummary, HazeData, HourPoint, NeaNow, NewsItem, NeaPm25History, SavedForecast, Sensor, Station, WeatherHour } from "./types";
 
 /** Raw inputs from every source; any of them may be missing. */
 export type Inputs = {
@@ -65,21 +65,41 @@ async function fetchInputs(): Promise<Inputs> {
   };
 }
 
+const FORECAST_URL =
+  process.env.FORECAST_URL || "https://raw.githubusercontent.com/sr33r00/haze-lah/main/data/forecast-latest.json";
+
+/** The last live forecast saved in the repo, without the hours already past; null when it is missing or has run out. */
+async function fetchSavedForecast(): Promise<SavedForecast | null> {
+  try {
+    const res = await fetch(FORECAST_URL, { next: { revalidate: 300 }, signal: AbortSignal.timeout(8000) });
+    if (!res.ok) return null;
+    const saved = (await res.json()) as SavedForecast;
+    const from = Date.now() - 3600_000;
+    const hourly = saved.hourly.filter((p) => Date.parse(p.time) >= from);
+    return hourly.length ? { ...saved, hourly } : null;
+  } catch {
+    return null;
+  }
+}
+
 async function buildHazeData(mock: boolean): Promise<HazeData> {
   const { cams, ...inp } = mock ? mockInputs() : await fetchInputs();
   const fc = inp.history ? buildForecast(inp.history.island, cams) : null;
   if (!fc && inp.history) inp.errors.push("Forecast");
+  const saved = !fc && !mock && inp.history ? await fetchSavedForecast() : null;
+  const points = fc?.points ?? saved?.hourly ?? [];
   return {
     ...inp,
     generatedAt: new Date().toISOString(),
     mock,
     forecast: {
-      available: !!fc,
+      available: points.length > 0,
       method: FORECAST_METHOD,
-      biasFactor: fc ? Math.round(fc.bias * 100) / 100 : null,
-      sigma: fc ? Math.round(fc.sigma * 100) / 100 : null,
-      hourly: fc?.points ?? [],
-      days: fc && inp.history ? dailyOutlook(inp.history.island, fc.points, inp.weather) : [],
+      biasFactor: fc ? Math.round(fc.bias * 100) / 100 : (saved?.biasFactor ?? null),
+      sigma: fc ? Math.round(fc.sigma * 100) / 100 : (saved?.sigma ?? null),
+      hourly: points,
+      days: inp.history && points.length ? dailyOutlook(inp.history.island, points, inp.weather) : [],
+      savedFrom: saved?.issued ?? null,
     },
   };
 }
@@ -92,8 +112,8 @@ const BUILDING = process.env.NEXT_PHASE === "phase-production-build";
 const cachedHazeData = unstable_cache(
   async () => {
     const data = await buildHazeData(false);
-    // Without NEA or the forecast there is nothing worth keeping for 30 minutes: throwing stops the cache storing it.
-    if (!data.nea || !data.history || !data.forecast.available) throw new Error("NEA data or forecast missing");
+    // Without NEA or the live forecast (a saved one does not count) there is nothing worth keeping for 30 minutes: throwing stops the cache storing it.
+    if (!data.nea || !data.history || !data.forecast.available || data.forecast.savedFrom) throw new Error("NEA data or forecast missing");
     return data;
   },
   [BUILDING ? "haze-data-build" : "haze-data"],
@@ -106,6 +126,7 @@ const partialHazeData = unstable_cache(() => buildHazeData(false), ["haze-data-p
 /** All the data behind the pages; `generatedAt` is when it was built. Mock mode (HAZE_MOCK=1) is never cached. */
 export async function getHazeData(): Promise<HazeData> {
   if (process.env.HAZE_MOCK === "1") return buildHazeData(true);
-  // When NEA or the forecast is missing, serve the partial build and try the full one again within a minute.
-  return cachedHazeData().catch(() => partialHazeData());
+  // When NEA or the live forecast is missing, serve the partial build and try the full one again within a minute.
+  // Outside Next.js (the scripts) unstable_cache throws, so build directly.
+  return cachedHazeData().catch(() => partialHazeData().catch(() => buildHazeData(false)));
 }

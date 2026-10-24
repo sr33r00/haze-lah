@@ -78,6 +78,9 @@ export type WeatherHour = {
   gust: number | null; // km/h, strongest gust at 10 m in that hour
 };
 
+/** The last live forecast, written hourly to data/forecast-latest.json and read back when CAMS is down. */
+export type SavedForecast = { issued: string; hourly: ForecastPoint[]; biasFactor: number | null; sigma: number | null };
+
 export type ForecastPoint = {
   time: string;
   pm25: number; // corrected 1-hr estimate
@@ -180,6 +183,7 @@ export type HazeData = {
     sigma: number | null; // typical error of the correction, as a log ratio (e^sigma - 1 is the typical relative error)
     hourly: ForecastPoint[];
     days: DayOutlook[];
+    savedFrom: string | null; // issue time of the saved forecast shown while the live model is down, else null
   };
   errors: string[];
 };

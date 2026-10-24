@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { Accuracy } from "@/lib/accuracy";
 import { answerText, bestWindow, instrumentHours, latestObserved, peakAhead, shortLeadNote, skillRows } from "@/lib/forecastHours";
+import { fmtDayHour } from "@/lib/format";
 import { HISTORY_URL, sinceWhen } from "@/lib/psiRecords";
 import { OUTLOOK_NOTE, fetchReplay } from "@/lib/replay";
 import type { DayOutlook, DayPsi, ForecastPoint, NeaPm25History, OutlookStep, WeatherHour } from "@/lib/types";
@@ -23,6 +24,7 @@ export default function ForecastView(props: {
   accuracy: Accuracy | null;
   bias: number | null;
   sigma: number | null;
+  savedFrom: string | null;
 }) {
   const { group } = usePrefs();
   const { history, hourly, weather } = props;
@@ -50,6 +52,7 @@ export default function ForecastView(props: {
         <div className="px-4">
           <Instrument hours={hours} windFailed={outlook.failed} />
           {hours.length > 0 && outlook.steps && <p className="mt-1 text-[13px] text-muted">{OUTLOOK_NOTE}</p>}
+          {props.savedFrom && <p className="mt-1 text-[13px] text-muted">Saved forecast from {fmtDayHour(props.savedFrom)}. The live model is not answering.</p>}
         </div>
       </Section>
 
