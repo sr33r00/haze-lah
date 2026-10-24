@@ -75,7 +75,7 @@ export default function NowView({ history, nea, hourly, days, sensors, aqiStatio
       </div>
 
       <div className="contents lg:block">
-        <Section className="order-4 !mt-8 lg:!mt-3" title="Plan your day">
+        <Section id="plan" className="order-4 !mt-8 lg:!mt-3" title="Plan your day">
           <PlanDay hourly={hourly} group={group} />
         </Section>
 

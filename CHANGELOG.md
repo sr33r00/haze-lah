@@ -6,6 +6,10 @@ The in-app "What's new" sheet shows the highlights of the current release. Data-
 
 ## [Unreleased]
 
+Nothing yet.
+
+## [1.6.0] - 2026-10-24
+
 ### Changed
 
 - Plan your day picks the steadiest session (lowest worst likely hour), lets you set how long (30 min to 3 h), adds Football, and shows fine dust breathed as cigarettes and times a normal day. The Telegram alert's best time out follows the same rule.
@@ -142,7 +146,8 @@ The in-app "What's new" sheet shows the highlights of the current release. Data-
 - Forecast smoke map, fire counts and a wind dial, "Plan your day", NEA news timeline and 7-day PSI history.
 - Feedback issue form.
 
-[Unreleased]: https://github.com/sr33r00/haze-lah/compare/abc6ebe...HEAD
+[Unreleased]: https://github.com/sr33r00/haze-lah/compare/v1.6.0...HEAD
+[1.6.0]: https://github.com/sr33r00/haze-lah/compare/abc6ebe...v1.6.0
 [1.5.0]: https://github.com/sr33r00/haze-lah/commit/abc6ebe
 [1.4.0]: https://github.com/sr33r00/haze-lah/commit/305c8ae
 [1.3.1]: https://github.com/sr33r00/haze-lah/commit/afc88c7
