@@ -169,7 +169,7 @@ NASA GIBS serves each satellite pass only as a coloured picture. `src/lib/source
 | `src/lib/forecast.ts` | `buildForecast` (calibration, range, chance above 55), `dailyOutlook` (5 days), `FORECAST_METHOD` |
 | `src/lib/forecastHours.ts` | 48-hour instrument data: `instrumentHours`, `peakAhead`, `bestWindow`, `answerText`, readout text, skill rows |
 | `src/lib/accuracy.ts` | `scoreArchive` and `fetchAccuracy` (verification) |
-| `src/lib/plan.ts` | Next 24 hours with a verdict per group; best window for the Now page |
+| `src/lib/plan.ts` | Next 24 hours with a verdict per group (the strip in "Plan your day") |
 | `src/lib/trend.ts` | "Better, worse or the same" line from the daily outlook |
 | `src/components/forecast/` | `Instrument` (chart), `Readout`, `Skill` |
 | `ForecastView.tsx`, `Outlook.tsx` (5 days with rain and gusts), `HazeOutlook.tsx`, `PsiWeek.tsx` (past 7 days), `PlanDay.tsx`, `AccuracyTable.tsx` | Forecast page and Now page sections |
@@ -180,7 +180,7 @@ NASA GIBS serves each satellite pass only as a coloured picture. `src/lib/source
 |---|---|
 | `src/lib/bands.ts` | NEA PSI levels, 1-hour PM2.5 bands, PM2.5 to PSI, US AQI, advice steps, verdicts, regions |
 | `src/lib/advice.ts` | Practical tips by level and group, with sources |
-| `src/lib/exercise.ts` | Ratings and best slots for running, cycling and so on |
+| `src/lib/exercise.ts` | Ratings and best slots for "Plan your day" (activity, length, steadiest session, dust and cigarettes); also the alert's best time out |
 | `src/lib/guide.ts` | Questions and answers for `/guide` |
 | `src/lib/cigarettes.ts`, `src/lib/breath.ts` | The "cigarette" and "times normal" comparisons, with sources |
 | `src/lib/alerts.ts` | Which Telegram alerts fire, and their captions |

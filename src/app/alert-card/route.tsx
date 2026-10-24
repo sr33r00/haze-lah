@@ -277,8 +277,8 @@ export async function GET() {
                 marginTop: 8,
                 padding: "6px 16px",
                 borderRadius: 14,
-                background: TONE_COLOR[win.verdict.tone].bg,
-                color: TONE_COLOR[win.verdict.tone].fg,
+                background: TONE_COLOR[win.tone].bg,
+                color: TONE_COLOR[win.tone].fg,
               }}
             >
               {win.text}

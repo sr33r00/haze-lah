@@ -107,7 +107,7 @@ The forecast page shows an "instrument": one hourly axis with the last measured 
 
 The detail adds the best window, or "No clear window in the next 48 hours", and ends with a short-lead clause when the scores say so (see below).
 
-Wind and fires on the instrument come from the browser-side replay (`fetchReplay`), so the instrument still works without them. A separate `bestWindow` in `src/lib/plan.ts` serves the Now page's "Plan your day" for one group and activity.
+Wind and fires on the instrument come from the browser-side replay (`fetchReplay`), so the instrument still works without them. The Now page's "Plan your day" (and the alert's best time out) uses `bestSlots` in `src/lib/exercise.ts`: the session whose worst likely hour (highest forecast `high`) is lowest.
 
 ## 6. The 5-day outlook
 

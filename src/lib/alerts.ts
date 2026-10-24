@@ -1,5 +1,5 @@
 import { LEVEL_NAME, REGIONS, pm25Band, psiLevel } from "./bands";
-import { bestWindow, planHours } from "./plan";
+import { bestSlots } from "./exercise";
 import { cap, fmtHour, fmtWeekday, trend3h } from "./format";
 import { islandMax, islandSummary } from "./situation";
 import type { HazeData, NewsItem } from "./types";
@@ -39,11 +39,11 @@ function fmtWindow(start: string, end: string) {
   return `${a.slice(-2) === b.slice(-2) ? a.slice(0, -2) : a}–${b}`;
 }
 
-/** Best 3-hour window for sensitive groups, optionally restricted to one SGT date. */
-export function bestWindowFor(data: HazeData, date?: string) {
-  const hours = planHours(data.forecast.hourly, "sensitive").filter((h) => !date || sgDate(0, new Date(h.time)) === date);
-  const w = bestWindow(hours, "sensitive");
-  return w && { ...w, text: fmtWindow(w.start, w.end) };
+/** Best time out for sensitive groups (the Plan your day rule), for one SGT date or the first slot; `tone` colours the card. */
+export function bestWindowFor(data: HazeData, date?: string, now = new Date()) {
+  const slots = bestSlots(data.forecast.hourly, "out", "sensitive", now.getTime());
+  const s = date ? slots.find((x) => sgDate(0, new Date(x.start)) === date) : slots[0];
+  return s && { start: s.start, end: s.end, text: fmtWindow(s.start, s.end), tone: s.rating.tone };
 }
 
 /** Direction of the 3-hour change of an hourly series. */
@@ -120,7 +120,7 @@ export function caption(data: HazeData, fired: Triggers, site: string, now = new
   const peak = summary?.peak;
   const tomorrow = data.forecast.days.find((d) => d.date === sgDate(1, now));
   const trend = peak && trendDir(data.history?.regions[peak.region]);
-  const win = bestWindowFor(data, fired.outlook && !fired.psi && fired.pm25 == null && !fired.brief ? sgDate(1, now) : undefined);
+  const win = bestWindowFor(data, fired.outlook && !fired.psi && fired.pm25 == null && !fired.brief ? sgDate(1, now) : undefined, now);
 
   const lines: string[] = [];
   if (fired.brief) lines.push(`Morning brief · ${fmtWeekday(sgDate(0, now), "long")}`);

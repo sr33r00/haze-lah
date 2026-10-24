@@ -1,23 +1,53 @@
+import { BREATH_M3_PER_DAY, NORMAL_PM25 } from "./breath";
+import { cigarettes, PM25_PER_CIGARETTE } from "./cigarettes";
 import { pm25Band, pm25Step, verdictFor, type Group } from "./bands";
 import type { ForecastPoint } from "./types";
 import { sgDate, sgHour } from "./util";
 
-export type Activity = "out" | "run" | "cycle" | "play";
+export type Activity = "out" | "run" | "cycle" | "play" | "football";
 
-/** How long each activity takes and when people usually do it (start hours, SGT). */
-export const ACTIVITY: Record<Activity, { label: string; hours: number; from: number; to: number; strenuous: boolean }> = {
-  out: { label: "Going out", hours: 3, from: 7, to: 19, strenuous: false },
-  run: { label: "Run", hours: 1, from: 5, to: 21, strenuous: true },
-  cycle: { label: "Cycle", hours: 2, from: 6, to: 18, strenuous: true },
-  play: { label: "Kids play", hours: 1, from: 7, to: 18, strenuous: true },
+/**
+ * How long each activity usually takes, when people start it (hours, SGT) and the air breathed, m³ an hour.
+ * Air: US EPA, Exposure Factors Handbook (2011), Chapter 6, Table 6-2 (mean, m³/min × 60), by EPA's MET bands:
+ * light (1.5 to 3) 1.2E-02 for adults, high (over 6) 4.9E-02 for adults aged 31 to under 41,
+ * moderate (3 to 6) 2.7E-02 for adults and 2.2E-02 for children aged 6 to under 11.
+ */
+export const ACTIVITY: Record<Activity, { label: string; hours: number; from: number; to: number; strenuous: boolean; m3PerHour: number }> = {
+  out: { label: "Going out", hours: 3, from: 7, to: 19, strenuous: false, m3PerHour: 0.72 },
+  run: { label: "Run", hours: 1, from: 5, to: 21, strenuous: true, m3PerHour: 2.94 },
+  cycle: { label: "Cycle", hours: 2, from: 6, to: 18, strenuous: true, m3PerHour: 1.62 },
+  play: { label: "Kids play", hours: 1, from: 7, to: 18, strenuous: true, m3PerHour: 1.32 },
+  football: { label: "Football", hours: 1.5, from: 7, to: 20, strenuous: true, m3PerHour: 2.94 },
 };
+/** Session lengths offered, in hours. Covers every activity's usual length. */
+export const DURATIONS = [0.5, 1, 1.5, 2, 3];
 export const ACTIVITIES = Object.keys(ACTIVITY) as Activity[];
 
 export type Rating = { tone: "go" | "easy" | "limit" | "stay"; text: string };
 /** Fine to do outdoors, if gently. */
 export const isOk = (r: Rating) => r.tone === "go" || r.tone === "easy";
 
-export type Slot = { day: "today" | "tomorrow"; start: string; end: string; startIndex: number; pm25: number; rating: Rating };
+/** `pm25` is the weighted mean, `worst` the highest hour; `dustUg` is the fine dust breathed and `timesNormal` the mean against a normal day. */
+export type Slot = {
+  day: "today" | "tomorrow";
+  start: string;
+  end: string;
+  startIndex: number;
+  pm25: number;
+  worst: number;
+  dustUg: number;
+  cigarettes: number;
+  timesNormal: number;
+  rating: Rating;
+};
+
+/** Shown under the plan: how the best time, the advice, the dust and the cigarettes are worked out. */
+export const PLAN_NOTES = [
+  "Best time is the session whose worst likely hour (the top of the forecast range) is lowest. If two tie, the lower average wins.",
+  "The advice uses NEA's 1-hr PM2.5 guide on that worst hour.",
+  `Fine dust breathed is PM2.5 × air breathed × time. The air comes from US EPA tables by effort: hard exercise means more air, and mouth breathing skips the nose's filter.`,
+  `Cigarettes: ${PM25_PER_CIGARETTE} µg/m³ for 24 hours carries about the same risk of early death as one cigarette (Berkeley Earth). The session's dust is shared over a day's ${BREATH_M3_PER_DAY} m³ of air. It compares risk, not smoke, and is a rough illustration. A normal day is ${NORMAL_PM25} µg/m³.`,
+];
 
 /**
  * NEA's 1-hr PM2.5 personal guide: band I is fine for everyone; in band II healthy people reduce strenuous activity
@@ -37,24 +67,45 @@ export function rate(pm: number, activity: Activity, group: Group): Rating {
   return { tone: band >= 2 ? "stay" : "limit", text: activity === "play" ? "Play indoors instead" : "Better indoors" };
 }
 
-/** The cleanest slot today (from now) and tomorrow for an activity, by mean forecast PM2.5. */
-export function bestSlots(hourly: ForecastPoint[], activity: Activity, group: Group, now = Date.now()): Slot[] {
+/**
+ * The steadiest session today (from now) and tomorrow: the start whose worst likely hour (highest `high`) is lowest,
+ * then the lower weighted mean PM2.5, then the earlier start. A final part-hour counts by its fraction.
+ */
+export function bestSlots(hourly: ForecastPoint[], activity: Activity, group: Group, now = Date.now(), hours = ACTIVITY[activity].hours): Slot[] {
   const a = ACTIVITY[activity];
+  const weights = Array.from({ length: Math.ceil(hours) }, (_, k) => Math.min(1, hours - k));
   const days = [sgDate(0, new Date(now)), sgDate(1, new Date(now))];
   const out: Slot[] = [];
   days.forEach((date, d) => {
-    let best: Slot | null = null;
-    for (let i = 0; i + a.hours <= hourly.length; i++) {
+    let best: { slot: Slot; likely: number } | null = null;
+    for (let i = 0; i + weights.length <= hourly.length; i++) {
       const t = hourly[i].time;
       const h = sgHour(t);
       if (sgDate(0, new Date(t)) !== date || h < a.from || h > a.to || Date.parse(t) < now - 3600_000) continue;
-      const pm = hourly.slice(i, i + a.hours).reduce((s, p) => s + p.pm25, 0) / a.hours;
-      if (!best || pm < best.pm25) {
-        const end = new Date(Date.parse(t) + a.hours * 3600_000).toISOString();
-        best = { day: d === 0 ? "today" : "tomorrow", start: t, end, startIndex: i, pm25: pm, rating: rate(pm, activity, group) };
-      }
+      const run = hourly.slice(i, i + weights.length);
+      if (run.some((p, k) => Date.parse(p.time) !== Date.parse(t) + k * 3600_000)) continue;
+      const pm = run.reduce((s, p, k) => s + p.pm25 * weights[k], 0) / hours;
+      const likely = Math.max(...run.map((p) => p.high));
+      if (best && (likely > best.likely || (likely === best.likely && pm >= best.slot.pm25))) continue;
+      const worst = Math.max(...run.map((p) => p.pm25));
+      const dustUg = pm * hours * a.m3PerHour;
+      best = {
+        likely,
+        slot: {
+          day: d === 0 ? "today" : "tomorrow",
+          start: t,
+          end: new Date(Date.parse(t) + hours * 3600_000).toISOString(),
+          startIndex: i,
+          pm25: pm,
+          worst,
+          dustUg,
+          cigarettes: cigarettes(dustUg / BREATH_M3_PER_DAY) ?? 0,
+          timesNormal: pm / NORMAL_PM25,
+          rating: rate(worst, activity, group),
+        },
+      };
     }
-    if (best) out.push(best);
+    if (best) out.push(best.slot);
   });
   return out;
 }

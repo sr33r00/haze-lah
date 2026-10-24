@@ -12,9 +12,9 @@ export function useStored<T extends string>(key: string, allowed: readonly T[], 
   useEffect(() => {
     try {
       const v = localStorage.getItem(key) as T | null;
-      if (v && allowed.includes(v)) setValue(v);
+      setValue(v && allowed.includes(v) ? v : fallback);
     } catch {}
-  }, [key, allowed]);
+  }, [key, allowed, fallback]);
   const set = useCallback(
     (v: T) => {
       setValue(v);
