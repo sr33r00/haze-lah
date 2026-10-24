@@ -3,6 +3,7 @@
   "pm25Band": 1,
   "neaUrl": "https://www.nea.gov.sg/media/news/advisories/index/haze-situation-update-24-october-2026",
   "newsUrls": [
+    "https://www.channelnewsasia.com/cna-insider/insider/haze-indoor-air-expired-n95-masks-air-purifiers-protect-6488636",
     "https://www.straitstimes.com/singapore/who-owns-the-10-spore-firms-targeted-by-the-haze-law",
     "https://www.channelnewsasia.com/singapore/tap-water-safe-drink-haze-6488996",
     "https://www.channelnewsasia.com/singapore/nea-bumitama-agri-first-resources-wilmar-international-haze-6488716",
@@ -31,10 +32,9 @@
     "https://www.straitstimes.com/singapore/environment/why-is-it-difficult-to-identify-companies-linked-to-fires-how-can-spores-haze-law-be-strengthened",
     "https://www.straitstimes.com/singapore/up-to-15-increase-in-respiratory-or-eye-related-vet-visits-in-singapore-during-haze",
     "https://www.straitstimes.com/singapore/housing/builders-reduce-workers-exposure-to-haze-take-steps-to-seek-time-extensions-for-construction-delays",
-    "https://www.channelnewsasia.com/singapore/singapore-air-pollution-october-21-haze-psi-pm25-6476941",
-    "https://www.straitstimes.com/singapore/haze-in-singapore-air-quality-lies-between-moderate-and-unhealthy-bands-overnight"
+    "https://www.channelnewsasia.com/singapore/singapore-air-pollution-october-21-haze-psi-pm25-6476941"
   ],
   "briefDate": "2026-10-24",
   "outlookDate": "2026-10-24",
-  "hourTime": "2026-10-25T02:00:00+08:00"
+  "hourTime": "2026-10-25T06:00:00+08:00"
 }
