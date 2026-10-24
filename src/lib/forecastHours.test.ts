@@ -113,9 +113,20 @@ test("skillSentence gives exact copy for the current accuracy.json leads", () =>
   assert.equal(skillSentence(rows), "For the next 6 hours, today's reading is the better guide. From 24 hours ahead, this forecast beats both Copernicus and assuming no change.");
 });
 
-test("skillSentence names the longest losing lead before the first win, and a win needs both rivals beaten", () => {
-  const rows = skillRows(accuracy([lead(6, 20, 36, 15), lead(24, 30, 25, 40), lead(48, 20, 30, 25), lead(72, 20, 30, 25)]));
-  assert.equal(skillSentence(rows), "For the next 24 hours, today's reading is the better guide. From 48 hours ahead, this forecast beats both Copernicus and assuming no change.");
+test("skillSentence says today's reading when any losing lead loses to persistence, else Copernicus alone", () => {
+  const mixed = skillRows(accuracy([lead(6, 20, 36, 15), lead(24, 30, 25, 40), lead(48, 20, 30, 25), lead(72, 20, 30, 25)]));
+  assert.equal(skillSentence(mixed), "For the next 24 hours, today's reading is the better guide. From 48 hours ahead, this forecast beats both Copernicus and assuming no change.");
+  const camsOnly = skillRows(accuracy([lead(6, 30, 25, 40), lead(24, 30, 25, 40), lead(48, 20, 30, 25)]));
+  assert.equal(skillSentence(camsOnly), "For the next 24 hours, Copernicus alone is closer. From 48 hours ahead, this forecast beats both Copernicus and assuming no change.");
+});
+
+test("skillSentence starts its claim after the last losing lead, and drops it when the last lead loses", () => {
+  const regain = skillRows(accuracy([lead(6, 20, 36, 15), lead(24, 10, 37, 26), lead(48, 20, 30, 15), lead(72, 10, 30, 25)]));
+  assert.equal(skillSentence(regain), "For the next 48 hours, today's reading is the better guide. From 72 hours ahead, this forecast beats both Copernicus and assuming no change.");
+  const lateLoss = skillRows(accuracy([lead(6, 10, 36, 15), lead(24, 30, 37, 26)]));
+  assert.equal(skillSentence(lateLoss), "For the next 24 hours, today's reading is the better guide.");
+  const lateCams = skillRows(accuracy([lead(6, 10, 36, 15), lead(24, 30, 25, 40)]));
+  assert.equal(skillSentence(lateCams), "For the next 24 hours, Copernicus alone is closer.");
 });
 
 test("skillSentence handles winning at every lead, winning at none, and no rows", () => {

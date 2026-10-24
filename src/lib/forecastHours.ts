@@ -111,18 +111,28 @@ export type SkillRow = { lead: number; ours: number; cams: number; persistence: 
 export function skillRows(a: Accuracy | null, minN = 20): SkillRow[] {
   const rows: SkillRow[] = [];
   for (const l of a?.leads ?? []) {
-    const { ours, cams, persistence } = { ours: l.ours.mae, cams: l.cams.mae, persistence: l.persistence.mae };
+    const [ours, cams, persistence] = [l.ours.mae, l.cams.mae, l.persistence.mae];
     if (l.ours.n >= minN && ours != null && cams != null && persistence != null) rows.push({ lead: l.lead, ours, cams, persistence });
   }
   return rows;
 }
 
-/** Where this forecast starts to beat both Copernicus and "assuming no change", in plain words, or null without rows. */
+/** True when this forecast is closer than both Copernicus and "assuming no change" at this lead. */
+const beatsBoth = (r: SkillRow) => r.ours < r.persistence && r.ours < r.cams;
+
+/**
+ * Where this forecast starts to beat both Copernicus and "assuming no change", in plain words, or null without rows.
+ * The "from" lead is the first one after the last lead that loses, so the claim holds at every longer lead. The loss
+ * clause says "today's reading" when any losing lead loses to persistence, else that Copernicus alone is closer.
+ */
 export function skillSentence(rows: SkillRow[]): string | null {
   if (!rows.length) return null;
-  const win = rows.findIndex((r) => r.ours < r.persistence && r.ours < r.cams);
-  if (win < 0) return "Assuming no change is the better guide at every lead time tested so far.";
-  if (rows.every((r) => r.ours < r.persistence && r.ours < r.cams)) return "This forecast beats Copernicus and assuming no change at every lead time.";
-  const beats = `From ${rows[win].lead} hours ahead, this forecast beats both Copernicus and assuming no change.`;
-  return win > 0 ? `For the next ${rows[win - 1].lead} hours, today's reading is the better guide. ${beats}` : beats;
+  const last = rows.findLastIndex((r) => !beatsBoth(r));
+  if (last < 0) return "This forecast beats Copernicus and assuming no change at every lead time.";
+  const losing = rows.filter((r) => !beatsBoth(r));
+  const losesToNoChange = (r: SkillRow) => r.ours >= r.persistence;
+  if (rows.every(losesToNoChange)) return "Assuming no change is the better guide at every lead time tested so far.";
+  const better = losing.some(losesToNoChange) ? "today's reading is the better guide" : "Copernicus alone is closer";
+  const loss = `For the next ${rows[last].lead} hours, ${better}.`;
+  return last === rows.length - 1 ? loss : `${loss} From ${rows[last + 1].lead} hours ahead, this forecast beats both Copernicus and assuming no change.`;
 }
