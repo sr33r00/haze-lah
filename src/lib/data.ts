@@ -92,17 +92,20 @@ const BUILDING = process.env.NEXT_PHASE === "phase-production-build";
 const cachedHazeData = unstable_cache(
   async () => {
     const data = await buildHazeData(false);
-    // Without NEA there is nothing worth keeping for 30 minutes: throwing stops the cache storing it.
-    if (!data.nea || !data.history) throw new Error("NEA data missing");
+    // Without NEA or the forecast there is nothing worth keeping for 30 minutes: throwing stops the cache storing it.
+    if (!data.nea || !data.history || !data.forecast.available) throw new Error("NEA data or forecast missing");
     return data;
   },
   [BUILDING ? "haze-data-build" : "haze-data"],
   { revalidate: BUILDING ? 300 : 1800 },
 );
 
+// A partial build is kept 1 minute, so the pages built from it (their revalidate drops to match) retry the sources soon.
+const partialHazeData = unstable_cache(() => buildHazeData(false), ["haze-data-partial"], { revalidate: 60 });
+
 /** All the data behind the pages; `generatedAt` is when it was built. Mock mode (HAZE_MOCK=1) is never cached. */
 export async function getHazeData(): Promise<HazeData> {
   if (process.env.HAZE_MOCK === "1") return buildHazeData(true);
-  // When NEA is down, serve the partial build now and try the cache again on the next request.
-  return cachedHazeData().catch(() => buildHazeData(false));
+  // When NEA or the forecast is missing, serve the partial build and try the full one again within a minute.
+  return cachedHazeData().catch(() => partialHazeData());
 }
