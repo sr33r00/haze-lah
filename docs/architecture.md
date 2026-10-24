@@ -131,7 +131,7 @@ Every visitor sees the same readings, so there is no reason to fetch them again 
 | Camera and webcam lists | Server memory and CDN | 60 s in memory for the DataMall list; 5 min at the CDN |
 | Forecast accuracy | `fetchAccuracy` fetch of `data/accuracy.json` | 1 hour |
 
-Why 30 minutes: NEA publishes hourly, so a shorter time buys nothing. `/api/refresh` (cron-job.org every 5 minutes, `REFRESH_SECRET`) revalidates the `haze-data` tag and the pages as soon as NEA publishes a newer hour. The fast sources are not cached one by one (`getJson` in `src/lib/util.ts` defaults to `revalidate: 0`) because they are read only when the 30-minute build runs; caching them too would add storage writes with no gain. The reasoning is in [ADR 0002](decisions/0002-shared-30-minute-cache.md).
+Why 30 minutes: NEA publishes hourly, so a shorter time buys nothing. A Cloudflare Worker (`workers/nea-refresh`) checks NEA a few times an hour and, only when NEA has new data, calls `POST /api/refresh` (`REFRESH_SECRET`), which revalidates the `haze-data` tag and the pages. No checking runs on Vercel. The fast sources are not cached one by one (`getJson` in `src/lib/util.ts` defaults to `revalidate: 0`) because they are read only when the 30-minute build runs; caching them too would add storage writes with no gain. The reasoning is in [ADR 0002](decisions/0002-shared-30-minute-cache.md).
 
 The 5-minute camera lists are the exception: they must be newer than the page, so the browser asks for them.
 

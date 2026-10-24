@@ -1,0 +1,15 @@
+{
+  "name": "haze-lah-nea-refresh",
+  "private": true,
+  "type": "module",
+  "description": "Cloudflare Worker that watches NEA and refreshes the Haze Lah site only when NEA publishes new data",
+  "scripts": {
+    "types": "cf workers types",
+    "check": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "cf": "1.0.0-beta.21",
+    "typescript": "^5.9.0",
+    "wrangler": "4.152.0"
+  }
+}
