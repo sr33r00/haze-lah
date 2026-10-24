@@ -2,7 +2,8 @@ import { pageMeta } from "@/lib/seo";
 import AppShell from "@/components/AppShell";
 import NewsView from "@/components/NewsView";
 import { getHazeData } from "@/lib/data";
-import { buildTimeline, islandSummary, unhealthyStreak } from "@/lib/situation";
+import { buildTimeline, islandSummary } from "@/lib/situation";
+import { currentStreak } from "@/lib/streak";
 
 export const metadata = pageMeta(
   "Singapore haze news and NEA updates",
@@ -15,7 +16,7 @@ export default async function News() {
   const data = await getHazeData();
   return (
     <AppShell data={data} title="News">
-      <NewsView items={buildTimeline(data)} streak={unhealthyStreak(data.psiDaily)} psi={islandSummary(data)?.psi ?? null} />
+      <NewsView items={buildTimeline(data)} streak={await currentStreak(data.psiDaily)} psi={islandSummary(data)?.psi ?? null} />
     </AppShell>
   );
 }

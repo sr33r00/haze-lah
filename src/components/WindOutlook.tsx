@@ -102,7 +102,7 @@ export default function WindOutlook() {
       <div className="px-4">
         <Lead step={steps[0]} />
       </div>
-      <div className="no-scrollbar mt-3 flex gap-4 overflow-x-auto px-4 pb-1 lg:block lg:space-y-3 lg:overflow-visible">
+      <div className="no-scrollbar relative mt-3 flex gap-4 overflow-x-auto px-4 pb-1 lg:block lg:space-y-3 lg:overflow-visible">
         {byDay(steps).map((d) => (
           <div key={d.date} className="shrink-0 lg:shrink">
             <h3 className="mb-1.5 text-[15px] font-bold">{d.label}</h3>

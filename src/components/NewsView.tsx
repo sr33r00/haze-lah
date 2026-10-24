@@ -4,8 +4,8 @@ import { ArrowUpRight, Bell } from "lucide-react";
 import { useState } from "react";
 import { LEVEL_NAME, LEVEL_TEXT, psiLevel } from "@/lib/bands";
 import { ALERTS_URL } from "@/lib/links";
-import { fmtTime, fmtWhen } from "@/lib/format";
-import type { TimelineItem } from "@/lib/situation";
+import { fmtDateShort, fmtTime, fmtWhen } from "@/lib/format";
+import type { Streak, TimelineItem } from "@/lib/situation";
 import { sgDate } from "@/lib/util";
 import SupportCard from "./SupportCard";
 
@@ -72,7 +72,7 @@ function Item({ n, i }: { n: TimelineItem; i: number }) {
 }
 
 /** The News tab: PSI status, source filter and day-grouped updates. */
-export default function NewsView({ items, streak, psi }: { items: TimelineItem[]; streak: number; psi: { min: number; max: number } | null }) {
+export default function NewsView({ items, streak, psi }: { items: TimelineItem[]; streak: Streak | null; psi: { min: number; max: number } | null }) {
   const [filter, setFilter] = useState(0);
   const allowed = FILTERS[filter].sources;
   const shown = allowed ? items.filter((i) => allowed.includes(i.source)) : items;
@@ -89,12 +89,16 @@ export default function NewsView({ items, streak, psi }: { items: TimelineItem[]
   return (
     <div className="mt-3 lg:grid lg:grid-cols-[minmax(0,1fr)_22rem] 2xl:grid-cols-[minmax(0,1fr)_26rem] lg:items-start lg:gap-x-8 lg:px-4">
       <div className="lg:sticky lg:top-[calc(4.5rem+env(safe-area-inset-top))] lg:col-start-2 lg:row-start-1 lg:space-y-4 lg:[&>*]:mx-0 lg:[&>*]:mt-0">
-        {(streak > 0 || psi || ALERTS_URL) && (
+        {(streak || psi || ALERTS_URL) && (
           <div className="mx-4 flex items-center gap-3 rounded-3xl bg-surface p-4">
             <div className="min-w-0 flex-1">
-              {streak > 0 && <p className="text-[20px] font-bold leading-tight">{streak >= 7 ? "7+ days of unhealthy air" : `Day ${streak} of unhealthy air`}</p>}
+              {streak && (
+                <p className="text-[20px] font-bold leading-tight">
+                  {streak.days} {streak.days === 1 ? "day" : "days"} of haze <span className="whitespace-nowrap text-[14px] font-normal text-muted">since {fmtDateShort(streak.since)}</span>
+                </p>
+              )}
               {psi && lv != null && (
-                <p className={`text-[15px] ${streak > 0 ? "mt-1 text-muted" : ""}`}>
+                <p className={`text-[15px] ${streak ? "mt-1 text-muted" : ""}`}>
                   24-hr PSI {psi.min === psi.max ? psi.max : `${psi.min}–${psi.max}`}, <b style={{ color: LEVEL_TEXT[lv] }}>{LEVEL_NAME[lv]}</b>
                 </p>
               )}

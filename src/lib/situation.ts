@@ -1,7 +1,7 @@
 import { REGIONS, pm25Band, pm25ToLevel, psiLevel, type Level, type Region } from "./bands";
 import { cap, fmtHour } from "./format";
-import type { DayPsi, HazeData, HourPoint, NewsItem } from "./types";
-import { sgDate } from "./util";
+import type { HazeData, HourPoint, NewsItem } from "./types";
+import { shiftDate } from "./util";
 
 export type TimelineItem = {
   source: NewsItem["source"] | "NEA readings" | "NASA FIRMS";
@@ -79,14 +79,35 @@ export function buildTimeline(data: HazeData): TimelineItem[] {
   return [...official, ...pm25Events(data.history), ...fireEvent(data.fires)].sort((a, b) => b.time - a.time).slice(0, 30);
 }
 
-/** Consecutive days up to today with a peak 24-hr PSI above 100 (NEA: Unhealthy starts at 101). */
-export function unhealthyStreak(days: DayPsi[]): number {
-  let n = 0;
-  for (let i = days.length - 1; i >= 0; i--) {
-    if (days[i].date !== sgDate(-n) || psiLevel(days[i].max) < 2) break;
-    n++;
+/** A run of unhealthy days: how many, and the SGT date it began. */
+export type Streak = { days: number; since: string };
+
+const SPELL_BREAK = 3; // this many days in a row with a peak 24-hr PSI of 100 or below end a haze spell
+
+/**
+ * The haze spell ending today, from a date to peak 24-hr PSI map: back from today to the first day above 100 (NEA:
+ * Unhealthy starts at 101) before `SPELL_BREAK` or more days in a row at 100 or below. `days` counts every day from
+ * `since` to today. Today with no reading yet counts from yesterday. `missing` is the day the walk stopped at for lack
+ * of a reading (null when it ended on clear days or `maxDays`), so a caller can fill it in and walk again. Pure.
+ */
+export function hazeSpell(psi: ReadonlyMap<string, number>, today: string, maxDays = 120): { spell: Streak | null; missing: string | null } {
+  const end = psi.has(today) ? today : shiftDate(today, -1);
+  let since: string | null = null;
+  let clear = 0;
+  let missing: string | null = null;
+  for (let n = 0, date = end; n < maxDays; n++, date = shiftDate(date, -1)) {
+    const max = psi.get(date);
+    if (max == null) {
+      missing = date;
+      break;
+    }
+    if (psiLevel(max) >= 2) {
+      since = date;
+      clear = 0;
+    } else if (++clear >= SPELL_BREAK) break;
   }
-  return n;
+  const days = since ? Math.round((Date.parse(today) - Date.parse(since)) / 86400_000) + 1 : 0;
+  return { spell: since ? { days, since } : null, missing };
 }
 
 /** Time of the newest timeline item that has already happened, or null. */

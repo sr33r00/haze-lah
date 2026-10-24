@@ -90,17 +90,22 @@ function psiPeak(items: Item[], date: string): DayPsi | null {
   return best;
 }
 
+/** The highest 24-hr PSI of one SGT day, or null when NEA has no readings for it. Past days never change, so they are cached for a day. Throws when the request fails. */
+export async function fetchPsiDay(date: string): Promise<DayPsi | null> {
+  const j = await getJson<Resp>(`${BASE}/psi?date=${date}`, { headers: headers(), revalidate: date < sgDate(0) ? 86400 : 0 });
+  return psiPeak(j.data.items, date);
+}
+
 /**
  * Highest 24-hr PSI of each of the last `days` SGT days. Fetched one at a time: data.gov.sg allows
- * 6 anonymous calls per 10 s. Past days never change, so they are cached for a day.
+ * 6 anonymous calls per 10 s.
  */
 export async function fetchPsiDaily(days = 7): Promise<DayPsi[]> {
   const out: DayPsi[] = [];
   for (let k = 1 - days; k <= 0; k++) {
     const date = sgDate(k);
     try {
-      const j = await getJson<Resp>(`${BASE}/psi?date=${date}`, { headers: headers(), revalidate: k < 0 ? 86400 : 0 });
-      const best = psiPeak(j.data.items, date);
+      const best = await fetchPsiDay(date);
       if (best) out.push(best);
     } catch (e) {
       console.error(`[haze] PSI ${date}:`, e);

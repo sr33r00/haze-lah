@@ -11,9 +11,9 @@ const KOFI_USER = "sr33r00";
 export const SUPPORT_URL = `https://ko-fi.com/${KOFI_USER}`;
 /** Ko-fi's donation panel, for the support dialog's iframe. */
 export const SUPPORT_EMBED_URL = `https://ko-fi.com/${KOFI_USER}/?hidefeed=true&widget=true&embed=true&preview=true`;
-export const SUPPORT_LABEL = "Support on Ko-fi";
+export const SUPPORT_LABEL = "Buy me a Ko-fi";
 /** Name of the icon-only link in the title bar. */
-export const SUPPORT_ICON_LABEL = "Support Haze Lah on Ko-fi";
+export const SUPPORT_ICON_LABEL = "Buy Haze Lah a Ko-fi";
 
 /** OpenStreetMap page centred on a point, with a pin. */
 export const mapLink = (lat: number, lon: number) => `https://www.openstreetmap.org/?mlat=${lat.toFixed(5)}&mlon=${lon.toFixed(5)}#map=16/${lat.toFixed(5)}/${lon.toFixed(5)}`;
