@@ -11,11 +11,10 @@ function log(event: string, extra: Record<string, unknown> = {}): void {
 }
 
 /** Today's NEA PM2.5 items, or null when the request or its JSON fails. */
-async function fetchItems(env: Env): Promise<NeaItem[] | null> {
-  const headers: Record<string, string> = { "User-Agent": USER_AGENT };
-  if (env.DATA_GOV_SG_API_KEY) headers["x-api-key"] = env.DATA_GOV_SG_API_KEY;
+async function fetchItems(): Promise<NeaItem[] | null> {
+  // About 120 calls a day: well inside data.gov.sg's anonymous limit, so no API key.
   try {
-    const res = await fetch(`${NEA_PM25}?date=${sgtDate(new Date())}`, { headers, signal: AbortSignal.timeout(10_000) });
+    const res = await fetch(`${NEA_PM25}?date=${sgtDate(new Date())}`, { headers: { "User-Agent": USER_AGENT }, signal: AbortSignal.timeout(10_000) });
     if (!res.ok) {
       log("nea-error", { status: res.status });
       return null;
@@ -43,7 +42,7 @@ async function warm(env: Env): Promise<void> {
 
 /** One check: when NEA's newest reading differs from the last one seen, tell the site to refresh, then warm it. */
 async function run(env: Env): Promise<void> {
-  const items = await fetchItems(env);
+  const items = await fetchItems();
   if (!items) return;
   const sig = signature(items);
   if (!sig) return log("no-data");
