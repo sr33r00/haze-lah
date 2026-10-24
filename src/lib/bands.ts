@@ -134,15 +134,15 @@ export function pm25ToUsAqi(c: number): number {
 
 /**
  * The six US AQI categories with the US EPA AirNow colours (https://www.airnow.gov/aqi/aqi-basics/); the names are
- * AQICN's (https://aqicn.org/scale/). `text` is the legible colour for a label on that background.
+ * AQICN's (https://aqicn.org/scale/).
  */
 export const US_AQI_BANDS = [
-  { from: 0, max: 50, name: "Good", color: "#00e400", text: "#111111" },
-  { from: 51, max: 100, name: "Moderate", color: "#ffff00", text: "#111111" },
-  { from: 101, max: 150, name: "Unhealthy for sensitive groups", color: "#ff7e00", text: "#111111" },
-  { from: 151, max: 200, name: "Unhealthy", color: "#ff0000", text: "#111111" },
-  { from: 201, max: 300, name: "Very unhealthy", color: "#8f3f97", text: "#ffffff" },
-  { from: 301, max: Infinity, name: "Hazardous", color: "#7e0023", text: "#ffffff" },
+  { from: 0, max: 50, name: "Good", color: "#00e400" },
+  { from: 51, max: 100, name: "Moderate", color: "#ffff00" },
+  { from: 101, max: 150, name: "Unhealthy for sensitive groups", color: "#ff7e00" },
+  { from: 151, max: 200, name: "Unhealthy", color: "#ff0000" },
+  { from: 201, max: 300, name: "Very unhealthy", color: "#8f3f97" },
+  { from: 301, max: Infinity, name: "Hazardous", color: "#7e0023" },
 ] as const;
 
 /** The US AQI category of an index value. */

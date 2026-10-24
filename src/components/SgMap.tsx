@@ -5,13 +5,14 @@ import L from "leaflet";
 import { LocateFixed } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { CircleMarker, MapContainer, Marker, TileLayer, Tooltip, useMap, useMapEvents } from "react-leaflet";
-import { LEVEL_COLOR, LEVEL_NAME, LEVEL_TEXT, PM25_BANDS, PM25_COLORS, REGIONS, REGION_POINT, US_AQI_BANDS, nearestRegion, pm25Color, pm25ToUsAqi, psiLevel, stationLevel, usAqiBand, usAqiColor, type Region } from "@/lib/bands";
+import { LEVEL_COLOR, LEVEL_NAME, LEVEL_TEXT, PM25_BANDS, PM25_COLORS, REGIONS, REGION_POINT, US_AQI_BANDS, nearestRegion, pm25Color, pm25ToUsAqi, psiLevel, stationLevel, usAqiColor, type Region } from "@/lib/bands";
 import { cap, fmtTime } from "@/lib/format";
 import { US_AQI_NOTE, WAQI_NAME, WAQI_URL } from "@/lib/links";
 import type { AqiStation, Camera, NeaNow, NeaPm25History, Sensor, Station } from "@/lib/types";
-import { MAX_SENSOR_AGE_MS, SG, haversineKm } from "@/lib/util";
+import { MAX_SENSOR_AGE_MS, haversineKm } from "@/lib/util";
 import RampBar from "./RampBar";
 import { Segmented } from "./ui";
+import { locateMe, useMyPosition } from "./useMyPosition";
 import { useStored } from "./usePrefs";
 
 const BOUNDS: L.LatLngBoundsExpression = [
@@ -59,15 +60,47 @@ const CAMERA_ICON = L.divIcon({
   html: `<div style="width:24px;height:24px;border-radius:7px;background:#13232e;display:grid;place-items:center;box-shadow:0 0 0 1.5px #fff"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg></div>`,
 });
 
-function pill(value: number | null, color: string, text: string, active: boolean) {
-  const ring = active ? "box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--fg);" : "";
-  return L.divIcon({
-    className: "",
-    iconSize: [40, 24],
-    iconAnchor: [20, 12],
-    html: `<div style="width:40px;height:24px;border-radius:12px;background:${value == null ? "#8a8f98" : color};color:${text};font:700 13px/24px var(--font-sans);text-align:center;${ring}">${value ?? "–"}</div>`,
-  });
+/** The four kinds of number badge, biggest first. `z` stacks them (Leaflet adds it to the marker's own latitude-based order). */
+const BADGE = {
+  nea: { h: 24, minW: 40, font: 13, border: 0, radius: 12, z: 40000 },
+  aqicn: { h: 26, minW: 26, font: 12, border: 2, radius: 13, z: 20000 },
+  my: { h: 22, minW: 22, font: 11, border: 2, radius: 6, z: 10000 },
+  sensor: { h: 20, minW: 20, font: 11, border: 1, radius: 10, z: 0 },
+} as const;
+type BadgeKind = keyof typeof BADGE;
+const ME_Z = 30000; // "you are here": above the sensors, below the NEA pills
+
+const badges = new Map<string, L.DivIcon>();
+
+/** A number in a coloured badge. Built once per look, so re-renders reuse the icons. */
+function badge(kind: BadgeKind, value: number | null, color: string, active = false) {
+  const key = `${kind}|${value}|${color}|${active}`;
+  let icon = badges.get(key);
+  if (!icon) {
+    const b = BADGE[kind];
+    const label = value ?? "–";
+    const w = Math.max(b.minW, Math.ceil(String(label).length * b.font * 0.62) + 6);
+    const edge = b.border ? `border:${b.border}px solid #fff;` : "";
+    const ring = active ? "0 0 0 2px var(--surface),0 0 0 4px var(--fg)" : b.border ? "0 0 0 1px rgba(0,0,0,.25)" : "none";
+    icon = L.divIcon({
+      className: "",
+      iconSize: [w, b.h],
+      iconAnchor: [w / 2, b.h / 2],
+      tooltipAnchor: [0, -b.h / 2],
+      html: `<div style="box-sizing:border-box;width:${w}px;height:${b.h}px;border-radius:${b.radius}px;background:${value == null ? "#8a8f98" : color};color:#fff;text-shadow:0 0 2px rgb(0 0 0 / 0.55);font:700 ${b.font}px/${b.h - 2 * b.border}px var(--font-sans);text-align:center;white-space:nowrap;${edge}box-shadow:${ring}">${label}</div>`,
+    });
+    badges.set(key, icon);
+  }
+  return icon;
 }
+
+// "You are here": a blue dot with a white ring and a soft halo.
+const ME_ICON = L.divIcon({
+  className: "",
+  iconSize: [28, 28],
+  iconAnchor: [14, 14],
+  html: `<div style="width:28px;height:28px;border-radius:50%;background:rgba(37,99,235,.22);display:grid;place-items:center"><div style="width:14px;height:14px;border-radius:50%;background:#2563eb;border:2px solid #fff;box-sizing:border-box;box-shadow:0 0 0 1px rgba(0,0,0,.25)"></div></div>`,
+});
 
 /** Map clicks pick a spot; a located spot is flown to. */
 function SpotControl({ spot, onSpot }: { spot: Spot | null; onSpot: (s: Spot) => void }) {
@@ -95,6 +128,7 @@ export default function SgMap(props: {
   const aqi = unit === "aqi";
   const [spot, setSpot] = useState<Spot | null>(null);
   const [note, setNote] = useState<string | null>(null);
+  const me = useMyPosition(true);
   const touch = useMemo(() => window.matchMedia("(pointer: coarse)").matches, []);
   const fresh = useMemo(() => props.sensors.filter((s) => Date.now() - new Date(s.time).getTime() < MAX_SENSOR_AGE_MS), [props.sensors]);
   const freshAqi = useMemo(() => props.aqiStations.filter((s) => Date.now() - new Date(s.time).getTime() < MAX_SENSOR_AGE_MS), [props.aqiStations]);
@@ -105,18 +139,20 @@ export default function SgMap(props: {
     setSpot(p);
     onPick(nearestRegion(p.lat, p.lon));
   };
-  const locate = () => {
-    if (!navigator.geolocation) return setNote("Location is not available on this device.");
+  const locate = async () => {
     setNote("Finding you…");
-    navigator.geolocation.getCurrentPosition(
-      ({ coords: c }) =>
-        Math.abs(c.latitude - SG.lat) < 0.3 && Math.abs(c.longitude - SG.lon) < 0.4
-          ? pickSpot({ lat: c.latitude, lon: c.longitude, mine: true })
-          : setNote("You seem to be outside Singapore. Tap the map instead."),
-      () => setNote("Could not get your location. Tap the map instead."),
-      { timeout: 8000, maximumAge: 600_000 },
-    );
+    const r = await locateMe();
+    if (r.status === "ok") pickSpot({ lat: r.lat, lon: r.lon, mine: true });
+    else
+      setNote(
+        r.status === "unsupported"
+          ? "Location is not available on this device."
+          : r.status === "outside"
+            ? "You seem to be outside Singapore. Tap the map instead."
+            : "Could not get your location. Tap the map instead.",
+      );
   };
+  const tone = (n: number) => (aqi ? usAqiColor(n) : pm25Color(n));
 
   return (
     <div className="px-4">
@@ -136,23 +172,32 @@ export default function SgMap(props: {
             maxZoom={19}
           />
           {!aqi &&
-            nearMy.map((s) => (
-            <CircleMarker key={s.id} center={[s.lat, s.lon]} radius={6} pathOptions={{ color: "#fff", weight: 1.5, fillColor: LEVEL_COLOR[stationLevel(s) ?? 0], fillOpacity: 0.9 }}>
-              <Tooltip>{`${s.name}: API ${s.api ?? "n/a"} (Malaysia)`}</Tooltip>
-            </CircleMarker>
-            ))}
+            nearMy.map((s) => {
+              const text = `${s.name}: API ${s.api ?? "n/a"} (Malaysia)`;
+              return (
+                <Marker key={s.id} position={[s.lat, s.lon]} icon={badge("my", s.api, LEVEL_COLOR[stationLevel(s) ?? 0])} title={text} zIndexOffset={BADGE.my.z}>
+                  <Tooltip direction="top">{text}</Tooltip>
+                </Marker>
+              );
+            })}
           {aqi &&
-            freshAqi.map((s) => (
-              <CircleMarker key={s.uid} center={[s.lat, s.lon]} radius={7} pathOptions={{ color: "#fff", weight: 2.5, fillColor: usAqiColor(s.aqi), fillOpacity: 0.95 }}>
-                <Tooltip>{`${s.name}: US AQI ${s.aqi} (AQICN, ${fmtTime(s.time)})`}</Tooltip>
-              </CircleMarker>
-            ))}
+            freshAqi.map((s) => {
+              const text = `${s.name}: US AQI ${s.aqi} (AQICN, ${fmtTime(s.time)})`;
+              const t = tone(s.aqi);
+              return (
+                <Marker key={s.uid} position={[s.lat, s.lon]} icon={badge("aqicn", s.aqi, t)} title={text} zIndexOffset={BADGE.aqicn.z}>
+                  <Tooltip direction="top">{text}</Tooltip>
+                </Marker>
+              );
+            })}
           {fresh.map((s) => {
             const n = aqi ? pm25ToUsAqi(s.pm25) : s.pm25;
+            const text = aqi ? `${s.name}: US AQI ${n} (community sensor)` : `${s.name}: PM2.5 ${n} µg/m³ (community sensor)`;
+            const t = tone(n);
             return (
-              <CircleMarker key={`${s.name}${s.lat}${s.lon}`} center={[s.lat, s.lon]} radius={4.5} pathOptions={{ color: "#fff", weight: 1, fillColor: aqi ? usAqiColor(n) : pm25Color(n), fillOpacity: 0.9 }}>
-                <Tooltip>{aqi ? `${s.name}: US AQI ${n} (community sensor)` : `${s.name}: PM2.5 ${n} µg/m³ (community sensor)`}</Tooltip>
-              </CircleMarker>
+              <Marker key={`${s.name}${s.lat}${s.lon}`} position={[s.lat, s.lon]} icon={badge("sensor", Math.round(n), t)} title={text} keyboard={false} zIndexOffset={BADGE.sensor.z}>
+                <Tooltip direction="top">{text}</Tooltip>
+              </Marker>
             );
           })}
           {props.cameras.map((c) => (
@@ -165,14 +210,15 @@ export default function SgMap(props: {
             />
           ))}
           <SpotControl spot={spot} onSpot={pickSpot} />
-          {spot && (
+          {spot && !spot.mine && (
             <CircleMarker
               center={[spot.lat, spot.lon]}
-              radius={8}
-              pathOptions={{ color: "#fff", weight: 3, fillColor: "#2563eb", fillOpacity: 1 }}
+              radius={6}
+              pathOptions={{ color: "#13232e", weight: 3, fillColor: "#fff", fillOpacity: 1 }}
               interactive={false}
             />
           )}
+          {me && <Marker position={[me.lat, me.lon]} icon={ME_ICON} interactive={false} keyboard={false} zIndexOffset={ME_Z} />}
           {REGIONS.map((r) => {
             const v = history?.regions[r].at(-1)?.value;
             const n = v == null ? null : aqi ? pm25ToUsAqi(v) : Math.round(v);
@@ -180,9 +226,9 @@ export default function SgMap(props: {
               <Marker
                 key={r}
                 position={REGION_POINT[r]}
-                icon={pill(n, n == null ? "" : aqi ? usAqiColor(n) : pm25Color(n), n != null && aqi ? usAqiBand(n).text : "#fff", r === region)}
+                icon={n == null ? badge("nea", null, "", r === region) : badge("nea", n, tone(n), r === region)}
                 title={`${cap(r)}, ${aqi ? "US AQI" : "PM2.5"} ${n ?? "n/a"}`}
-                zIndexOffset={r === region ? 1000 : 500}
+                zIndexOffset={BADGE.nea.z + (r === region ? 10000 : 0)}
                 eventHandlers={{ click: () => onPick(r) }}
               />
             );
@@ -197,10 +243,14 @@ export default function SgMap(props: {
       <div className="mt-3 space-y-2 text-[12px] text-muted">
         <LegendRow>
           <Key swatch={<span className={`h-2.5 w-4 rounded-full ${aqi ? "bg-muted" : "bg-[#d9a118]"}`} />}>NEA regions</Key>
-          <Key swatch={<span className={`h-2.5 w-2.5 rounded-full border border-white ring-1 ring-black/20 ${aqi ? "bg-muted" : "bg-[#d9a118]"}`} />}>Community sensors</Key>
-          {aqi && freshAqi.length > 0 && <Key swatch={<span className="h-3.5 w-3.5 rounded-full border-[2.5px] border-white bg-muted ring-1 ring-black/20" />}>AQICN</Key>}
-          {!aqi && <Key swatch={<span className="h-2.5 w-2.5 rounded-full border-2 border-white bg-[#d9a118]" />}>Malaysia API</Key>}
+          <Key swatch={<span className={`h-2.5 w-2.5 rounded-full border border-white ring-1 ring-black/20 ${aqi ? "bg-muted" : "bg-[#d9a118]"}`} />}>Sensors</Key>
+          {aqi && freshAqi.length > 0 && <Key swatch={<span className="h-3.5 w-3.5 rounded-full border-2 border-white bg-muted ring-1 ring-black/20" />}>AQICN</Key>}
+          {!aqi && <Key swatch={<span className="h-3 w-3 rounded-[3px] border-2 border-white bg-[#d9a118] ring-1 ring-black/20" />}>Malaysia API</Key>}
           {props.cameras.length > 0 && <Key swatch={<span className="h-2.5 w-2.5 rounded-[3px] bg-[#13232e] ring-1 ring-white" />}>Cameras</Key>}
+          {/* Hidden, not removed, until the position is known, so the legend never changes height. */}
+          <span className={me ? "" : "invisible"}>
+            <Key swatch={<span className="h-3 w-3 rounded-full border-2 border-white bg-[#2563eb] ring-1 ring-black/20" />}>You</Key>
+          </span>
         </LegendRow>
         <div className="pb-0.5">
           <RampBar {...(aqi ? AQI_SCALE : PM25_SCALE)} bar="border-line" text="text-muted" />

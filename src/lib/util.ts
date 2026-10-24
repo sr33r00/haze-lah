@@ -1,5 +1,8 @@
 export const SG = { lat: 1.3521, lon: 103.8198 };
 
+/** Whether a position is in or around Singapore (a loose box, not the border). */
+export const inSingapore = (lat: number, lon: number) => Math.abs(lat - SG.lat) < 0.3 && Math.abs(lon - SG.lon) < 0.4;
+
 /** A community sensor reading older than this (ms) is not shown. */
 export const MAX_SENSOR_AGE_MS = 3 * 3600_000;
 

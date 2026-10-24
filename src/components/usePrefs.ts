@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { REGIONS, nearestRegion, type Group, type Region } from "@/lib/bands";
-import { SG } from "@/lib/util";
+import { locateMe } from "./useMyPosition";
 
 const GROUPS: Group[] = ["healthy", "sensitive", "chronic"];
 
@@ -52,18 +52,11 @@ export function usePrefs(defaultRegion: Region = "central") {
     [setRegion],
   );
 
-  const locate = useCallback(() => {
-    if (!navigator.geolocation) return;
+  const locate = useCallback(async () => {
     setLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      ({ coords }) => {
-        setLocating(false);
-        const inSingapore = Math.abs(coords.latitude - SG.lat) < 0.3 && Math.abs(coords.longitude - SG.lon) < 0.4;
-        if (inSingapore) pickRegion(nearestRegion(coords.latitude, coords.longitude));
-      },
-      () => setLocating(false),
-      { timeout: 8000, maximumAge: 600_000 },
-    );
+    const r = await locateMe();
+    setLocating(false);
+    if (r.status === "ok") pickRegion(nearestRegion(r.lat, r.lon));
   }, [pickRegion]);
 
   return { region, setRegion: pickRegion, group, setGroup, locating, locate };
