@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { PM25_BANDS, PM25_COLORS, pm25Color } from "@/lib/bands";
 import { fmtHour, fmtWeekday } from "@/lib/format";
 import { HIGH_PM25 } from "@/lib/forecast";
-import { peakAhead, readoutText, type InstrumentHour } from "@/lib/forecastHours";
+import { peakAhead, readoutLines, type InstrumentHour } from "@/lib/forecastHours";
 import { FIRE_COLOR } from "@/lib/replay";
 import { sgDate, sgHour } from "@/lib/util";
 import Readout from "./Readout";
@@ -20,6 +20,10 @@ const AXIS_H = 22;
 const heightFor = (pmH: number) => 6 + pmH + GAP.pmWind + LANE.wind + GAP.windRain + LANE.rain + AXIS_H;
 const SERIES_GAP = 1.5 * HOUR; // a longer hole in the hours breaks a line instead of bridging it
 const HALO = { stroke: "var(--bg)", strokeWidth: 3, strokeLinejoin: "round", paintOrder: "stroke" } as const; // so a label reads on a line
+const Y_TICKS = [20, 40, 100, 150, 200, 300, 400, 500, 600, 800]; // µg/m³ values the PM2.5 lane may label at its right edge
+const TICK_GAP = 22; // px kept between two tick labels, and between a label and the 55 line's
+/** The line under the instrument that says how to read it. */
+const KEY = "Solid: measured. Dashed: forecast. Shade: likely range. PM2.5 forecast: Copernicus CAMS, calibrated to NEA readings.";
 const LABEL = { fontSize: 11, fill: "var(--muted)" } as const;
 
 type Pt = [number, number];
@@ -103,6 +107,9 @@ export default function Instrument({ hours, windFailed }: { hours: InstrumentHou
   const y = (v: number): number => pmY + pmH - (Math.min(v, yMax) / yMax) * pmH;
 
   const forecast = runs(hours.flatMap((h, i) => (h.pm25 != null ? [{ t: times[i], p: [x(times[i]), y(h.pm25)] as Pt }] : [])));
+  // The dashed line starts where the solid one ends, so the hour between them is not left blank.
+  const last = nowIdx >= 0 && hours[nowIdx].pm25 == null ? { t: times[nowIdx], p: [x(times[nowIdx]), y(hours[nowIdx].observed!)] as Pt } : null;
+  if (last && forecast[0] && forecast[0][0].t - last.t <= SERIES_GAP) forecast[0].unshift(last);
   const measured = runs(hours.flatMap((h, i) => (h.observed != null ? [{ t: times[i], p: [x(times[i]), y(h.observed)] as Pt }] : [])));
   const ribbon = runs(hours.flatMap((h, i) => (h.low != null && h.high != null ? [{ t: times[i], p: [h.low, h.high] as Pt }] : []))).map((r) => [
     ...r.map((q) => [x(q.t), y(q.p[1])] as Pt),
@@ -114,6 +121,11 @@ export default function Instrument({ hours, windFailed }: { hours: InstrumentHou
   const nowX = nowIdx >= 0 ? x(times[nowIdx]) : null;
   const barW = Math.max(1, (plotW * HOUR) / span - 1.5);
   const ticks = hours.flatMap((h, i) => (sgHour(h.t) % 6 === 0 ? [{ h, x: x(times[i]), midnight: sgHour(h.t) === 0 }] : []));
+  // Up to three value labels at the right edge, clear of the 55 line, the top and each other.
+  const yTicks = Y_TICKS.reduce<number[]>((kept, v) => {
+    const clear = [HIGH_PM25, ...kept].every((k) => Math.abs(y(v) - y(k)) >= TICK_GAP);
+    return v < yMax && y(v) - pmY >= 8 && kept.length < 3 && clear ? [...kept, v] : kept;
+  }, []);
   const bands = PM25_BANDS.map((b, i) => ({ lo: i ? PM25_BANDS[i - 1].max : 0, hi: Math.min(b.max, yMax), color: PM25_COLORS[i] })).filter((b) => b.lo < yMax);
 
   const onKey = (e: React.KeyboardEvent) => {
@@ -134,7 +146,7 @@ export default function Instrument({ hours, windFailed }: { hours: InstrumentHou
         aria-valuemin={0}
         aria-valuemax={hours.length - 1}
         aria-valuenow={idx}
-        aria-valuetext={readoutText(shown)}
+        aria-valuetext={readoutLines(shown).when}
         onKeyDown={onKey}
         onPointerDown={(e) => {
           e.currentTarget.setPointerCapture(e.pointerId);
@@ -158,9 +170,11 @@ export default function Instrument({ hours, windFailed }: { hours: InstrumentHou
                 <text x={PAD + plotW + 5} y={y(HIGH_PM25) + 4} {...LABEL}>
                   {HIGH_PM25}
                 </text>
-                <text x={PAD} y={pmY + 12} {...LABEL} {...HALO}>
-                  PM2.5 µg/m³
-                </text>
+                {yTicks.map((v) => (
+                  <text key={v} x={PAD + plotW + 5} y={y(v) + 3.5} fontSize={10} fill="var(--muted)" fillOpacity={0.8}>
+                    {v}
+                  </text>
+                ))}
                 {ribbon.map((r, i) => (
                   <path key={i} d={`${path(r)}Z`} fill="var(--fg)" fillOpacity={0.18} />
                 ))}
@@ -178,7 +192,6 @@ export default function Instrument({ hours, windFailed }: { hours: InstrumentHou
                     </text>
                   </>
                 )}
-  
                 {windFailed ? (
                   <text x={PAD} y={windY + LANE.wind / 2 + 4} {...LABEL}>
                     Wind outlook unavailable
@@ -193,7 +206,6 @@ export default function Instrument({ hours, windFailed }: { hours: InstrumentHou
                     )}
                   </>
                 )}
-  
                 <line x1={PAD} x2={PAD + plotW} y1={bottom} y2={bottom} stroke="var(--line)" />
                 {hours.map((h, i) =>
                   h.rainProb != null && h.rainProb > 0 ? (
@@ -203,13 +215,11 @@ export default function Instrument({ hours, windFailed }: { hours: InstrumentHou
                 <text x={PAD} y={rainY + 10} {...LABEL} {...HALO}>
                   Rain
                 </text>
-  
                 {ticks.map(({ h, x: tx, midnight }, i) => (
                   <text key={i} x={tx} y={bottom + 16} textAnchor={tx < PAD + 10 ? "start" : tx > w - PAD_R - 10 ? "end" : "middle"} {...LABEL} fontWeight={midnight ? 700 : 400} fill={midnight ? "var(--fg)" : "var(--muted)"}>
                     {midnight ? fmtWeekday(sgDate(0, new Date(h.t))) : fmtHour(h.t)}
                   </text>
                 ))}
-  
                 <line x1={selX} x2={selX} y1={pmY} y2={bottom} stroke="var(--fg)" />
                 {selV != null && <circle cx={selX} cy={y(selV)} r={5.5} fill={pm25Color(selV)} stroke="var(--bg)" strokeWidth={2} />}
               </>
@@ -217,6 +227,7 @@ export default function Instrument({ hours, windFailed }: { hours: InstrumentHou
           </svg>
         </div>
       </div>
+      <p className="mt-2 text-[13px] text-muted">{KEY}</p>
     </div>
   );
 }

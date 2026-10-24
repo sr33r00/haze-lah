@@ -14,7 +14,7 @@ const ANNOUNCE_MS = 500; // a screen reader hears the hour only once the scrub h
  * The screen-reader copy is a polite live region that updates only after the hour has stayed put for a moment.
  */
 export default function Readout({ hour, className = "" }: { hour: InstrumentHour; className?: string }) {
-  const { line1, line2, fires, rain } = readoutLines(hour);
+  const { when, figures, line2, fires, rain } = readoutLines(hour);
   const text = readoutText(hour);
   const [announced, setAnnounced] = useState(text);
   useEffect(() => {
@@ -25,7 +25,13 @@ export default function Readout({ hour, className = "" }: { hour: InstrumentHour
   return (
     <div className={className}>
       <div aria-hidden className="tabular text-[15px] leading-5">
-        <p className="line-clamp-2 h-10 whitespace-pre-wrap font-bold">{line1}</p>
+        <p className="line-clamp-2 h-10 font-bold">
+          {[when, ...figures].map((part, i) => (
+            <span key={i} className="mr-2 whitespace-nowrap">
+              {part}{" "}
+            </span>
+          ))}
+        </p>
         <p className="line-clamp-1 h-5 text-muted">{line2}</p>
         <p className="line-clamp-2 h-10 text-muted">
           {fires && (

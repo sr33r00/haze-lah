@@ -103,34 +103,56 @@ export function dayWind(outlook: OutlookStep[] | null, date: string): number | n
   return (Math.round((Math.atan2(x, y) * 180) / Math.PI) + 360) % 360;
 }
 
-/** The sentence that opens the forecast page: when the next 48 hours peak and the best daylight window. */
+/** The latest measured value (µg/m³) in the hours, or null when none was measured. */
+export function latestObserved(hours: InstrumentHour[]): number | null {
+  return hours.findLast((h) => h.observed != null)?.observed ?? null;
+}
+
+/**
+ * The sentences that open the forecast page. The headline is "Worst right now" when the latest measured value (`latest`) is
+ * already at or above the forecast peak and over 55, "Normal air" when the whole forecast stays at or under 55, else when the
+ * next 48 hours peak. The detail has the best daylight window (after the day's highest hour on a normal day) and ends with
+ * `leadNote`, the short-lead clause from `shortLeadNote`, when there is one.
+ */
 export function answerText(
   peak: { t: string; pm25: number } | null,
   window: { from: string; to: string } | null,
   now: Date,
+  latest: number | null = null,
+  leadNote: string | null = null,
 ): { headline: string; detail: string } {
-  return {
-    headline: peak ? `Worst ${dayWord(peak.t, now)} around ${fmtHour(peak.t)}, near ${peak.pm25} µg/m³.` : "No forecast for the next 48 hours.",
-    detail: window ? `Best window: ${dayWord(window.from, now)} ${fmtHourRange(window.from, window.to)}.` : "No clear window in the next 48 hours.",
-  };
+  const windowText = window ? `Best window: ${dayWord(window.from, now)} ${fmtHourRange(window.from, window.to)}.` : "No clear window in the next 48 hours.";
+  let headline: string;
+  let detail = windowText;
+  if (!peak) headline = "No forecast for the next 48 hours.";
+  else if (latest != null && latest > HIGH_PM25 && latest >= peak.pm25) headline = `Worst right now, near ${Math.round(latest)} µg/m³.`;
+  else if (peak.pm25 <= HIGH_PM25) {
+    headline = "Normal air for the next 48 hours.";
+    detail = `Highest ${dayWord(peak.t, now)} around ${fmtHour(peak.t)}, near ${Math.round(peak.pm25)} µg/m³. ${windowText}`;
+  } else headline = `Worst ${dayWord(peak.t, now)} around ${fmtHour(peak.t)}, near ${Math.round(peak.pm25)} µg/m³.`;
+  return { headline, detail: leadNote ? `${detail} ${leadNote}` : detail };
 }
 
 /**
- * The readout for one hour, as lines: time with PM2.5, its likely range and the chance of passing 55; the model's value and
- * the wind; the fires it crosses; the rain chance. A part with nothing to say is "". `long` spells the wind out ("from the
- * southwest at 22 km/h") for a screen reader; the default is short ("wind SW 22 km/h") so a line fits at 360 px.
+ * The readout for one hour, as lines: `when` (the time) and `figures` (PM2.5 with its likely range, the chance of passing 55;
+ * each figure is one group that must not break) make `line1`; then the model's value and the wind; the fires it crosses;
+ * the rain chance. A part with nothing to say is "". `long` spells the wind out ("from the southwest at 22 km/h") for a
+ * screen reader; the default is short ("wind SW 22 km/h") so a line fits at 360 px.
  */
 export function readoutLines(h: InstrumentHour, now = new Date(), long = false) {
   const when = `${cap(dayWord(h.t, now))} ${fmtHour(h.t)}`;
   const rain = h.rainProb != null ? `Rain ${Math.round(h.rainProb)}%` : "";
-  if (h.pm25 == null) return { line1: h.observed != null ? `${when}  Measured ${Math.round(h.observed)} µg/m³` : when, line2: "", fires: "", rain };
+  if (h.pm25 == null) {
+    const figures = h.observed != null ? [`Measured ${Math.round(h.observed)} µg/m³`] : [];
+    return { when, figures, line1: [when, ...figures].join("  "), line2: "", fires: "", rain };
+  }
   const range = h.low != null && h.high != null ? ` (${Math.round(h.low)}–${Math.round(h.high)})` : "";
-  const chance = h.pHigh != null ? `  ${Math.round(h.pHigh * 100)}% above ${HIGH_PM25}` : "";
+  const figures = [`PM2.5 ${Math.round(h.pm25)}${range}`, ...(h.pHigh != null ? [`${Math.round(h.pHigh * 100)}% above ${HIGH_PM25}`] : [])];
   const w = h.wind;
   const wind = w && (long ? `from the ${windFrom(w.deg)} at ${w.kmh} km/h` : `wind ${windFromShort(w.deg)} ${w.kmh} km/h`);
   const line2 = [h.raw != null && `Copernicus ${Math.round(h.raw)}`, wind].filter(Boolean).join(", ");
   const fires = w && w.near > 0 ? `over ${w.near.toLocaleString("en-SG")} ${w.near === 1 ? "fire" : "fires"}${w.area ? ` in ${w.area}` : ""}` : "";
-  return { line1: `${when}  PM2.5 ${Math.round(h.pm25)}${range}${chance}`, line2, fires, rain };
+  return { when, figures, line1: [when, ...figures].join("  "), line2, fires, rain };
 }
 
 /** The readout as sentences, for a screen reader. */
@@ -155,19 +177,30 @@ export function skillRows(a: Accuracy | null, minN = 20): SkillRow[] {
 /** True when this forecast is closer than both Copernicus and "assuming no change" at this lead. */
 const beatsBoth = (r: SkillRow) => r.ours < r.persistence && r.ours < r.cams;
 
+/** True when "assuming no change" is at least as close as this forecast at this lead. */
+const losesToNoChange = (r: SkillRow) => r.ours >= r.persistence;
+
 /**
- * Where this forecast starts to beat both Copernicus and "assuming no change", in plain words, or null without rows.
- * The "from" lead is the first one after the last lead that loses, so the claim holds at every longer lead. The loss
- * clause says "today's reading" when any losing lead loses to persistence, else that Copernicus alone is closer.
+ * The short-lead clause for the forecast page: "For the next 6 hours, today's reading is the better guide." (or "Copernicus
+ * alone is closer"), up to the last lead that loses. Null when no lead loses, or when every lead loses to "assuming no
+ * change" (`skillSentence` says that). It says "today's reading" when any losing lead loses to persistence.
+ */
+export function shortLeadNote(rows: SkillRow[]): string | null {
+  const last = rows.findLastIndex((r) => !beatsBoth(r));
+  if (last < 0 || rows.every(losesToNoChange)) return null;
+  const better = rows.some((r) => !beatsBoth(r) && losesToNoChange(r)) ? "today's reading is the better guide" : "Copernicus alone is closer";
+  return `For the next ${rows[last].lead} hours, ${better}.`;
+}
+
+/**
+ * Where this forecast starts to beat both Copernicus and "assuming no change", in plain words, or null without rows (or when
+ * even the longest lead loses; `shortLeadNote` has the loss). The "from" lead is the first one after the last lead that loses,
+ * so the claim holds at every longer lead.
  */
 export function skillSentence(rows: SkillRow[]): string | null {
   if (!rows.length) return null;
   const last = rows.findLastIndex((r) => !beatsBoth(r));
   if (last < 0) return "This forecast beats Copernicus and assuming no change at every lead time.";
-  const losing = rows.filter((r) => !beatsBoth(r));
-  const losesToNoChange = (r: SkillRow) => r.ours >= r.persistence;
   if (rows.every(losesToNoChange)) return "Assuming no change is the better guide at every lead time tested so far.";
-  const better = losing.some(losesToNoChange) ? "today's reading is the better guide" : "Copernicus alone is closer";
-  const loss = `For the next ${rows[last].lead} hours, ${better}.`;
-  return last === rows.length - 1 ? loss : `${loss} From ${rows[last + 1].lead} hours ahead, this forecast beats both Copernicus and assuming no change.`;
+  return last === rows.length - 1 ? null : `From ${rows[last + 1].lead} hours ahead, this forecast beats both Copernicus and assuming no change.`;
 }

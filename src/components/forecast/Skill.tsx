@@ -3,14 +3,14 @@ import type { Accuracy } from "@/lib/accuracy";
 import { skillRows, skillSentence } from "@/lib/forecastHours";
 import { Section } from "../ui";
 
-const W = 320; // viewBox width; the chart scales to its card
-const LABEL_W = 34; // room for the lead on the left
-const VALUE_W = 30; // and for the number at the end of the longest bar
-const BAR = { h: 8, gap: 2, group: 14 } as const; // px: one bar, between bars, between leads
+const W = 280; // viewBox width; the chart scales to its card, so its text stays at least 11 px at 360 px wide
+const LABEL_W = 32; // room for the lead on the left
+const VALUE_W = 28; // and for the number at the end of the longest bar
+const BAR = { h: 11, gap: 2, group: 12 } as const; // px: one bar, between bars, between leads
 const METHODS = [
   { key: "ours", label: "This site", fill: "var(--accent)", opacity: 1 },
   { key: "cams", label: "Copernicus", fill: "var(--fg)", opacity: 0.75 },
-  { key: "persistence", label: "No change", fill: "var(--muted)", opacity: 0.45 },
+  { key: "persistence", label: "No change", fill: "var(--muted)", opacity: 0.6 },
 ] as const;
 
 /**
@@ -21,6 +21,7 @@ const METHODS = [
 export default function Skill({ accuracy, bias, sigma, className }: { accuracy: Accuracy | null; bias: number | null; sigma: number | null; className?: string }) {
   const rows = skillRows(accuracy);
   if (!rows.length) return null;
+  const claim = skillSentence(rows);
   const max = Math.max(...rows.flatMap((r) => METHODS.map((m) => r[m.key])));
   const scale = (W - LABEL_W - VALUE_W) / max;
   const groupH = METHODS.length * BAR.h + (METHODS.length - 1) * BAR.gap;
@@ -50,7 +51,7 @@ export default function Skill({ accuracy, bias, sigma, className }: { accuracy: 
                   return (
                     <g key={m.key}>
                       <rect x={LABEL_W} y={y} width={Math.max(1, r[m.key] * scale)} height={BAR.h} rx={2} fill={m.fill} fillOpacity={m.opacity} />
-                      <text x={LABEL_W + Math.max(1, r[m.key] * scale) + 4} y={y + BAR.h - 0.5} fontSize={9.5} fontWeight={m.key === "ours" ? 700 : 400} fill={m.key === "ours" ? "var(--fg)" : "var(--muted)"}>
+                      <text x={LABEL_W + Math.max(1, r[m.key] * scale) + 4} y={y + BAR.h - 1} fontSize={12} fontWeight={m.key === "ours" ? 700 : 400} fill={m.key === "ours" ? "var(--fg)" : "var(--muted)"}>
                         {r[m.key]}
                       </text>
                     </g>
@@ -60,7 +61,7 @@ export default function Skill({ accuracy, bias, sigma, className }: { accuracy: 
             );
           })}
         </svg>
-        <p className="mt-3 text-[15px]">{skillSentence(rows)}</p>
+        {claim && <p className="mt-3 text-[15px]">{claim}</p>}
         {bias != null && (
           <p className="mt-2 text-[13px] text-muted">
             Today: Copernicus × {bias.toFixed(1)}

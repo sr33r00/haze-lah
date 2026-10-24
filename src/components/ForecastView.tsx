@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { Accuracy } from "@/lib/accuracy";
-import { answerText, bestWindow, instrumentHours, peakAhead } from "@/lib/forecastHours";
+import { answerText, bestWindow, instrumentHours, latestObserved, peakAhead, shortLeadNote, skillRows } from "@/lib/forecastHours";
 import { HISTORY_URL, sinceWhen } from "@/lib/psiRecords";
 import { OUTLOOK_NOTE, fetchReplay } from "@/lib/replay";
 import type { DayOutlook, DayPsi, ForecastPoint, NeaPm25History, OutlookStep, WeatherHour } from "@/lib/types";
@@ -35,7 +35,8 @@ export default function ForecastView(props: {
     );
   }, []);
   const hours = useMemo(() => instrumentHours(history?.island ?? [], hourly, weather, outlook.steps), [history, hourly, weather, outlook.steps]);
-  const answer = useMemo(() => answerText(peakAhead(hours), bestWindow(hours), new Date()), [hours]);
+  const leadNote = useMemo(() => shortLeadNote(skillRows(props.accuracy)), [props.accuracy]);
+  const answer = useMemo(() => answerText(peakAhead(hours), bestWindow(hours), new Date(), latestObserved(hours), leadNote), [hours, leadNote]);
   const weekPeak = Math.max(0, ...props.psiDaily.map((d) => d.max));
   const since = sinceWhen(weekPeak);
   return (
@@ -48,7 +49,7 @@ export default function ForecastView(props: {
       <Section title="Next 48 hours" aside="PM2.5 µg/m³, island-wide">
         <div className="px-4">
           <Instrument hours={hours} windFailed={outlook.failed} />
-          <p className="mt-2 text-[13px] text-muted">{OUTLOOK_NOTE}</p>
+          {hours.length > 0 && outlook.steps && <p className="mt-1 text-[13px] text-muted">{OUTLOOK_NOTE}</p>}
         </div>
       </Section>
 
