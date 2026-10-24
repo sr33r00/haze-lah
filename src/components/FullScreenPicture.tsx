@@ -16,6 +16,16 @@ export function Chip({ at, children }: { at: "top" | "bottom"; children: React.R
   );
 }
 
+/** What stands in the picture's box instead of the picture when it cannot be shown: a span, so it can sit inside a button. */
+export function PictureNote({ children }: { children: React.ReactNode }) {
+  return <span className="absolute inset-0 grid place-items-center p-4 text-center text-[15px] text-white/80">{children}</span>;
+}
+
+/** The picture's box while it waits to load, the same shape so that nothing shifts. */
+export function PictureSkeleton() {
+  return <div className="animate-pulse rounded-2xl bg-line" style={{ aspectRatio: SAT_ASPECT }} />;
+}
+
 /**
  * A picture of `SAT_BOX` with a button over it that opens the same picture full screen: a native dialog on black, panned and
  * pinch-zoomed by scrolling. `inline` and `full` are what fills the picture's box in each place (spans only: the inline one sits inside a button).

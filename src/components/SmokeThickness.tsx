@@ -1,19 +1,17 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { fmtDateShort, fmtFullDate, fmtWeekday } from "@/lib/format";
 import { loadDay, loadIndex } from "@/lib/historyClient";
 import type { HistoryDay, HistoryIndex } from "@/lib/historyTypes";
 import { NASA_AOD_URL } from "@/lib/links";
-import { FIRE_COLOR, fetchReplay } from "@/lib/replay";
-import { AOD_DAYS, AOD_MAX, AOD_STOPS, RELIEF, SAT_ASPECT, SAT_SIZE, aodDates, aodUrl } from "@/lib/satellite";
+import { FIRE_COLOR } from "@/lib/replay";
+import { AOD_DAYS, AOD_MAX, AOD_STOPS, RELIEF, SAT_SIZE, aodDates, aodUrl } from "@/lib/satellite";
 import { psiByDate } from "@/lib/timeline";
 import type { DayPsi, Replay } from "@/lib/types";
-import FullScreenPicture from "./FullScreenPicture";
-import SmokeOverlay, { Key, LayerChips, SMOKE_LAYERS, type SmokeLayer } from "./SmokeOverlay";
-import { useNearScreen } from "./useNearScreen";
+import FullScreenPicture, { PictureNote, PictureSkeleton } from "./FullScreenPicture";
+import SmokeOverlay, { Key, hasLayer, type SmokeLayer } from "./SmokeOverlay";
 
-const LAYERS = SMOKE_LAYERS.filter((l) => l.id !== "ahead"); // the chips: fires and labels; there is no smoke path for a past day
 const TICKS = [0, 0.5, 1, 2, AOD_MAX] as const; // the values the colour key names
 const KEY_GRADIENT = `linear-gradient(to right, ${AOD_STOPS.map(([v, c]) => `${c} ${((v / AOD_MAX) * 100).toFixed(1)}%`).join(", ")})`;
 
@@ -81,28 +79,44 @@ function AodKey() {
   );
 }
 
+/** The key of the day slider: the colour scale, the fire line and what the thickness means, for the sidebar of "Smoke from space". */
+export function WeekKey({ replay, layers }: { replay: Replay | null; layers: Record<SmokeLayer, boolean> }) {
+  return (
+    <>
+      <div className="mt-1.5">
+        <AodKey />
+      </div>
+      {layers.fires && hasLayer(replay, "fires") && (
+        <ul className="mt-2 space-y-1.5 text-[13px] text-muted">
+          <Key mark={<span className="size-2.5 rounded-full" style={{ background: FIRE_COLOR }} />}>Fire seen by NASA that day</Key>
+        </ul>
+      )}
+      <p className="mt-2 text-[13px] text-muted">
+        Aerosol optical depth: how much sunlight the smoke and haze block. Above about 1 is thick haze.{" "}
+        <a href={NASA_AOD_URL} target="_blank" rel="noreferrer" className="text-accent underline">
+          Source
+        </a>
+      </p>
+    </>
+  );
+}
+
 /**
- * "Smoke thickness": how much sunlight the smoke and haze block (NASA VIIRS Deep Blue aerosol optical depth, the three satellites stacked
+ * The "Last 7 days" view of "Smoke from space": how much sunlight the smoke and haze block (NASA VIIRS Deep Blue aerosol optical depth, the three satellites stacked
  * so that they fill each other's gaps) over Sumatra, Singapore and Borneo for each of the last `AOD_DAYS` days, chosen with a slider, over
- * the relief map. Drawn over it: that day's fires (today's from the live replay, a past day's from its history file), the provinces with most of
- * them, and Singapore with that day's highest 24-hr PSI (`psiDaily`, the live NEA days, over the history index's). Nothing loads until the section is near the screen.
+ * the relief map. Drawn over it: that day's fires (today's from the live `replay`, a past day's from its history file), the provinces with most of
+ * them, and Singapore with that day's highest 24-hr PSI (`psiDaily`, the live NEA days, over the history index's), as far as the `layers` are on. Nothing loads until `near`.
  */
-export default function SmokeThickness({ psiDaily }: { psiDaily: DayPsi[] }) {
-  const box = useRef<HTMLDivElement>(null);
-  const near = useNearScreen(box);
+export default function SmokeThickness({ psiDaily, replay, layers, near }: { psiDaily: DayPsi[]; replay: Replay | null; layers: Record<SmokeLayer, boolean>; near: boolean }) {
   const [dates, setDates] = useState<string[] | null>(null); // computed in the browser: the server's page can be up to half an hour old
   const [sel, setSel] = useState(AOD_DAYS - 1); // today
-  const [layers, setLayers] = useState<Partial<Record<SmokeLayer, boolean>>>({ fires: true, labels: true });
-  const [replay, setReplay] = useState<Replay | null>(null);
   const [index, setIndex] = useState<HistoryIndex | null>(null);
   const [files, setFiles] = useState<Record<string, HistoryDay | null>>({}); // a day's history file; null when it has none
   const [failed, setFailed] = useState<Record<string, boolean>>({});
 
   useEffect(() => setDates(aodDates()), []);
   useEffect(() => {
-    if (!near) return;
-    fetchReplay().then(setReplay, () => {});
-    loadIndex().then(setIndex);
+    if (near) loadIndex().then(setIndex);
   }, [near]);
 
   const date = dates?.[sel];
@@ -116,9 +130,12 @@ export default function SmokeThickness({ psiDaily }: { psiDaily: DayPsi[] }) {
 
   if (!dates || !date) {
     return (
-      <div ref={box} className="px-4">
-        <div className="animate-pulse rounded-2xl bg-line" style={{ aspectRatio: SAT_ASPECT }} />
-      </div>
+      <>
+        <div aria-hidden className="min-h-12 sm:min-h-6" />
+        <div className="mt-2">
+          <PictureSkeleton />
+        </div>
+      </>
     );
   }
 
@@ -137,61 +154,39 @@ export default function SmokeThickness({ psiDaily }: { psiDaily: DayPsi[] }) {
       {caption}
     </p>
   );
-  const withFires = (fires?.length ?? 0) > 0;
 
   return (
-    <div ref={box} className="px-4">
+    <>
       {captionEl}
-      <div className="mt-2 lg:grid lg:grid-cols-[minmax(0,1fr)_17rem] lg:gap-6">
-        <div>
-          <FullScreenPicture
-            name="Smoke thickness"
-            disabled={!near}
-            inline={
-              <>
-                {stack}
-                {note ? <span className="absolute inset-0 grid place-items-center p-4 text-center text-[15px] text-white/80">{note}</span> : overlay}
-              </>
-            }
-            full={
-              <>
-                {stack}
-                {overlay}
-              </>
-            }
-            chips={null}
-            controls={
-              <>
-                <DaySlider dates={dates} sel={sel} onSel={setSel} onDark />
-                {captionEl}
-              </>
-            }
-          />
-          <div className="mt-2">
-            <DaySlider dates={dates} sel={sel} onSel={setSel} />
-          </div>
-          <p className="mt-1 text-[13px] text-muted">Blank patches are clouds or gaps between satellite passes. NASA posts the newest day or two late.</p>
+      <div className="mt-2">
+        <FullScreenPicture
+          name="Smoke thickness"
+          disabled={!near}
+          inline={
+            <>
+              {stack}
+              {note ? <PictureNote>{note}</PictureNote> : overlay}
+            </>
+          }
+          full={
+            <>
+              {stack}
+              {overlay}
+            </>
+          }
+          chips={null}
+          controls={
+            <>
+              <DaySlider dates={dates} sel={sel} onSel={setSel} onDark />
+              {captionEl}
+            </>
+          }
+        />
+        <div className="mt-2">
+          <DaySlider dates={dates} sel={sel} onSel={setSel} />
         </div>
-        <div className="mt-3 lg:mt-0">
-          {withFires && <LayerChips shown={LAYERS} layers={layers} onToggle={(id) => setLayers((old) => ({ ...old, [id]: !old[id] }))} />}
-          <h3 className="text-[13px] font-semibold text-fg">How to read this</h3>
-          <div className="mt-1.5">
-            <AodKey />
-          </div>
-          {layers.fires && withFires && (
-            <ul className="mt-2 space-y-1.5 text-[13px] text-muted">
-              <Key mark={<span className="size-2.5 rounded-full" style={{ background: FIRE_COLOR }} />}>Fire seen by NASA that day</Key>
-            </ul>
-          )}
-          <p className="mt-2 text-[13px] text-muted">
-            Aerosol optical depth: how much sunlight the smoke and haze block. Above about 1 is thick haze.{" "}
-            <a href={NASA_AOD_URL} target="_blank" rel="noreferrer" className="text-accent underline">
-              Source
-            </a>
-          </p>
-        </div>
+        <p className="mt-1 text-[13px] text-muted">Blank patches are clouds or gaps between satellite passes. NASA posts the newest day or two late.</p>
       </div>
-      <p className="mt-2 text-[13px] text-muted">Smoke: NASA VIIRS Deep Blue (NOAA-20, NOAA-21, Suomi NPP) via NASA GIBS · Fires: NASA FIRMS · PSI: NEA</p>
-    </div>
+    </>
   );
 }

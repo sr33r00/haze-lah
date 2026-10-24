@@ -13,6 +13,25 @@ export function Section(props: { title: string; aside?: React.ReactNode; childre
   );
 }
 
+/** A row of equal buttons in a rounded tray (`aria-pressed` on each, `on` saying which are pressed): a choice between views, or chips that switch things on and off. `className` places the tray. */
+export function Segmented<T extends string>({ label, options, on, onSelect, className = "" }: { label: string; options: readonly { id: T; label: string }[]; on: (id: T) => boolean; onSelect: (id: T) => void; className?: string }) {
+  return (
+    <div role="group" aria-label={label} className={`grid gap-1 rounded-2xl bg-surface p-1 ${className}`} style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }}>
+      {options.map((o) => (
+        <button
+          key={o.id}
+          type="button"
+          aria-pressed={on(o.id)}
+          onClick={() => onSelect(o.id)}
+          className={`min-h-[44px] rounded-xl px-2 text-[14px] font-semibold ${on(o.id) ? "bg-fg text-bg" : "text-muted hover:bg-line"}`}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 /** Small coloured status word, e.g. a band name. */
 export function Tag({ color, children }: { color: string; children: React.ReactNode }) {
   return (

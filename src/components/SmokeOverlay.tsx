@@ -5,6 +5,7 @@ import { FIRE_COLOR, NEW_FIRE_COLOR, topAreas } from "@/lib/replay";
 import { SAT_SIZE, onImage } from "@/lib/satellite";
 import type { Replay } from "@/lib/types";
 import { SG } from "@/lib/util";
+import { Segmented } from "./ui";
 
 /** The layers of the picture that can be switched off, as the chips list them. */
 export const SMOKE_LAYERS = [
@@ -30,21 +31,7 @@ export function hasLayer(replay: Replay | null, layer: SmokeLayer) {
 
 /** The chips that switch the `shown` layers of a picture on and off, `layers` saying which are on. */
 export function LayerChips({ shown, layers, onToggle }: { shown: readonly { id: SmokeLayer; label: string }[]; layers: Partial<Record<SmokeLayer, boolean>>; onToggle: (id: SmokeLayer) => void }) {
-  return (
-    <div role="group" aria-label="Show on the picture" className="mb-3 grid gap-1 rounded-2xl bg-surface p-1" style={{ gridTemplateColumns: `repeat(${shown.length}, minmax(0, 1fr))` }}>
-      {shown.map((l) => (
-        <button
-          key={l.id}
-          type="button"
-          aria-pressed={!!layers[l.id]}
-          onClick={() => onToggle(l.id)}
-          className={`min-h-[44px] rounded-xl px-2 text-[14px] font-semibold ${layers[l.id] ? "bg-fg text-bg" : "text-muted hover:bg-line"}`}
-        >
-          {l.label}
-        </button>
-      ))}
-    </div>
-  );
+  return <Segmented label="Show on the picture" options={shown} on={(id) => !!layers[id]} onSelect={onToggle} className="mb-3" />;
 }
 
 /** One line of a picture's key: a `mark` and what it means. */

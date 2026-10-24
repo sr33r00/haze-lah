@@ -1,15 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { fmtDateTime, fmtTimeRange } from "@/lib/format";
-import { AHEAD_LABEL, AHEAD_NONE, FIRE_COLOR, NEW_FIRE_COLOR, aheadParts, fetchReplay, newFires, newZonesText, trailCaption } from "@/lib/replay";
-import { SAT_ASPECT, SAT_SIZE, himawariUrl, visibleTimes } from "@/lib/satellite";
+import { AHEAD_LABEL, AHEAD_NONE, FIRE_COLOR, NEW_FIRE_COLOR, aheadParts, newZonesText, trailCaption } from "@/lib/replay";
+import { SAT_SIZE, himawariUrl, visibleTimes } from "@/lib/satellite";
 import type { Replay } from "@/lib/types";
 import { sgDate } from "@/lib/util";
-import FullScreenPicture, { Chip } from "./FullScreenPicture";
+import FullScreenPicture, { Chip, PictureNote, PictureSkeleton } from "./FullScreenPicture";
 import PlayButton from "./PlayButton";
-import SmokeOverlay, { Key, LayerChips, SMOKE_LAYERS, hasLayer, type SmokeLayer } from "./SmokeOverlay";
-import { useNearScreen } from "./useNearScreen";
+import SmokeOverlay, { Key, hasLayer, type SmokeLayer } from "./SmokeOverlay";
 
 const FRAME_MS = 250; // about 4 pictures a second
 const BLANK_BELOW = 3; // a picture whose average brightness (0 to 255) is under this has no data
@@ -60,7 +59,7 @@ function Picture({ times, current, mark, note }: { times: string[]; current: str
   return (
     <>
       <Frames times={times} current={current} mark={mark} />
-      {note && <span className="absolute inset-0 grid place-items-center p-4 text-center text-[15px] text-white/80">{note}</span>}
+      {note && <PictureNote>{note}</PictureNote>}
     </>
   );
 }
@@ -141,38 +140,48 @@ function Player({ times, playing, onPlaying, overlay, chips }: { times: string[]
   );
 }
 
+/** The key of the loop (what the smoke, the cloud, the fires and the paths look like) and the note under it, for the sidebar of "Smoke from space". `fresh` are the new fire zones. */
+export function LiveKey({ replay, fresh, layers }: { replay: Replay | null; fresh: [number, number][]; layers: Record<SmokeLayer, boolean> }) {
+  return (
+    <>
+      <ul className="mt-1.5 space-y-1.5 text-[13px] text-muted">
+        <Key mark={<span className="size-3.5 rounded-sm" style={{ background: "#9b8f84" }} />}>Smoke: smooth grey-brown veil, often over Sumatra and Borneo</Key>
+        <Key mark={<span className="size-3.5 rounded-sm border border-fg/30 bg-white" />}>Cloud: bright white, lumpy</Key>
+        {layers.fires && hasLayer(replay, "fires") && <Key mark={<span className="size-2.5 rounded-full" style={{ background: FIRE_COLOR }} />}>Fire seen by NASA today</Key>}
+        {layers.fires && fresh.length > 0 && (
+          <Key mark={<span className="size-3.5 rounded-full border-[1.5px]" style={{ borderColor: NEW_FIRE_COLOR }} />}>{newZonesText(fresh.length)}</Key>
+        )}
+        {layers.ahead && hasLayer(replay, "ahead") && <Key mark={<span className="w-5 border-t-[3px] border-dashed" style={{ borderColor: FIRE_COLOR }} />}>{AHEAD_LABEL}</Key>}
+      </ul>
+      <p className="mt-2 text-[13px] text-muted">Fires and paths: latest, not the loop&apos;s time.</p>
+    </>
+  );
+}
+
 /**
- * "Smoke from space": the last 3 hours of Himawari-9 over Sumatra, Singapore and Borneo as a looping picture (visible light by day; at night
- * the afternoon's, up to 5:30pm), straight from NASA GIBS, with today's fires, the paths of today's smoke, province names and Singapore's PM2.5
- * (`pm25`, NEA's highest 1-hour reading) drawn over it, and a caption that says what it shows. The overlay is the latest data, not that of
- * the loop's frame. Nothing loads until the section is near the screen. Paused to begin with under reduced motion.
+ * The "Live" view of "Smoke from space": the last 3 hours of Himawari-9 over Sumatra, Singapore and Borneo as a looping picture (visible light
+ * by day; at night the afternoon's, up to 5:30pm), straight from NASA GIBS, with today's fires, the paths of today's smoke, province names and
+ * Singapore's PM2.5 (`pm25`, NEA's highest 1-hour reading) drawn over it, and a caption that says what it shows. The overlay is the latest data
+ * (`replay`, or `failed` to get it, with its `fresh` fire zones and the `layers` that are on), not that of the loop's frame. Nothing loads until
+ * `near`. Paused to begin with under reduced motion.
  */
-export default function HimawariLoop({ pm25 }: { pm25: number | null }) {
+export default function HimawariLoop({ pm25, replay, failed, fresh, layers, near }: { pm25: number | null; replay: Replay | null; failed: boolean; fresh: [number, number][]; layers: Record<SmokeLayer, boolean>; near: boolean }) {
   const [playing, setPlaying] = useState(true);
   const [frames, setFrames] = useState<ReturnType<typeof visibleTimes> | null>(null);
-  const [replay, setReplay] = useState<Replay | null>(null);
-  const [failed, setFailed] = useState(false);
-  const [layers, setLayers] = useState<Record<SmokeLayer, boolean>>({ fires: true, ahead: true, labels: true });
-  const box = useRef<HTMLDivElement>(null);
-  const near = useNearScreen(box);
 
   useEffect(() => {
     if (matchMedia("(prefers-reduced-motion: reduce)").matches) setPlaying(false);
   }, []);
   useEffect(() => {
-    if (!near) return;
-    setFrames(visibleTimes());
-    fetchReplay().then(setReplay, () => setFailed(true));
+    if (near) setFrames(visibleTimes());
   }, [near]);
 
   const day = replay?.days.at(-1);
-  const fresh = useMemo(() => (replay ? newFires(replay.days) : []), [replay]);
   const reach = day?.ahead ? aheadParts(day.ahead) : null;
-  const shown = SMOKE_LAYERS.filter((l) => hasLayer(replay, l.id));
   const night = frames?.night ? `${sgDate(0, new Date(frames.times[0])) === sgDate(0) ? "Today" : "Yesterday"} ${fmtTimeRange(frames.times[0], frames.times.at(-1)!)}` : null;
 
   return (
-    <div ref={box} className="px-4">
+    <>
       <div aria-live="polite" className={failed || day ? "" : "min-h-[5.5rem]"}>
         {day ? (
           <>
@@ -183,46 +192,25 @@ export default function HimawariLoop({ pm25 }: { pm25: number | null }) {
           !failed && <div className="h-[5.5rem] animate-pulse rounded-2xl bg-line" />
         )}
       </div>
-      <div className="mt-3 lg:grid lg:grid-cols-[minmax(0,1fr)_17rem] lg:gap-6">
-        <div>
-          {frames ? (
-            <Player
-              times={frames.times}
-              playing={playing}
-              onPlaying={setPlaying}
-              chips={
-                <>
-                  {night && <Chip at="top">{night}</Chip>}
-                  {layers.fires && hasLayer(replay, "fires") && <Chip at="bottom">Fires: today</Chip>}
-                </>
-              }
-              overlay={<SmokeOverlay fires={day?.fires ?? []} ahead={day?.ahead?.path} layers={layers} reading={pm25 != null ? `PM2.5 ${Math.round(pm25)} µg/m³` : null} fresh={fresh} />}
-            />
-          ) : (
-            <div className="animate-pulse rounded-2xl bg-line" style={{ aspectRatio: SAT_ASPECT }} />
-          )}
-          {frames?.night && <p className="mt-1 text-[13px] text-muted">Night: smoke can&apos;t be seen in the dark, so this is the last good light. Fires and smoke paths are the latest.</p>}
-        </div>
-        <div className="mt-3 lg:mt-0">
-          {shown.length > 0 && <LayerChips shown={shown} layers={layers} onToggle={(id) => setLayers((old) => ({ ...old, [id]: !old[id] }))} />}
-          <h3 className="text-[13px] font-semibold text-fg">How to read this</h3>
-          <ul className="mt-1.5 space-y-1.5 text-[13px] text-muted">
-            <Key mark={<span className="size-3.5 rounded-sm" style={{ background: "#9b8f84" }} />}>Smoke: smooth grey-brown veil, often over Sumatra and Borneo</Key>
-            <Key mark={<span className="size-3.5 rounded-sm border border-fg/30 bg-white" />}>Cloud: bright white, lumpy</Key>
-            {layers.fires && hasLayer(replay, "fires") && (
-              <Key mark={<span className="size-2.5 rounded-full" style={{ background: FIRE_COLOR }} />}>Fire seen by NASA today</Key>
-            )}
-            {layers.fires && fresh.length > 0 && (
-              <Key mark={<span className="size-3.5 rounded-full border-[1.5px]" style={{ borderColor: NEW_FIRE_COLOR }} />}>{newZonesText(fresh.length)}</Key>
-            )}
-            {layers.ahead && hasLayer(replay, "ahead") && (
-              <Key mark={<span className="w-5 border-t-[3px] border-dashed" style={{ borderColor: FIRE_COLOR }} />}>{AHEAD_LABEL}</Key>
-            )}
-          </ul>
-          <p className="mt-2 text-[13px] text-muted">Fires and paths: latest, not the loop&apos;s time.</p>
-        </div>
+      <div className="mt-3">
+        {frames ? (
+          <Player
+            times={frames.times}
+            playing={playing}
+            onPlaying={setPlaying}
+            chips={
+              <>
+                {night && <Chip at="top">{night}</Chip>}
+                {layers.fires && hasLayer(replay, "fires") && <Chip at="bottom">Fires: today</Chip>}
+              </>
+            }
+            overlay={<SmokeOverlay fires={day?.fires ?? []} ahead={day?.ahead?.path} layers={layers} reading={pm25 != null ? `PM2.5 ${Math.round(pm25)} µg/m³` : null} fresh={fresh} />}
+          />
+        ) : (
+          <PictureSkeleton />
+        )}
+        {frames?.night && <p className="mt-1 text-[13px] text-muted">Night: smoke can&apos;t be seen in the dark, so this is the last good light. Fires and smoke paths are the latest.</p>}
       </div>
-      <p className="mt-2 text-[13px] text-muted">Himawari-9 (JMA) via NASA GIBS · Fires: NASA FIRMS · Wind: ECMWF via Open-Meteo{pm25 != null && " · PM2.5: NEA"}</p>
-    </div>
+    </>
   );
 }
