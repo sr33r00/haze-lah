@@ -14,11 +14,14 @@ export const fmtTime = (t: string | number) =>
     .replace(" ", "")
     .toLowerCase();
 
+/** Joins two clock times with an en dash; the first loses its "am"/"pm" when it is the same as the second's. */
+const joinTimes = (a: string, b: string) => `${a.slice(-2) === b.slice(-2) ? a.slice(0, -2) : a}–${b}`;
+
 /** "3:30–6:30pm" for two moments in time, in Singapore: the first loses its "am"/"pm" when it is the same as the second's. */
-export function fmtTimeRange(from: string | number, to: string | number) {
-  const [a, b] = [fmtTime(from), fmtTime(to)];
-  return `${a.slice(-2) === b.slice(-2) ? a.slice(0, -2) : a}–${b}`;
-}
+export const fmtTimeRange = (from: string | number, to: string | number) => joinTimes(fmtTime(from), fmtTime(to));
+
+/** "7–10am" or "11am–2pm" for two moments in time, in Singapore, on the hour. */
+export const fmtHourRange = (from: string | number, to: string | number) => joinTimes(fmtHour(from), fmtHour(to));
 
 /** Weekday name of an SGT date (YYYY-MM-DD). */
 export const fmtWeekday = (date: string, weekday: "short" | "long" = "short") =>
