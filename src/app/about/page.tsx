@@ -6,13 +6,14 @@ import { GROUP_LABEL, LEVEL_COLOR, LEVEL_NAME, NEA_ADVICE, type Group } from "@/
 import AccuracyTable from "@/components/AccuracyTable";
 import AppShell from "@/components/AppShell";
 import SupportDialog from "@/components/SupportDialog";
+import ReleaseList from "@/components/ReleaseList";
 import SectionNav from "@/components/SectionNav";
 import { Bullets } from "@/components/ui";
 import { fetchAccuracy } from "@/lib/accuracy";
 import { CIGARETTE_NOTES, CIGARETTE_SOURCES } from "@/lib/cigarettes";
 import { getHazeData } from "@/lib/data";
 import { FORECAST_METHOD } from "@/lib/forecast";
-import { RELEASE, RELEASE_LABEL } from "@/lib/releases";
+import { RELEASE_LABEL } from "@/lib/releases";
 
 export const metadata = pageMeta(
   "About Haze Lah: data sources, forecast method and accuracy",
@@ -297,16 +298,7 @@ export default async function About() {
             <section id="whats-new" className="scroll-mt-20 space-y-3">
               <h2 className={H2}>What&apos;s new</h2>
               <p className="text-[13px] text-muted">{RELEASE_LABEL}</p>
-              <ul className="divide-y divide-line rounded-2xl bg-surface">
-                {RELEASE.items.map(({ title, text, href }) => (
-                  <li key={title} className="p-3">
-                    <Link href={href} className="font-semibold text-accent">
-                      {title}
-                    </Link>
-                    <div className="text-[14px] text-muted">{text}</div>
-                  </li>
-                ))}
-              </ul>
+              <ReleaseList on="page" />
             </section>
 
             <section className="rounded-2xl border border-line bg-surface p-3">

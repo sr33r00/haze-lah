@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useRef } from "react";
 import { RELEASE, RELEASE_LABEL } from "@/lib/releases";
+import ReleaseList from "./ReleaseList";
 import SupportDialog from "./SupportDialog";
 
 const SEEN = "seen-release";
@@ -47,16 +47,10 @@ export default function WhatsNew() {
           New in Haze Lah
         </h2>
         <p className="mt-0.5 text-[13px] text-muted">{RELEASE_LABEL}</p>
-        <ul className="-mx-3 mt-3">
-          {RELEASE.items.map(({ title, text, href }) => (
-            <li key={title}>
-              <Link href={href} onClick={close} className="block min-h-11 rounded-2xl px-3 py-2.5 transition-colors hover:bg-line">
-                <span className="block text-[15px] font-semibold">{title}</span>
-                <span className="mt-0.5 block text-[13px] leading-snug text-muted">{text}</span>
-              </Link>
-            </li>
-          ))}
-        </ul>
+        <p className="mt-0.5 text-[13px] text-muted">Tap one to see it.</p>
+        <div className="mt-3">
+          <ReleaseList onNavigate={close} />
+        </div>
         <div className="mt-3 flex flex-col items-center gap-3 text-center">
           <p className="text-balance text-[13px] leading-snug text-muted">Haze Lah is free for everyone. Supporters help keep it running.</p>
           <SupportDialog />

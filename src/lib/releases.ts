@@ -1,47 +1,52 @@
+import { CalendarDays, Camera, ChartLine, Globe, MapPin, Satellite, type LucideIcon } from "lucide-react";
 import { fmtFullDate } from "./format";
 
+/** One change in a release: a row in the "What's new" sheet and on the About page. */
+export type ReleaseItem = { title: string; text: string; href: string; icon: LucideIcon };
+
 /** The current release, shown once to each visitor in the "What's new" sheet and listed on the About page. Keep `version` in step with package.json. */
-export const RELEASE = {
-  version: "1.4.0",
-  date: "2026-10-23",
+export const RELEASE: { version: string; date: string; items: ReleaseItem[] } = {
+  version: "1.5.0",
+  date: "2026-10-24",
   items: [
+    {
+      title: "New forecast",
+      text: "One answer up top, then a 48-hour graph you can drag: PM2.5 with its likely range, the wind and the rain. See how accurate the forecast has been.",
+      href: "/forecast",
+      icon: ChartLine,
+    },
+    {
+      title: "PM2.5 or US AQI",
+      text: "Switch the map on Now between PM2.5 and US AQI, with every AQICN station in Singapore. Every dot shows its number, and a blue dot shows where you are.",
+      href: "/#across",
+      icon: MapPin,
+    },
+    {
+      title: "Smoke from space",
+      text: "Watch today's smoke on the Himawari-9 satellite loop, or switch to the last 7 days of NASA smoke thickness. Tap the picture for full screen.",
+      href: "/photos#space",
+      icon: Satellite,
+    },
+    {
+      title: "Cameras first",
+      text: "Photos now opens with the road cameras and webcams, so you can see the haze where you are.",
+      href: "/photos#ground",
+      icon: Camera,
+    },
+    {
+      title: "Days of haze",
+      text: "News now counts the whole haze spell, not just the last week.",
+      href: "/news",
+      icon: CalendarDays,
+    },
     {
       title: "Fly in from space",
       text: "The globe now opens on the whole Earth and flies down to Singapore, and it loads faster. Tap anywhere to skip.",
       href: "/map",
-    },
-    {
-      title: "The air globe",
-      text: "The map is now a globe of the Earth from NASA. See the fires, the wind and the air's path to Singapore.",
-      href: "/map",
-    },
-    {
-      title: "Every day since 1 August",
-      text: "Drag the timeline to see each day of the haze season and the next 3 days. Press play to see the smoke move.",
-      href: "/map",
-    },
-    {
-      title: "More pollutants",
-      text: "See PM2.5, PM10, carbon monoxide, nitrogen dioxide, sulphur dioxide, ozone and dust on the globe, and NASA's smoke picture.",
-      href: "/map",
-    },
-    {
-      title: "Measured readings",
-      text: "Dots on the globe show what NEA, Malaysian stations and air sensors measure now. Tap a dot to see the number.",
-      href: "/map",
-    },
-    {
-      title: "New fire zones",
-      text: "Cyan rings show fires that started far from earlier ones.",
-      href: "/map?view=path",
-    },
-    {
-      title: "One smoke map on Now",
-      text: "The air journey map now shows the wind and the smoke. Move the slider over the past few days and the next 3, and tap a spot to read the smoke level.",
-      href: "/#origin",
+      icon: Globe,
     },
   ],
 };
 
-/** "Version 1.4.0, 23 Oct 2026". */
+/** "Version 1.5.0, 24 Oct 2026". */
 export const RELEASE_LABEL = `Version ${RELEASE.version}, ${fmtFullDate(RELEASE.date)}`;
