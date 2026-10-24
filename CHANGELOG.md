@@ -8,6 +8,16 @@ The in-app "What's new" sheet shows the highlights of the current release. Data-
 
 Nothing yet.
 
+## [1.6.2] - 2026-10-24
+
+### Fixed
+
+- When today's NEA PM2.5 request failed, the page kept yesterday's readings for 30 minutes, so the forecast, the hero's next hours and Plan your day started in the past. A build whose newest reading is over 3 hours old is now kept 1 minute, and the hero and Plan your day always start at the current hour, also on a page left open.
+
+### Changed
+
+- Plan your day is one card: the question, the best time, the hours with it outlined, the numbers and the caveat. Its bars are scaled to the hours shown, with NEA band I's top (55 µg/m³) marked.
+
 ## [1.6.1] - 2026-10-24
 
 ### Fixed
@@ -156,7 +166,8 @@ Nothing yet.
 - Forecast smoke map, fire counts and a wind dial, "Plan your day", NEA news timeline and 7-day PSI history.
 - Feedback issue form.
 
-[Unreleased]: https://github.com/sr33r00/haze-lah/compare/v1.6.1...HEAD
+[Unreleased]: https://github.com/sr33r00/haze-lah/compare/v1.6.2...HEAD
+[1.6.2]: https://github.com/sr33r00/haze-lah/compare/v1.6.1...v1.6.2
 [1.6.1]: https://github.com/sr33r00/haze-lah/compare/v1.6.0...v1.6.1
 [1.6.0]: https://github.com/sr33r00/haze-lah/compare/abc6ebe...v1.6.0
 [1.5.0]: https://github.com/sr33r00/haze-lah/commit/abc6ebe

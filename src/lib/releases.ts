@@ -6,12 +6,12 @@ export type ReleaseItem = { title: string; text: string; href: string; icon: Luc
 
 /** The current release, shown once to each visitor in the "What's new" sheet and listed on the About page. Keep `version` in step with package.json. */
 export const RELEASE: { version: string; date: string; items: ReleaseItem[] } = {
-  version: "1.6.1",
+  version: "1.6.2",
   date: "2026-10-24",
   items: [
     {
-      title: "Plan your run",
-      text: "Pick running, cycling, football or a walk and how long you'll be out. Get the steadiest time today and tomorrow, and how much fine dust you'd breathe, in cigarettes.",
+      title: "Plan your day, in one card",
+      text: "Pick running, cycling, football or a walk and how long you'll be out. Your best time, the hours from now and the fine dust you'd breathe, all in one card, with bars sized to show the changes.",
       href: "/#plan",
       icon: Footprints,
     },
@@ -30,5 +30,5 @@ export const RELEASE: { version: string; date: string; items: ReleaseItem[] } = 
   ],
 };
 
-/** "Version 1.6.1, 24 Oct 2026". */
+/** "Version 1.6.2, 24 Oct 2026". */
 export const RELEASE_LABEL = `Version ${RELEASE.version}, ${fmtFullDate(RELEASE.date)}`;
