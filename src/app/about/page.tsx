@@ -1,6 +1,6 @@
 import { Activity, BookOpen, Camera, CloudSun, Flame, History, Newspaper } from "lucide-react";
 import Link from "next/link";
-import { OPEN_DATA_LICENCE } from "@/lib/links";
+import { OPEN_DATA_LICENCE, WAQI_NAME, WAQI_URL } from "@/lib/links";
 import { pageMeta } from "@/lib/seo";
 import { GROUP_LABEL, LEVEL_COLOR, LEVEL_NAME, NEA_ADVICE, type Group } from "@/lib/bands";
 import AccuracyTable from "@/components/AccuracyTable";
@@ -48,6 +48,7 @@ const SOURCE_GROUPS = [
       ["NEA via data.gov.sg", "Live 1-hour PM2.5 and 24-hour PSI for the five regions, updated hourly", "https://data.gov.sg"],
       ["Malaysia DOE APIMS", "Live Air Pollutant Index for Malaysian stations", "https://eqms.doe.gov.my/APIMS/main"],
       ["OpenAQ", "Low-cost community air sensors on the map, mainly AirGradient", "https://openaq.org"],
+      [WAQI_NAME, "Air quality stations in Singapore on the map's US AQI view, from the agencies behind it. Not fully verified.", WAQI_URL],
     ],
   },
   {
@@ -166,7 +167,7 @@ export default async function About() {
                 </a>
                 . Contains modified Copernicus Atmosphere
                 Monitoring Service information. Weather data by Open-Meteo.com (CC BY 4.0). Fire data from NASA FIRMS. Community sensor data
-                from OpenAQ.
+                from OpenAQ. AQI station data from the {WAQI_NAME} (waqi.info).
               </p>
             </section>
 

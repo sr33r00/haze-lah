@@ -6,7 +6,7 @@ import { tips } from "@/lib/advice";
 import { trend3h } from "@/lib/format";
 import { adviceStep, psiLevel } from "@/lib/bands";
 import { currentReading, islandMax } from "@/lib/situation";
-import type { DayOutlook, ForecastPoint, NeaNow, NeaPm25History, Sensor, Station } from "@/lib/types";
+import type { AqiStation, DayOutlook, ForecastPoint, NeaNow, NeaPm25History, Sensor, Station } from "@/lib/types";
 import AirDetail from "./AirDetail";
 import Advice from "./Advice";
 import CigaretteCard from "./CigaretteCard";
@@ -27,7 +27,7 @@ const SgMap = dynamic(() => import("./SgMap"), {
 });
 
 /** The Now tab: the answer for the chosen region, what to do, what is in the air and where it came from. */
-export default function NowView({ history, nea, hourly, days, sensors, stations }: { history: NeaPm25History | null; nea: NeaNow | null; hourly: ForecastPoint[]; days: DayOutlook[]; sensors: Sensor[]; stations: Station[] }) {
+export default function NowView({ history, nea, hourly, days, sensors, aqiStations, stations }: { history: NeaPm25History | null; nea: NeaNow | null; hourly: ForecastPoint[]; days: DayOutlook[]; sensors: Sensor[]; aqiStations: AqiStation[]; stations: Station[] }) {
   const cameras = useCameras() ?? [];
   const { region, setRegion, group, setGroup, locating, locate } = usePrefs(nea ? islandMax(nea.psi24)?.region : undefined);
 
@@ -61,7 +61,7 @@ export default function NowView({ history, nea, hourly, days, sensors, stations 
         </div>
 
         <Section className="order-7" title="Across Singapore">
-          <SgMap history={history} psi24={nea?.psi24 ?? null} region={region} onPick={setRegion} sensors={sensors} stations={stations} cameras={cameras} />
+          <SgMap history={history} psi24={nea?.psi24 ?? null} region={region} onPick={setRegion} sensors={sensors} aqiStations={aqiStations} stations={stations} cameras={cameras} />
         </Section>
 
         {cameras.length > 0 && (

@@ -7,7 +7,8 @@ import { fetchNews } from "./sources/news";
 import { fetchNeaNow, fetchNeaPm25History, fetchPsiDaily } from "./sources/nea";
 import { fetchCamsSingapore, fetchUpwindModel, fetchWeather } from "./sources/openmeteo";
 import { fetchCommunitySensors } from "./sources/openaq";
-import type { DayPsi, FireSummary, HazeData, HourPoint, NeaNow, NewsItem, NeaPm25History, Sensor, Station, WeatherHour } from "./types";
+import { fetchAqiStations } from "./sources/waqi";
+import type { AqiStation, DayPsi, FireSummary, HazeData, HourPoint, NeaNow, NewsItem, NeaPm25History, Sensor, Station, WeatherHour } from "./types";
 
 /** Raw inputs from every source; any of them may be missing. */
 export type Inputs = {
@@ -17,6 +18,7 @@ export type Inputs = {
   weather: WeatherHour[];
   stations: Station[];
   sensors: Sensor[];
+  aqiStations: AqiStation[];
   fires: FireSummary;
   news: NewsItem[];
   psiDaily: DayPsi[];
@@ -35,7 +37,7 @@ function settled<T>(r: PromiseSettledResult<T>, label: string, errors: string[])
 
 async function fetchInputs(): Promise<Inputs> {
   const errors: string[] = [];
-  const [now, hist, apims, upwind, fires, cams, weather, news, psiDaily, sensors] = await Promise.allSettled([
+  const [now, hist, apims, upwind, fires, cams, weather, news, psiDaily, sensors, aqiStations] = await Promise.allSettled([
     fetchNeaNow(),
     fetchNeaPm25History(),
     fetchApims(),
@@ -46,6 +48,7 @@ async function fetchInputs(): Promise<Inputs> {
     fetchNews(),
     fetchPsiDaily(),
     fetchCommunitySensors(),
+    fetchAqiStations(),
   ]);
   return {
     nea: settled(now, "NEA PSI", errors),
@@ -54,6 +57,7 @@ async function fetchInputs(): Promise<Inputs> {
     weather: settled(weather, "Weather", errors) ?? [],
     stations: [...(settled(apims, "Malaysia APIMS", errors) ?? []), ...(settled(upwind, "Upwind model", errors) ?? [])],
     sensors: settled(sensors, "Community sensors", errors) ?? [],
+    aqiStations: settled(aqiStations, "AQI stations", errors) ?? [],
     fires: settled(fires, "NASA FIRMS", errors) ?? NO_FIRES,
     news: settled(news, "News", errors) ?? [],
     psiDaily: settled(psiDaily, "NEA PSI history", errors) ?? [],

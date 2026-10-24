@@ -31,3 +31,13 @@ export const NEA_PSI_URL = "https://www.haze.gov.sg/docs/default-source/faq/comp
 
 /** NASA Earth Observatory, "Aerosols: Small Particles with Big Impacts": what aerosol optical depth is. */
 export const NASA_AOD_URL = "https://earthobservatory.nasa.gov/features/Aerosols";
+
+/** AQICN, the World Air Quality Index Project: the station data on the Now map's US AQI view needs this credit. */
+export const WAQI_URL = "https://waqi.info";
+export const WAQI_NAME = "World Air Quality Index Project";
+
+/** The Guide answer on why AQICN shows a bigger number than NEA. */
+export const GUIDE_AQICN_URL = "/guide#other-apps";
+
+/** Said under the US AQI view of the Now map. */
+export const US_AQI_NOTE = "US AQI reads higher than Singapore's PSI for the same air. NEA's PSI is the official measure.";

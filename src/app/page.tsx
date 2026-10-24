@@ -11,7 +11,7 @@ export default async function Home() {
   return (
     <AppShell data={data}>
       <link rel="preload" as="fetch" href={REPLAY_URL} crossOrigin="anonymous" /> {/* "Where today's air came from" asks for it as soon as the page runs */}
-      <NowView history={data.history} nea={data.nea} hourly={data.forecast.hourly} days={data.forecast.days} sensors={data.sensors} stations={data.stations} />
+      <NowView history={data.history} nea={data.nea} hourly={data.forecast.hourly} days={data.forecast.days} sensors={data.sensors} aqiStations={data.aqiStations} stations={data.stations} />
       <Footer errors={data.errors} />
     </AppShell>
   );

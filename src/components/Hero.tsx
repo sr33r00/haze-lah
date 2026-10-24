@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { GROUP_LABEL, LEVEL_COLOR, LEVEL_NAME, STEP_TEXT, TONE_COLOR, adviceStep, pm25Band, pm25Color, pm25ToUsAqi, psiLevel, verdictFor, type Group } from "@/lib/bands";
 import { fmtHour } from "@/lib/format";
+import { GUIDE_AQICN_URL } from "@/lib/links";
 import type { ForecastPoint } from "@/lib/types";
 import { cap } from "./ui";
 import Counter from "./bits/Counter";
@@ -123,7 +124,7 @@ export default function Hero(props: {
           <span className="mt-px shrink-0 rounded-md bg-fg px-1.5 py-0.5 text-[11px] font-bold tracking-wide text-bg">ON AQICN</span>
           <p className="text-[13px] leading-snug">
             This PM2.5 of <span className="tabular">{Math.round(pm25)}</span> shows as <b className="tabular font-bold">{pm25ToUsAqi(pm25)}</b>. AQICN uses a US scale, not the PSI.{" "}
-            <Link href="/guide#other-apps" className="-my-3.5 inline-block py-3.5 font-semibold text-accent underline">
+            <Link href={GUIDE_AQICN_URL} className="-my-3.5 inline-block py-3.5 font-semibold text-accent underline">
               Why?
             </Link>
           </p>

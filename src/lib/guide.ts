@@ -1,5 +1,5 @@
 import { ECDA, MOE, MOH, NEA_FAQ } from "./advice";
-import { pm25ToPsi, pm25ToUsAqi } from "./bands";
+import { US_AQI_BANDS, pm25ToPsi, pm25ToUsAqi } from "./bands";
 
 type Source = [name: string, url: string];
 export type GuideItem = { id: string; q: string; a: string; points?: string[]; sources: Source[] };
@@ -11,14 +11,7 @@ const AQICN: Source = ["AQICN Singapore page", "https://aqicn.org/city/singapore
 const AQICN_SCALE: Source = ["AQICN scale", "https://aqicn.org/scale/"];
 
 /** AQICN's words for its US AQI ranges (aqicn.org/scale). */
-const AQICN_WORDS = [
-  ["0 to 50", "Good"],
-  ["51 to 100", "Moderate"],
-  ["101 to 150", "Unhealthy for sensitive groups"],
-  ["151 to 200", "Unhealthy"],
-  ["201 to 300", "Very unhealthy"],
-  ["301 and above", "Hazardous"],
-] as const;
+const AQICN_WORDS = US_AQI_BANDS.map((b) => [b.max === Infinity ? `${b.from} and above` : `${b.from} to ${b.max}`, b.name] as const);
 const NEA_HAZE: Source = ["NEA: managing haze", "https://www.nea.gov.sg/our-services/pollution-control/air-pollution/managing-haze"];
 const NEA_QA: Source = ["NEA air pollution FAQ", NEA_FAQ[1]];
 const MOH_HAZE: Source = ["MOH haze advice", MOH[1]];

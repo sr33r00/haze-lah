@@ -1,6 +1,6 @@
 import { LEVEL_NAME, REGIONS, pm25Band } from "@/lib/bands";
 import { getHazeData } from "@/lib/data";
-import { SITE_URL } from "@/lib/links";
+import { SITE_URL, WAQI_NAME, WAQI_URL } from "@/lib/links";
 import { islandSummary } from "@/lib/situation";
 
 export const revalidate = 1800;
@@ -50,6 +50,7 @@ Canonical site: ${SITE_URL}
 - [NASA FIRMS](https://firms.modaps.eosdis.nasa.gov): satellite fire detections
 - [Copernicus CAMS via Open-Meteo](https://open-meteo.com/en/docs/air-quality-api): PM2.5 forecast
 - [OpenAQ](https://openaq.org): community air sensors
+- [${WAQI_NAME}](${WAQI_URL}): AQI stations on the map's US AQI view
 - [NASA GIBS](https://gibs.earthdata.nasa.gov): satellite images (OMPS aerosol index)
 - [OpenFreeMap](https://openfreemap.org): the vector map under them, drawn with MapLibre (map data © OpenStreetMap contributors, © OpenMapTiles)
 - LTA traffic images: live camera photos

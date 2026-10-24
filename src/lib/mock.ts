@@ -1,5 +1,5 @@
 // Synthetic data for local development and screenshots (HAZE_MOCK=1). Not real readings.
-import { REGIONS, type Region } from "./bands";
+import { REGIONS, pm25ToUsAqi, type Region } from "./bands";
 import type { Inputs } from "./data";
 import { buildReplay } from "./replay";
 import type { DayPsi, Fire, HourPoint, NewsItem, Replay, SmokeGrid, Station, WeatherHour } from "./types";
@@ -82,6 +82,17 @@ export function mockInputs(): Inputs {
       ["Yio Chu Kang Beacon", 1.3820, 103.8450, 131],
       ["Taman Jurong", 1.3400, 103.7230, 156],
     ].map(([name, lat, lon, pm25]) => ({ name: String(name), lat: Number(lat), lon: Number(lon), pm25: Number(pm25), time: new Date(now).toISOString() })),
+    // AQICN stations: the US AQI of a PM2.5 close to the community sensors' level.
+    aqiStations: [
+      ["Bedok Reservoir", 1.338, 103.932, 118],
+      ["Siglap", 1.313, 103.93, 125],
+      ["Tanjong Katong", 1.305, 103.893, 130],
+      ["Ang Mo Kio", 1.369, 103.848, 108],
+      ["Yio Chu Kang", 1.381, 103.844, 112],
+      ["Fernvale", 1.391, 103.877, 116],
+      ["Jalan Kayu", 1.396, 103.873, 121],
+      ["Taman Jurong", 1.34, 103.723, 150],
+    ].map(([name, lat, lon, pm], i) => ({ uid: 9000 + i, name: String(name), lat: Number(lat), lon: Number(lon), aqi: pm25ToUsAqi(Number(pm)), time: new Date(now).toISOString() })),
     fires: {
       available: true,
       days: 2,

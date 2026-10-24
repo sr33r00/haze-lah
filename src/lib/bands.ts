@@ -56,9 +56,12 @@ export const PM25_BANDS = [
   { max: Infinity, name: "Very high", band: "IV" },
 ] as const;
 
-/** Colour for a 1-hr PM2.5 value: Normal is green, then the colours of the PSI rows it corresponds to. */
+/** Colour of each 1-hr PM2.5 band: Normal is green, then the colours of the PSI rows it corresponds to. */
+export const PM25_COLORS = [LEVEL_COLOR[0], LEVEL_COLOR[2], LEVEL_COLOR[3], LEVEL_COLOR[4]] as const;
+
+/** Colour for a 1-hr PM2.5 value. */
 export function pm25Color(pm: number) {
-  return [LEVEL_COLOR[0], LEVEL_COLOR[2], LEVEL_COLOR[3], LEVEL_COLOR[4]][pm25Band(pm).index];
+  return PM25_COLORS[pm25Band(pm).index];
 }
 
 export function pm25Band(pm: number) {
@@ -128,6 +131,25 @@ export function pm25ToUsAqi(c: number): number {
   if (c <= 0) return 0;
   return Math.floor(interpolate(PM25_US_AQI_SEGMENTS, Math.floor(c * 10 + 1e-9) / 10, true) ?? 0);
 }
+
+/**
+ * The six US AQI categories with the US EPA AirNow colours (https://www.airnow.gov/aqi/aqi-basics/); the names are
+ * AQICN's (https://aqicn.org/scale/). `text` is the legible colour for a label on that background.
+ */
+export const US_AQI_BANDS = [
+  { from: 0, max: 50, name: "Good", color: "#00e400", text: "#111111" },
+  { from: 51, max: 100, name: "Moderate", color: "#ffff00", text: "#111111" },
+  { from: 101, max: 150, name: "Unhealthy for sensitive groups", color: "#ff7e00", text: "#111111" },
+  { from: 151, max: 200, name: "Unhealthy", color: "#ff0000", text: "#111111" },
+  { from: 201, max: 300, name: "Very unhealthy", color: "#8f3f97", text: "#ffffff" },
+  { from: 301, max: Infinity, name: "Hazardous", color: "#7e0023", text: "#ffffff" },
+] as const;
+
+/** The US AQI category of an index value. */
+export const usAqiBand = (aqi: number) => US_AQI_BANDS.find((b) => aqi <= b.max) ?? US_AQI_BANDS[US_AQI_BANDS.length - 1];
+
+/** Map colour of a US AQI value. */
+export const usAqiColor = (aqi: number) => usAqiBand(aqi).color;
 
 /** Level for a neighbouring station: its API if measured, else modelled PM2.5. */
 export function stationLevel(s: { api: number | null; pm25: number | null }): Level | null {
