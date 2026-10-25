@@ -19,12 +19,12 @@ export const BREATH_SOURCES = [
 ] as const;
 
 export const BREATH_NOTES = [
-  `Times a normal day: today's 24-hour PM2.5 divided by ${NORMAL_PM25} µg/m³. ${NORMAL_PM25} µg/m³ is the yearly average PM2.5 in Singapore in 2025 (NEA).`,
+  `Times a normal day: this hour's PM2.5 (the 1-hour reading) divided by ${NORMAL_PM25} µg/m³. ${NORMAL_PM25} µg/m³ is the yearly average PM2.5 in Singapore in 2025 (NEA).`,
   `Fine dust breathed: an adult breathes about ${BREATH_M3_PER_DAY} m³ of air a day (US EPA). Each hour is ${BREATH_M3_PER_DAY} ÷ 24 m³. The card adds each hour's PM2.5 since midnight and multiplies it by that air.`,
   "Both numbers assume you breathe outdoor air all day. Indoors with windows closed and an air purifier, you breathe less. Exercise makes you breathe more.",
 ];
 
-/** Today's 24-hour PM2.5 against a normal day: the "5.8×" number and a short label. */
+/** This hour's PM2.5 against a normal day: the "5.8×" number and a short label. */
 export function timesNormal(pm25: number): { big: string; label: string } | null {
   if (!Number.isFinite(pm25)) return null;
   const x = Math.max(0, pm25) / NORMAL_PM25;

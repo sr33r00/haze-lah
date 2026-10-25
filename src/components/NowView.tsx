@@ -60,7 +60,7 @@ export default function NowView({ generatedAt, history, nea, hourly, days, senso
           <HazeOutlook days={days} psiNow={nea ? (islandMax(nea.psi24)?.psi ?? null) : null} />
         </div>
         <div className="order-6">
-          <CigaretteCard region={region} pm25={nea?.pm25_24h[region]} today={history?.regions[region]} />
+          <CigaretteCard region={region} pm25={latest?.value} today={history?.regions[region]} />
         </div>
 
         <Section id="across" className="order-7" title="Across Singapore">
