@@ -8,7 +8,8 @@ export default defineConfig({
   plugins: [
     vinext({
       // Pages and cacheable responses are served from Cloudflare's edge (Workers Cache); KV holds the data cache underneath.
-      cache: { data: kvDataAdapter(), cdn: workersCacheCdnAdapter() },
+      // Each location keeps a KV read for 5 minutes (KV's default is 60 s), so a page rebuilt there does not wait on the central store.
+      cache: { data: kvDataAdapter({ entryCacheTtlSeconds: 300 }), cdn: workersCacheCdnAdapter() },
     }),
     cloudflare({
       viteEnvironment: {

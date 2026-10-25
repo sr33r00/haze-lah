@@ -19,6 +19,9 @@ const csp = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // A cached page older than an hour is rebuilt before it is served, not served while it rebuilds (the default allows a year).
+  // Each Cloudflare location keeps its own copy, so a quiet location would otherwise hand its first visitor a page hours old.
+  expireTime: 3600,
   async headers() {
     return [
       {
