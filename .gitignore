@@ -53,3 +53,6 @@ docs/superpowers/
 /dist/
 .vinext/
 .wrangler/
+
+# The site's data lives in the private R2 bucket haze-lah-data, not in the repo.
+/data/
