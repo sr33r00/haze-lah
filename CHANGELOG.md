@@ -10,10 +10,6 @@ The in-app "What's new" sheet shows the highlights of the current release. Data-
 
 - Map number badges on yellow, light green and orange (US AQI view) use dark text instead of unreadable white.
 
-### Removed
-
-- Donations: the Ko-fi link in the header, the support card, the support section on About and the asks in What's new and after sharing.
-
 ## [1.7.0] - 2026-10-25
 
 ### Changed
@@ -62,13 +58,11 @@ The in-app "What's new" sheet shows the highlights of the current release. Data-
 - PM2.5 / US AQI toggle on the Now map, with AQICN's stations in Singapore. Every reading is a numbered badge, a blue dot shows where you are, and a note under the scale explains each colour.
 - Smoke from space on Photos: a Himawari-9 loop of the last hours over Sumatra, Singapore and Borneo, or NASA smoke thickness for each of the last 7 days (Live / Last 7 days toggle). Tap a picture for full screen with pinch-zoom.
 - Wind outlook (where the air comes from, every 3 hours for 3 days, with fires upwind), and rain total and gusts in the 5-day outlook.
-- Donate dialog on the site (Ko-fi's panel), from the header, the support card, What's new, About and after sharing.
 
 ### Changed
 
 - Photos opens with the road cameras and webcams first.
 - News counts the whole haze spell, up to two clear days apart, instead of only the last week.
-- Support moved from Buy Me a Coffee to Ko-fi.
 - The 5-day strips never look safer than the day's expected PSI.
 - What's new rows are tappable and have icons.
 
@@ -129,7 +123,6 @@ The in-app "What's new" sheet shows the highlights of the current release. Data-
 - What's new sheet for returning visitors.
 - AQICN panel, showing the AQICN number and why it is higher than NEA's.
 - Wind arrows, each day's air path and the smoke forecast path on the globe.
-- Supporters named on the support card and About.
 
 ## [1.1.0] - 2026-10-21
 
@@ -171,7 +164,6 @@ The in-app "What's new" sheet shows the highlights of the current release. Data-
 
 - Four tabs: Now, Forecast, Map and News.
 - Anonymous page-view counts (Vercel Web Analytics) and a privacy note.
-- A support link.
 
 ## [0.1.0] - 2026-10-15
 
