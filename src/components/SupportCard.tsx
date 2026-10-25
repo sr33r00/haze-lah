@@ -1,4 +1,4 @@
-import SupportDialog from "./SupportDialog";
+import SupportLink from "./SupportLink";
 
 /** A short, honest ask: the site is free and ad-free, and support pays for keeping it online. */
 export default function SupportCard({ className = "" }: { className?: string }) {
@@ -8,7 +8,7 @@ export default function SupportCard({ className = "" }: { className?: string }) 
       {/* Written by hand: update when new supporters agree to be named. */}
       <p className="mt-1 text-[14px] font-semibold leading-snug">Kept running by Tanu, Vincent, Jonathan, Annie, Jessica, S and others.</p>
       <p className="mt-1 text-[14px] leading-snug text-muted">Free, no ads, made by one person. A coffee pays for the servers and the data.</p>
-      <SupportDialog className="mt-4" />
+      <SupportLink className="mt-4" />
     </div>
   );
 }

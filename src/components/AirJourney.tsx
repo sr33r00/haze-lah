@@ -5,7 +5,7 @@ import { useRef, useState } from "react";
 import { SITE_URL } from "@/lib/links";
 import { FIRE_COLOR, TRAIL_COLOR, journeyText } from "@/lib/replay";
 import type { ReplayDay } from "@/lib/types";
-import SupportDialog from "./SupportDialog";
+import SupportLink from "./SupportLink";
 
 const PICTURE = "/air-journey";
 
@@ -105,7 +105,7 @@ export default function AirJourney({ day, shareable = true }: { day: ReplayDay; 
         {shared && (
           <>
             Thanks for sharing. Haze Lah is free. Supporters keep it running.{" "}
-            <SupportDialog variant="link" />
+            <SupportLink variant="link" />
           </>
         )}
       </div>
