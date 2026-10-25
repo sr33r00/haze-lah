@@ -9,7 +9,7 @@ import Freshness from "./Freshness";
 import InstallPrompt from "./InstallPrompt";
 import Logo from "./Logo";
 import ShareButton from "./ShareButton";
-import SupportDialog from "./SupportDialog";
+import SupportLink from "./SupportLink";
 import ThemeToggle from "./ThemeToggle";
 import WhatsNew from "./WhatsNew";
 
@@ -49,7 +49,7 @@ export default function AppShell({ data, title, children }: { data?: HazeData; t
             >
               <Info size={16} aria-hidden />
             </Link>
-            <SupportDialog variant="icon" />
+            <SupportLink variant="icon" />
             <ThemeToggle />
             <ShareButton />
           </div>

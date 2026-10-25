@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import { RELEASE, RELEASE_LABEL } from "@/lib/releases";
 import ReleaseList from "./ReleaseList";
-import SupportDialog from "./SupportDialog";
+import SupportLink from "./SupportLink";
 
 const SEEN = "seen-release";
 const DELAY = 1200; // ms: let the page settle first
@@ -53,7 +53,7 @@ export default function WhatsNew() {
         </div>
         <div className="mt-3 flex flex-col items-center gap-3 text-center">
           <p className="text-balance text-[13px] leading-snug text-muted">Haze Lah is free for everyone. Supporters help keep it running.</p>
-          <SupportDialog />
+          <SupportLink />
         </div>
         <button
           type="button"
