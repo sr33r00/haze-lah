@@ -4,7 +4,6 @@
 
 [![Licence: AGPL-3.0](https://img.shields.io/badge/licence-AGPL--3.0-blue)](LICENSE)
 [![Live site](https://img.shields.io/badge/live-hazelah.app-2b8a3e)](https://www.hazelah.app)
-[![Ko-fi](https://img.shields.io/badge/Ko--fi-support-ff5e5b?logo=ko-fi&logoColor=white)](https://ko-fi.com/sr33r00)
 [![Next.js 15](https://img.shields.io/badge/Next.js-15.5-000000?logo=nextdotjs&logoColor=white)](https://nextjs.org)
 [![Tests: node:test](https://img.shields.io/badge/tests-node%3Atest-informational)](#quick-start)
 
@@ -146,10 +145,6 @@ How the parts fit together is in [docs/architecture.md](docs/architecture.md).
 ## Contributing
 
 Issues and pull requests are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) first. It covers the checks to run, the code style and the rule that every health or science claim cites a source. Please follow the [Code of Conduct](CODE_OF_CONDUCT.md). Report security issues as described in [SECURITY.md](SECURITY.md), and see the [changelog](CHANGELOG.md) for what changed in each version.
-
-## Support
-
-Haze Lah is free, has no ads and is run by one person. Donations pay for running costs and new features: [ko-fi.com/sr33r00](https://ko-fi.com/sr33r00). Thank you.
 
 ## Licence
 

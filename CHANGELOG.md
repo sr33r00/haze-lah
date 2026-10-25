@@ -6,6 +6,10 @@ The in-app "What's new" sheet shows the highlights of the current release. Data-
 
 ## [Unreleased]
 
+### Removed
+
+- Donations: the Ko-fi link in the header, the support card, the support section on About and the asks in What's new and after sharing.
+
 ## [1.7.0] - 2026-10-25
 
 ### Changed

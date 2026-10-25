@@ -5,7 +5,6 @@ import { useRef, useState } from "react";
 import { SITE_URL } from "@/lib/links";
 import { FIRE_COLOR, TRAIL_COLOR, journeyText } from "@/lib/replay";
 import type { ReplayDay } from "@/lib/types";
-import SupportLink from "./SupportLink";
 
 const PICTURE = "/air-journey";
 
@@ -102,12 +101,7 @@ export default function AirJourney({ day, shareable = true }: { day: ReplayDay; 
         {shareable && <ShareJourney text={`Today's air travelled ${t.trip} to reach Singapore.`} onShared={() => setShared(true)} />}
       </div>
       <div aria-live="polite" className={`px-4 text-[13px] leading-snug text-muted ${shared ? "pb-3" : ""}`}>
-        {shared && (
-          <>
-            Thanks for sharing. Haze Lah is free. Supporters keep it running.{" "}
-            <SupportLink variant="link" />
-          </>
-        )}
+        {shared && "Thanks for sharing."}
       </div>
     </div>
   );

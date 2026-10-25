@@ -124,7 +124,6 @@ These are not data sources, but the code calls them.
 |---|---|---|
 | Telegram Bot API | `scripts/alert.ts` (alerts) and `src/app/api/feedback/route.ts` | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `FEEDBACK_CHAT_ID` |
 | Resend | `src/app/api/feedback/route.ts` | `RESEND_API_KEY`, `FEEDBACK_EMAIL` |
-| Ko-fi | Support dialog frame (`src/lib/links.ts`) | none |
 
 ## Adding a source
 

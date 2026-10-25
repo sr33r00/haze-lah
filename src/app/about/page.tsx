@@ -5,7 +5,6 @@ import { pageMeta } from "@/lib/seo";
 import { GROUP_LABEL, LEVEL_COLOR, LEVEL_NAME, NEA_ADVICE, type Group } from "@/lib/bands";
 import AccuracyTable from "@/components/AccuracyTable";
 import AppShell from "@/components/AppShell";
-import SupportLink from "@/components/SupportLink";
 import ReleaseList from "@/components/ReleaseList";
 import SectionNav from "@/components/SectionNav";
 import { Bullets } from "@/components/ui";
@@ -31,7 +30,6 @@ const SECTIONS = [
   { id: "accuracy", title: "Accuracy" },
   { id: "cigarettes", title: "Cigarette comparison" },
   { id: "privacy", title: "Privacy" },
-  { id: "support", title: "Support" },
   { id: "whats-new", title: "What's new" },
 ];
 
@@ -287,12 +285,6 @@ export default async function About() {
                 No accounts and no cookies. Anonymous page-view counts are collected with Cloudflare Web Analytics. Your region and group
                 choices stay on your device.
               </p>
-            </section>
-
-            <section id="support" className="scroll-mt-20 space-y-3">
-              <h2 className={H2}>Support</h2>
-              <p>Haze Lah is free, has no ads and is made by one person. Supporters pay for the servers and the data.</p>
-              <SupportLink />
             </section>
 
             <section id="whats-new" className="scroll-mt-20 space-y-3">

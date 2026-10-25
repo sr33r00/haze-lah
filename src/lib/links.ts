@@ -6,12 +6,6 @@ export const ALERTS_URL = alerts?.startsWith("https://t.me/") ? alerts : undefin
 /** Canonical public origin (www; the apex redirects to it). */
 export const SITE_URL = process.env.SITE_URL || "https://hazelah.app";
 
-/** Tip jar (Ko-fi: no platform fee on one-off tips), shown in the title bar and footer. */
-export const SUPPORT_URL = "https://ko-fi.com/sr33";
-export const SUPPORT_LABEL = "Buy me a Ko-fi";
-/** Name of the icon-only link in the title bar. */
-export const SUPPORT_ICON_LABEL = "Buy Haze Lah a Ko-fi";
-
 /** OpenStreetMap page centred on a point, with a pin. */
 export const mapLink = (lat: number, lon: number) => `https://www.openstreetmap.org/?mlat=${lat.toFixed(5)}&mlon=${lon.toFixed(5)}#map=16/${lat.toFixed(5)}/${lon.toFixed(5)}`;
 

@@ -17,7 +17,6 @@ import Hero from "./Hero";
 import LiveViews from "./LiveViews";
 import PlanDay from "./PlanDay";
 import RegionChips from "./RegionChips";
-import SupportCard from "./SupportCard";
 import { Section, cap } from "./ui";
 import { useCameras } from "./useCameras";
 import { useNow } from "./useNow";
@@ -96,7 +95,6 @@ export default function NowView({ generatedAt, history, nea, hourly, days, senso
 
         <HazeOrigin className="order-10" nea={nea} history={history} stations={stations} sensors={sensors} />
 
-        <SupportCard className="order-11 mt-10" />
       </div>
     </div>
   );
