@@ -6,6 +6,10 @@ The in-app "What's new" sheet shows the highlights of the current release. Data-
 
 ## [Unreleased]
 
+### Fixed
+
+- Map number badges on yellow, light green and orange (US AQI view) use dark text instead of unreadable white.
+
 ### Removed
 
 - Donations: the Ko-fi link in the header, the support card, the support section on About and the asks in What's new and after sharing.

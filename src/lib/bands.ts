@@ -36,6 +36,16 @@ export const LEVEL_NAME = ["Good", "Moderate", "Unhealthy", "Very unhealthy", "H
 // Colours follow NEA's PSI legend (green, blue, yellow, orange, red).
 export const LEVEL_COLOR = ["#3f9a6b", "#3c7db0", "#d9a118", "#d2662a", "#9e2b35"] as const;
 
+/** Text colour for a number on a `#rrggbb` badge: white, or dark ink where white would fall under 3:1 contrast (yellow, orange). */
+export function textOn(bg: string): string {
+  const lin = (i: number) => {
+    const c = parseInt(bg.slice(i, i + 2), 16) / 255;
+    return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+  };
+  const lum = 0.2126 * lin(1) + 0.7152 * lin(3) + 0.0722 * lin(5);
+  return 1.05 / (lum + 0.05) < 3 ? "#13232e" : "#fff";
+}
+
 /** Readable text colours for each level (theme-aware CSS variables). */
 export const LEVEL_TEXT = ["var(--lv0)", "var(--lv1)", "var(--lv2)", "var(--lv3)", "var(--lv4)"] as const;
 

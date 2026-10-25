@@ -5,7 +5,7 @@ import L from "leaflet";
 import { LocateFixed } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { CircleMarker, MapContainer, Marker, TileLayer, Tooltip, useMap, useMapEvents } from "react-leaflet";
-import { LEVEL_COLOR, LEVEL_NAME, LEVEL_TEXT, PM25_BANDS, PM25_COLORS, REGIONS, REGION_POINT, US_AQI_BANDS, nearestRegion, pm25Color, pm25ToUsAqi, psiLevel, stationLevel, usAqiColor, type Region } from "@/lib/bands";
+import { LEVEL_COLOR, LEVEL_NAME, LEVEL_TEXT, PM25_BANDS, PM25_COLORS, REGIONS, REGION_POINT, US_AQI_BANDS, nearestRegion, pm25Color, pm25ToUsAqi, psiLevel, stationLevel, textOn, usAqiColor, type Region } from "@/lib/bands";
 import { cap, fmtTime } from "@/lib/format";
 import { US_AQI_NOTE, WAQI_NAME, WAQI_URL } from "@/lib/links";
 import type { AqiStation, Camera, NeaNow, NeaPm25History, Sensor, Station } from "@/lib/types";
@@ -83,13 +83,15 @@ function badge(kind: BadgeKind, value: number | null, color: string, active = fa
     const label = value ?? "–";
     const w = Math.max(b.minW, Math.ceil(String(label).length * b.font * 0.62) + 6);
     const edge = b.border ? `border:${b.border}px solid #fff;` : "";
+    const bg = value == null ? "#8a8f98" : color;
+    const fg = textOn(bg);
     const ring = active ? "0 0 0 2px var(--surface),0 0 0 4px var(--fg)" : b.border ? "0 0 0 1px rgba(0,0,0,.25)" : "none";
     icon = L.divIcon({
       className: "",
       iconSize: [w, b.h],
       iconAnchor: [w / 2, b.h / 2],
       tooltipAnchor: [0, -b.h / 2],
-      html: `<div style="box-sizing:border-box;width:${w}px;height:${b.h}px;border-radius:${b.radius}px;background:${value == null ? "#8a8f98" : color};color:#fff;text-shadow:0 0 2px rgb(0 0 0 / 0.55);font:700 ${b.font}px/${b.h - 2 * b.border}px var(--font-sans);text-align:center;white-space:nowrap;${edge}box-shadow:${ring}">${label}</div>`,
+      html: `<div style="box-sizing:border-box;width:${w}px;height:${b.h}px;border-radius:${b.radius}px;background:${bg};color:${fg};${fg === "#fff" ? "text-shadow:0 0 2px rgb(0 0 0 / 0.55);" : ""}font:700 ${b.font}px/${b.h - 2 * b.border}px var(--font-sans);text-align:center;white-space:nowrap;${edge}box-shadow:${ring}">${label}</div>`,
     });
     badges.set(key, icon);
   }
