@@ -1,4 +1,4 @@
-import { ChartLine, Footprints, Globe, type LucideIcon } from "lucide-react";
+import { ChartLine, Cigarette, Globe, type LucideIcon } from "lucide-react";
 import { fmtFullDate } from "./format";
 
 /** One change in a release: a row in the "What's new" sheet and on the About page. */
@@ -6,14 +6,14 @@ export type ReleaseItem = { title: string; text: string; href: string; icon: Luc
 
 /** The current release, shown once to each visitor in the "What's new" sheet and listed on the About page. Keep `version` in step with package.json. */
 export const RELEASE: { version: string; date: string; items: ReleaseItem[] } = {
-  version: "1.6.2",
-  date: "2026-10-24",
+  version: "1.7.0",
+  date: "2026-10-25",
   items: [
     {
-      title: "Plan your day, in one card",
-      text: "Pick running, cycling, football or a walk and how long you'll be out. Your best time, the hours from now and the fine dust you'd breathe, all in one card, with bars sized to show the changes.",
-      href: "/#plan",
-      icon: Footprints,
+      title: "Cigarettes, now and so far",
+      text: "See this hour's air as cigarettes a day, which drops as soon as the air clears, and a pack that burns down with what you've breathed since midnight.",
+      href: "/#everyday",
+      icon: Cigarette,
     },
     {
       title: "New forecast",
@@ -30,5 +30,5 @@ export const RELEASE: { version: string; date: string; items: ReleaseItem[] } = 
   ],
 };
 
-/** "Version 1.6.2, 24 Oct 2026". */
+/** "Version 1.7.0, 25 Oct 2026". */
 export const RELEASE_LABEL = `Version ${RELEASE.version}, ${fmtFullDate(RELEASE.date)}`;

@@ -6,13 +6,17 @@ The in-app "What's new" sheet shows the highlights of the current release. Data-
 
 ## [Unreleased]
 
+## [1.7.0] - 2026-10-25
+
 ### Changed
 
-- Hosting moves to Cloudflare Workers (vinext). Visitor analytics move from Vercel Web Analytics to Cloudflare Web Analytics, and the satellite smoke picture is built with WebAssembly image codecs instead of `sharp`.
+- The cigarette card has two parts. Right now: this hour's PM2.5 as cigarettes a day, so it drops as soon as the air clears (it used the 24-hour average, which stayed high for hours after a hazy night). So far today: the hours since midnight, drawn as smoked butts and one lit cigarette that burns down. "Times a normal day" also uses this hour's reading.
+- Hosting moves to Cloudflare Workers (vinext), at hazelah.app (www.hazelah.app redirects to it). Visitor analytics move from Vercel Web Analytics to Cloudflare Web Analytics, and the satellite smoke picture is built with WebAssembly image codecs instead of `sharp`.
+- Community sensors (OpenAQ) are hidden for now.
 
 ### Fixed
 
-- New NEA readings now appear within about 5 minutes of NEA publishing them, instead of up to about 40: a Cloudflare Worker watches NEA and refreshes the site only when there is new data.
+- New NEA readings now appear within a few minutes of NEA publishing them, instead of up to about 40: a Cloudflare Worker checks NEA just after each hour, refreshes the site only when there is new data, and loads the main pages so visitors get them ready-made.
 
 ## [1.6.2] - 2026-10-24
 
@@ -172,7 +176,8 @@ The in-app "What's new" sheet shows the highlights of the current release. Data-
 - Forecast smoke map, fire counts and a wind dial, "Plan your day", NEA news timeline and 7-day PSI history.
 - Feedback issue form.
 
-[Unreleased]: https://github.com/sr33r00/haze-lah/compare/v1.6.2...HEAD
+[Unreleased]: https://github.com/sr33r00/haze-lah/compare/v1.7.0...HEAD
+[1.7.0]: https://github.com/sr33r00/haze-lah/compare/v1.6.2...v1.7.0
 [1.6.2]: https://github.com/sr33r00/haze-lah/compare/v1.6.1...v1.6.2
 [1.6.1]: https://github.com/sr33r00/haze-lah/compare/v1.6.0...v1.6.1
 [1.6.0]: https://github.com/sr33r00/haze-lah/compare/abc6ebe...v1.6.0
