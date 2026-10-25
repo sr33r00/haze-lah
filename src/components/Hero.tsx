@@ -7,6 +7,7 @@ import { GUIDE_AQICN_URL } from "@/lib/links";
 import type { ForecastPoint } from "@/lib/types";
 import { cap } from "./ui";
 import Counter from "./bits/Counter";
+import Puff from "./Puff";
 
 const GROUPS: Group[] = ["healthy", "sensitive", "chronic"];
 const GROUP_SHORT: Record<Group, string> = { healthy: "Healthy adult", sensitive: "Child, elderly, pregnant", chronic: "Heart or lung condition" };
@@ -49,9 +50,12 @@ export default function Hero(props: {
       <p className="pr-8 text-[15px]" style={{ color: soft }}>
         {cap(props.region)}.{props.readingTime ? ` Measured at ${fmtHour(props.readingTime)}.` : ""} Should I go out?
       </p>
-      <div key={`${props.region}-${group}-${v?.headline}`} className="animate-rise">
-        <h1 className="mt-1 text-balance text-[40px] font-extrabold leading-[1.02] tracking-[-0.02em]">{v ? v.headline : "No reading yet."}</h1>
-        <p className="mt-2 max-w-[34ch] text-[17px] leading-snug">{v ? v.detail : "NEA data is temporarily unavailable."}</p>
+      <div className="flex items-start gap-3">
+        <div key={`${props.region}-${group}-${v?.headline}`} className="min-w-0 flex-1 animate-rise">
+          <h1 className="mt-1 text-balance text-[40px] font-extrabold leading-[1.02] tracking-[-0.02em]">{v ? v.headline : "No reading yet."}</h1>
+          <p className="mt-2 max-w-[34ch] text-[17px] leading-snug">{v ? v.detail : "NEA data is temporarily unavailable."}</p>
+        </div>
+        <Puff step={step} className="mt-1 w-[92px] lg:w-32" />
       </div>
 
       <div role="group" aria-label="Advice for" className="mt-5 grid grid-cols-3 gap-1 rounded-2xl p-1" style={{ background: `color-mix(in srgb, ${ink} 14%, transparent)` }}>

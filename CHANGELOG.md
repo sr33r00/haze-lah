@@ -6,6 +6,10 @@ The in-app "What's new" sheet shows the highlights of the current release. Data-
 
 ## [Unreleased]
 
+### Added
+
+- Puff, a small animated cloud beside the verdict on the Now page: happy when the air is fine, uneasy, worried, then crying (with a mask at the worst) as the advice gets stricter, and asleep when there is no reading.
+
 ### Changed
 
 - Data and scheduled jobs moved to Cloudflare: the history, readings, forecast archive, accuracy scores and alert state live in a private R2 bucket instead of the repository, the jobs (forecast archive, Telegram alerts, readings capture, daily history and readings) run in the site Worker on the NEA refresh Worker's schedules instead of GitHub Actions, and the globe's history files are served from the site itself instead of jsDelivr.

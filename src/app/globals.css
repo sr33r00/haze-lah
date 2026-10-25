@@ -72,6 +72,18 @@
   --animate-flow: flow 1.2s linear infinite;
   --animate-ember: ember 1.8s ease-in-out infinite;
   --animate-wisp: wisp 3s ease-out infinite;
+  /* Puff the mascot: durations here are defaults; the mood sets its own pace inline. */
+  --animate-puff-float: puff-float 3s ease-in-out infinite;
+  --animate-puff-shadow: puff-shadow 3s ease-in-out infinite;
+  --animate-puff-squash: puff-squash 2.6s ease-in-out infinite;
+  --animate-puff-breathe: puff-breathe 5s ease-in-out infinite;
+  --animate-puff-blink: puff-blink 4.5s infinite;
+  --animate-puff-glance: puff-glance 6s ease-in-out infinite;
+  --animate-puff-drip: puff-drip 2.6s ease-in-out infinite;
+  --animate-puff-tremble: puff-tremble 0.5s ease-in-out infinite alternate;
+  --animate-puff-twinkle: puff-twinkle 2s ease-in-out infinite;
+  --animate-puff-z: puff-z 3.6s ease-out infinite;
+  --animate-puff-swap: puff-swap 300ms ease-out both;
 
   @keyframes rise {
     from {
@@ -135,6 +147,101 @@
     to {
       opacity: 0;
       transform: translate(8px, -40px) scale(1.8);
+    }
+  }
+  /* Puff: every resting frame (no animation) is the finished picture, so these move away from it and back. */
+  @keyframes puff-float {
+    50% {
+      transform: translateY(calc(var(--puff-lift, 4px) * -1));
+    }
+  }
+  @keyframes puff-shadow {
+    50% {
+      opacity: 0.55;
+      transform: scale(0.85);
+    }
+  }
+  @keyframes puff-squash {
+    0%,
+    100% {
+      transform: scale(1.04, 0.96);
+    }
+    50% {
+      transform: scale(0.98, 1.03);
+    }
+  }
+  @keyframes puff-breathe {
+    50% {
+      transform: scale(1.02);
+    }
+  }
+  @keyframes puff-blink {
+    95%,
+    98% {
+      transform: scaleY(1);
+    }
+    96.5% {
+      transform: scaleY(0.1);
+    }
+  }
+  @keyframes puff-glance {
+    25% {
+      transform: translateX(-1.5px);
+    }
+    75% {
+      transform: translateX(1.5px);
+    }
+  }
+  @keyframes puff-drip {
+    from {
+      opacity: 0;
+      transform: translateY(calc(var(--puff-fall, 10px) * -0.5)) scale(0.3);
+    }
+    25% {
+      opacity: 1;
+      transform: translateY(calc(var(--puff-fall, 10px) * -0.4)) scale(1);
+    }
+    75% {
+      opacity: 1;
+    }
+    to {
+      opacity: 0;
+      transform: translateY(calc(var(--puff-fall, 10px) * 0.5));
+    }
+  }
+  @keyframes puff-tremble {
+    to {
+      transform: translateY(0.6px) scaleX(0.94);
+    }
+  }
+  @keyframes puff-twinkle {
+    0%,
+    100% {
+      opacity: 0.2;
+      transform: scale(0.4);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1) rotate(15deg);
+    }
+  }
+  @keyframes puff-z {
+    from {
+      opacity: 0;
+      transform: translate(-4px, 6px) scale(0.6);
+    }
+    30% {
+      opacity: 0.6;
+    }
+    to {
+      opacity: 0;
+      transform: translate(4px, -8px) scale(1.1);
+    }
+  }
+  @keyframes puff-swap {
+    from {
+      opacity: 0;
+      transform: scale(0.9) translateY(4px);
     }
   }
 }
@@ -252,6 +359,14 @@ body {
 /* Focused by code only (e.g. a dialog title), never by Tab: no ring. */
 [tabindex="-1"]:focus-visible {
   outline: none;
+}
+
+/* Puff's moving SVG parts scale around their own centres. */
+@layer base {
+  [class*="animate-puff"] {
+    transform-box: fill-box;
+    transform-origin: center;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
