@@ -64,10 +64,10 @@ function Legend({ layer, expanded }: { layer: LayerChoice; expanded: boolean }) 
   const limits = p?.tracer ? null : (p?.bands ?? null);
   return (
     <div className="mt-2">
-      <p className={`text-[11px] leading-4 text-white/65 ${expanded ? "" : "hidden"} ${EXTRAS}`}>{title}</p>
+      <p className={`text-label leading-5 text-white/65 ${expanded ? "" : "hidden"} ${EXTRAS}`}>{title}</p>
       <RampBar background={p ? rampCss(p) : satelliteRampCss(ramp)} names={names} bar="border-white/20 bg-black/50" text="text-white/85" />
       {limits && (
-        <div className={`relative h-4 text-[11px] leading-4 text-white/65 tabular ${expanded ? "block" : "hidden"} ${EXTRAS}`}>
+        <div className={`relative h-4 text-fine leading-4 text-white/65 tabular ${expanded ? "block" : "hidden"} ${EXTRAS}`}>
           {limits.map((v, i) => (
             <span key={v} className="absolute -translate-x-1/2" style={{ left: `${(i + 1) * 25}%` }}>
               {v.toLocaleString("en-SG")}
@@ -76,7 +76,7 @@ function Legend({ layer, expanded }: { layer: LayerChoice; expanded: boolean }) 
         </div>
       )}
       {p?.tracer && (
-        <p className={`mt-1 text-[11px] leading-4 text-white/65 ${expanded ? "block" : "hidden"} ${EXTRAS}`}>
+        <p className={`mt-1 text-label leading-5 text-white/65 ${expanded ? "block" : "hidden"} ${EXTRAS}`}>
           {p.tracer.note}{" "}
           <a href={NEA_PSI_URL} target="_blank" rel="noreferrer" className="underline">
             NEA PSI method
@@ -95,7 +95,7 @@ export default function GlobeCard({ headline, facts, layer, day, dots, live, exp
   const start = useRef<number | null>(null);
   const dragged = useRef(false);
   const items = keyOf(day, dots);
-  const row = (children: ReactNode) => <div className="flex items-center gap-2 text-[12px] leading-4 text-white/85">{children}</div>;
+  const row = (children: ReactNode) => <div className="flex items-center gap-2 text-label leading-5 text-white/85">{children}</div>;
 
   const down = (e: PointerEvent<HTMLButtonElement>) => {
     start.current = e.clientY;
@@ -131,13 +131,13 @@ export default function GlobeCard({ headline, facts, layer, day, dots, live, exp
       </button>
 
       <div className="px-4 pb-1 pt-7 min-[700px]:px-5 min-[700px]:pb-4 min-[700px]:pt-4">
-        <h2 aria-live={live ? "polite" : "off"} className="line-clamp-2 text-balance text-[15px] font-bold leading-5 min-[700px]:line-clamp-none min-[700px]:text-[17px] min-[700px]:leading-[22px]">
+        <h2 aria-live={live ? "polite" : "off"} className="line-clamp-2 text-balance text-label font-bold leading-5 min-[700px]:line-clamp-none min-[700px]:text-[17px] min-[700px]:leading-[22px]">
           {headline}
         </h2>
         <Legend layer={layer} expanded={expanded} />
 
         <div id="globe-more" className={`${expanded ? "block" : "hidden"} ${EXTRAS} mt-3 max-h-[42dvh] overflow-y-auto overscroll-contain min-[700px]:max-h-none min-[700px]:overflow-visible`}>
-          {facts.length > 0 && <p className="text-[13px] leading-[19px] text-white/90">{facts.join(" · ")}</p>}
+          {facts.length > 0 && <p className="text-label leading-5 text-white/90">{facts.join(" · ")}</p>}
           {items.length > 0 && (
             <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 border-t border-white/10 pt-3">
               {items.map(([id, label]) => (
@@ -154,10 +154,10 @@ export default function GlobeCard({ headline, facts, layer, day, dots, live, exp
               ))}
             </div>
           )}
-          <p className="mt-2 text-[12px] leading-4 text-white/65">{WIND_NOTE}</p>
+          <p className="mt-2 text-label leading-5 text-white/65">{WIND_NOTE}</p>
           <details className="mt-3 border-t border-white/10 text-white/60 [&_summary::-webkit-details-marker]:hidden">
-            <summary className="flex min-h-11 cursor-pointer list-none items-center text-[12px] font-semibold text-white/80 underline-offset-2 hover:underline">Sources</summary>
-          <p className="pb-1 pt-1 text-[11px] leading-[15px] text-white/60">
+            <summary className="flex min-h-11 cursor-pointer list-none items-center text-label font-semibold text-white/80 underline-offset-2 hover:underline">Sources</summary>
+          <p className="pb-1 pt-1 text-label leading-5 text-white/60">
             Fires: NASA FIRMS. Satellite pictures: NASA GIBS (OMPS). Pollution and wind: Copernicus Atmosphere Monitoring Service and ECMWF via Open-Meteo; contains modified Copernicus
             Atmosphere Monitoring Service information. Readings: NEA under the{" "}
             <a href={OPEN_DATA_LICENCE} target="_blank" rel="noreferrer" className="underline">

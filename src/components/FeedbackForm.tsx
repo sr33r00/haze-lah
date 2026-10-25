@@ -46,10 +46,10 @@ export default function FeedbackForm({ pill }: { pill: string }) {
   return (
     <div className="w-full basis-full animate-rise rounded-3xl bg-surface p-4 text-left text-fg">
       {status === "sent" ? (
-        <p className="text-[15px] font-semibold">Thanks, your message was sent.</p>
+        <p className="text-label font-semibold">Thanks, your message was sent.</p>
       ) : (
         <form onSubmit={submit} className="space-y-2">
-          <label className="block text-[14px] font-semibold" htmlFor="fb-message">
+          <label className="block text-label font-semibold" htmlFor="fb-message">
             What could be better?
           </label>
           <textarea
@@ -60,7 +60,7 @@ export default function FeedbackForm({ pill }: { pill: string }) {
             minLength={3}
             maxLength={2000}
             rows={4}
-            className="w-full rounded-2xl border border-line bg-bg p-3 text-[15px]"
+            className="w-full rounded-2xl border border-line bg-bg p-3 text-body"
             placeholder="A bug, an idea, something confusing…"
           />
           <input
@@ -70,7 +70,7 @@ export default function FeedbackForm({ pill }: { pill: string }) {
             spellCheck={false}
             autoCapitalize="off"
             autoComplete="email"
-            className="w-full rounded-2xl border border-line bg-bg p-3 text-[15px]"
+            className="w-full rounded-2xl border border-line bg-bg p-3 text-body"
             placeholder="Email or Telegram for a reply (optional)"
           />
           {/* Hidden from people; bots fill it in. */}
@@ -79,17 +79,17 @@ export default function FeedbackForm({ pill }: { pill: string }) {
             <button
               type="submit"
               disabled={status === "sending"}
-              className="rounded-full bg-accent px-5 py-2 text-[14px] font-semibold text-bg disabled:opacity-60"
+              className="rounded-full bg-accent px-5 py-2 text-label font-semibold text-bg disabled:opacity-60"
             >
               {status === "sending" ? "Sending…" : "Send"}
             </button>
-            <button type="button" onClick={() => setOpen(false)} className="text-[14px] text-muted">
+            <button type="button" onClick={() => setOpen(false)} className="text-label text-muted">
               Cancel
             </button>
           </div>
           <div aria-live="polite">
             {status === "error" && (
-              <p className="text-[13px]" style={{ color: "var(--lv3)" }}>
+              <p className="text-label" style={{ color: "var(--lv3)" }}>
                 {error}. You can also{" "}
                 <a href={ISSUE_URL} target="_blank" rel="noreferrer" className="underline">
                   post it on GitHub

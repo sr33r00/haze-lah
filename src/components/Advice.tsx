@@ -17,7 +17,7 @@ export default function Advice({ items }: { items: Tip[] }) {
     <>
       <ul className="mx-4 space-y-3">
         {items.map((t) => (
-          <li key={t.kind} className="flex gap-3 text-[15px] leading-snug">
+          <li key={t.kind} className="flex gap-3 text-body leading-snug">
             <span className="mt-0.5 shrink-0 text-muted" aria-hidden>
               {ICON[t.kind]}
             </span>
@@ -25,7 +25,7 @@ export default function Advice({ items }: { items: Tip[] }) {
               <span className={t.kind === "help" ? "font-semibold" : ""}>{t.text}</span>
               {t.more &&
                 (t.more.points.length > 0 ? (
-                  <details className="mt-1 text-[14px] text-muted">
+                  <details className="mt-1 text-label text-muted">
                     <summary className="cursor-pointer">{t.more.label}</summary>
                     <ul className="mt-1 list-disc space-y-0.5 pl-5">
                       {t.more.points.map((p) => (
@@ -41,7 +41,7 @@ export default function Advice({ items }: { items: Tip[] }) {
           </li>
         ))}
       </ul>
-      <Link href="/guide" className="mx-4 mt-3 block text-[13px] text-muted underline">
+      <Link href="/guide" className="mx-4 mt-3 block text-label text-muted underline">
         More in the Guide
       </Link>
     </>
@@ -51,7 +51,7 @@ export default function Advice({ items }: { items: Tip[] }) {
 /** "Source: NEA, MOH" links; shown inline when a tip has nothing else to expand. */
 function Sources({ list }: { list: [string, string][] }) {
   return (
-    <p className="mt-1 text-[13px] text-muted">
+    <p className="mt-1 text-label text-muted">
       Source:{" "}
       {list.map(([name, url], i) => (
         <span key={url}>

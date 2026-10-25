@@ -81,45 +81,52 @@ test("bestWindow is null when no daylight run stays at or under 55", () => {
 test("answerText gives exact copy for a peak tomorrow and a window today", () => {
   const peak = { t: "2026-10-25T06:00:00Z", pm25: 118 }; // tomorrow 2pm SGT
   const window = { from: "2026-10-23T23:00:00Z", to: "2026-10-24T02:00:00Z" }; // today 7-10am SGT
-  assert.deepEqual(answerText(peak, window, NOW), { headline: "Worst tomorrow around 2pm, near 118 µg/m³.", detail: "Best window: today 7–10am." });
+  assert.deepEqual(answerText(peak, window, NOW), { headline: "Haziest tomorrow around 2pm: PM2.5 118.", tip: "Best time to go out: today 7–10am." });
 });
 
 test("answerText writes the weekday further out, am and pm on both ends across noon, and the no-window line", () => {
   const peak = { t: "2026-10-27T06:00:00Z", pm25: 90 }; // Tue 2pm SGT
-  assert.equal(answerText(peak, null, NOW).headline, "Worst Tuesday around 2pm, near 90 µg/m³.");
-  assert.equal(answerText(peak, null, NOW).detail, "No clear window in the next 48 hours.");
-  assert.equal(answerText(peak, { from: "2026-10-25T03:00:00Z", to: "2026-10-25T06:00:00Z" }, NOW).detail, "Best window: tomorrow 11am–2pm.");
+  assert.equal(answerText(peak, null, NOW).headline, "Haziest Tuesday around 2pm: PM2.5 90.");
+  assert.equal(answerText(peak, null, NOW).tip, "No clear window to go out in the next 48 hours.");
+  assert.equal(answerText(peak, { from: "2026-10-25T03:00:00Z", to: "2026-10-25T06:00:00Z" }, NOW).tip, "Best time to go out: tomorrow 11am–2pm.");
 });
 
-test("answerText says worst right now when the latest reading is at or above the peak and over 55", () => {
+test("answerText says haziest today when the peak is today, and rounds the number", () => {
+  const peak = { t: "2026-10-24T08:00:00Z", pm25: 90.6 }; // today 4pm SGT
+  assert.equal(answerText(peak, null, NOW).headline, "Haziest today around 4pm: PM2.5 91.");
+});
+
+test("answerText says haziest right now when the latest reading is at or above the peak and over 55", () => {
   const peak = { t: "2026-10-25T06:00:00Z", pm25: 118 };
   const window = { from: "2026-10-23T23:00:00Z", to: "2026-10-24T02:00:00Z" };
-  assert.deepEqual(answerText(peak, window, NOW, 140.4), { headline: "Worst right now, near 140 µg/m³.", detail: "Best window: today 7–10am." });
-  assert.equal(answerText(peak, window, NOW, 118).headline, "Worst right now, near 118 µg/m³.");
-  assert.equal(answerText(peak, window, NOW, 117).headline, "Worst tomorrow around 2pm, near 118 µg/m³.");
-  assert.equal(answerText(peak, window, NOW, null).headline, "Worst tomorrow around 2pm, near 118 µg/m³.");
+  assert.deepEqual(answerText(peak, window, NOW, 140.4), { headline: "Haziest right now: PM2.5 140.", tip: "Best time to go out: today 7–10am." });
+  assert.equal(answerText(peak, window, NOW, 118).headline, "Haziest right now: PM2.5 118.");
+  assert.equal(answerText(peak, window, NOW, 117).headline, "Haziest tomorrow around 2pm: PM2.5 118.");
+  assert.equal(answerText(peak, window, NOW, null).headline, "Haziest tomorrow around 2pm: PM2.5 118.");
 });
 
-test("answerText calls a day with a peak at or under 55 normal, with its highest hour in the detail", () => {
+test("answerText calls a forecast that stays at or under 55 clear, with the peak as the upper figure", () => {
   const peak = { t: "2026-10-25T06:00:00Z", pm25: 48 };
   const window = { from: "2026-10-23T23:00:00Z", to: "2026-10-24T02:00:00Z" };
   assert.deepEqual(answerText(peak, window, NOW, 30), {
-    headline: "Normal air for the next 48 hours.",
-    detail: "Highest tomorrow around 2pm, near 48 µg/m³. Best window: today 7–10am.",
+    headline: "Clear air for the next 48 hours: PM2.5 up to 48.",
+    tip: "Best time to go out: today 7–10am.",
   });
-  assert.equal(answerText({ ...peak, pm25: 55 }, null, NOW, 55).headline, "Normal air for the next 48 hours.");
-  assert.equal(answerText({ ...peak, pm25: 55 }, null, NOW, 55).detail, "Highest tomorrow around 2pm, near 55 µg/m³. No clear window in the next 48 hours.");
-  // Rule 1 wins over a clean forecast only when the latest reading is over 55.
-  assert.equal(answerText(peak, window, NOW, 70).headline, "Worst right now, near 70 µg/m³.");
-  assert.equal(answerText(peak, window, NOW, 55).headline, "Normal air for the next 48 hours.");
+  assert.equal(answerText({ ...peak, pm25: 55 }, null, NOW, 55).headline, "Clear air for the next 48 hours: PM2.5 up to 55.");
+  assert.equal(answerText({ ...peak, pm25: 55 }, null, NOW, 55).tip, "No clear window to go out in the next 48 hours.");
+  // The "right now" line wins over a clear forecast only when the latest reading is over 55.
+  assert.equal(answerText(peak, window, NOW, 70).headline, "Haziest right now: PM2.5 70.");
+  assert.equal(answerText(peak, window, NOW, 55).headline, "Clear air for the next 48 hours: PM2.5 up to 48.");
 });
 
-test("answerText ends the detail with the short-lead note, and handles no forecast", () => {
+test("answerText ends the tip with the short-lead note, and handles no forecast", () => {
   const peak = { t: "2026-10-25T06:00:00Z", pm25: 118 };
-  const note = "For the next 6 hours, today's reading is the better guide.";
-  assert.equal(answerText(peak, null, NOW, null, note).detail, `No clear window in the next 48 hours. ${note}`);
-  assert.equal(answerText({ ...peak, pm25: 40 }, null, NOW, 20, note).detail, `Highest tomorrow around 2pm, near 40 µg/m³. No clear window in the next 48 hours. ${note}`);
-  assert.equal(answerText(null, null, NOW, 200).headline, "No forecast for the next 48 hours.");
+  const note = "Next 6 hours: check Now.";
+  const window = { from: "2026-10-23T23:00:00Z", to: "2026-10-24T02:00:00Z" };
+  assert.equal(answerText(peak, null, NOW, null, note).tip, `No clear window to go out in the next 48 hours. ${note}`);
+  assert.equal(answerText(peak, window, NOW, null, note).tip, `Best time to go out: today 7–10am. ${note}`);
+  assert.equal(answerText({ ...peak, pm25: 40 }, null, NOW, 20, note).tip, `No clear window to go out in the next 48 hours. ${note}`);
+  assert.deepEqual(answerText(null, null, NOW, 200), { headline: "No forecast for the next 48 hours.", tip: "No clear window to go out in the next 48 hours." });
 });
 
 test("latestObserved is the newest measured value, or null", () => {
@@ -182,27 +189,27 @@ test("skillRows drops leads with too few forecasts and is empty without a file",
 test("skillSentence and shortLeadNote give exact copy for the current accuracy.json leads", () => {
   const rows = skillRows(accuracy([lead(6, 20.1, 36.5, 14.8, 42), lead(24, 24.3, 37.4, 26.1, 39)]));
   assert.equal(skillSentence(rows), "From 24 hours ahead, this forecast beats both Copernicus and assuming no change.");
-  assert.equal(shortLeadNote(rows), "For the next 6 hours, today's reading is the better guide.");
+  assert.equal(shortLeadNote(rows), "Next 6 hours: check Now.");
 });
 
-test("shortLeadNote says today's reading when any losing lead loses to persistence, else Copernicus alone", () => {
+test("shortLeadNote points to Now when any losing lead loses to persistence, else says the raw Copernicus model is closer", () => {
   const mixed = skillRows(accuracy([lead(6, 20, 36, 15), lead(24, 30, 25, 40), lead(48, 20, 30, 25), lead(72, 20, 30, 25)]));
-  assert.equal(shortLeadNote(mixed), "For the next 24 hours, today's reading is the better guide.");
+  assert.equal(shortLeadNote(mixed), "Next 24 hours: check Now.");
   assert.equal(skillSentence(mixed), "From 48 hours ahead, this forecast beats both Copernicus and assuming no change.");
   const camsOnly = skillRows(accuracy([lead(6, 30, 25, 40), lead(24, 30, 25, 40), lead(48, 20, 30, 25)]));
-  assert.equal(shortLeadNote(camsOnly), "For the next 24 hours, Copernicus alone is closer.");
+  assert.equal(shortLeadNote(camsOnly), "Next 24 hours: the raw Copernicus model is closer.");
   assert.equal(skillSentence(camsOnly), "From 48 hours ahead, this forecast beats both Copernicus and assuming no change.");
 });
 
 test("the lead note and the claim start after the last losing lead, and the claim drops when the last lead loses", () => {
   const regain = skillRows(accuracy([lead(6, 20, 36, 15), lead(24, 10, 37, 26), lead(48, 20, 30, 15), lead(72, 10, 30, 25)]));
-  assert.equal(shortLeadNote(regain), "For the next 48 hours, today's reading is the better guide.");
+  assert.equal(shortLeadNote(regain), "Next 48 hours: check Now.");
   assert.equal(skillSentence(regain), "From 72 hours ahead, this forecast beats both Copernicus and assuming no change.");
   const lateLoss = skillRows(accuracy([lead(6, 10, 36, 15), lead(24, 30, 37, 26)]));
-  assert.equal(shortLeadNote(lateLoss), "For the next 24 hours, today's reading is the better guide.");
+  assert.equal(shortLeadNote(lateLoss), "Next 24 hours: check Now.");
   assert.equal(skillSentence(lateLoss), null);
   const lateCams = skillRows(accuracy([lead(6, 10, 36, 15), lead(24, 30, 25, 40)]));
-  assert.equal(shortLeadNote(lateCams), "For the next 24 hours, Copernicus alone is closer.");
+  assert.equal(shortLeadNote(lateCams), "Next 24 hours: the raw Copernicus model is closer.");
   assert.equal(skillSentence(lateCams), null);
 });
 

@@ -69,7 +69,7 @@ export default function NowView({ generatedAt, history, nea, hourly, days, senso
         {cameras.length > 0 && (
           <Section className="order-8" title="Live views">
             <LiveViews cameras={cameras} region={region} />
-            <Link href="/photos" className="mt-2 block px-5 text-[14px] font-semibold text-accent">
+            <Link href="/photos" className="mt-2 block px-5 text-label font-semibold text-accent">
               Camera viewer
             </Link>
           </Section>

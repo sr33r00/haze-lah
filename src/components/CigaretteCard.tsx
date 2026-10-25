@@ -31,15 +31,15 @@ export default function CigaretteCard({ region, pm25, today }: { region: string;
 
   return (
     <div id="everyday" className="mx-4 mt-3 scroll-mt-20 overflow-hidden rounded-3xl px-4 py-3 text-white ring-1 ring-white/10" style={{ background: "linear-gradient(160deg, #2f241d, #17120f)" }}>
-      <p className="text-[13px] text-white/70">Breathing {cap(region)}&apos;s air right now</p>
+      <p className="text-label text-white/70">Breathing {cap(region)}&apos;s air right now</p>
       <p className="mt-1 leading-none">
         <span className="tabular text-4xl font-extrabold">{n}</span>
         <span className="ml-1.5 text-base font-semibold">{n === 1 ? "cigarette" : "cigarettes"} a day</span>
       </p>
-      <p className="mt-1.5 text-[12px] text-white/70">1-hr PM2.5 {pm25} µg/m³</p>
+      <p className="mt-1.5 text-label text-white/70">1-hr PM2.5 {pm25} µg/m³</p>
       {pack && (
         <div className="mt-3 border-t border-white/10 pt-3">
-          <p className="text-[13px] text-white/70">So far today</p>
+          <p className="text-label text-white/70">So far today</p>
           <p className="mt-1 leading-none" suppressHydrationWarning>
             <span className="tabular text-2xl font-extrabold">About {sofar}</span>
             <span className="ml-1.5 text-base font-semibold">{sofar === 1 ? "cigarette" : "cigarettes"}</span>
@@ -49,29 +49,29 @@ export default function CigaretteCard({ region, pm25, today }: { region: string;
               <Cig key={i} delay={i * 60} {...c} />
             ))}
           </div>
-          {pack.per > 1 && <p className="mt-1.5 text-[12px] text-white/70">1 icon = {pack.per}</p>}
+          {pack.per > 1 && <p className="mt-1.5 text-label text-white/70">1 icon = {pack.per}</p>}
         </div>
       )}
       {normal && (
         <div className="mt-3 grid grid-cols-2 gap-4 border-t border-white/10 pt-3" aria-live="polite">
           <div className="min-w-0">
             <p className="tabular text-2xl font-extrabold leading-none">{normal.big}</p>
-            <p className="mt-1.5 text-[12px] text-white/70">{normal.label}</p>
+            <p className="mt-1.5 text-label text-white/70">{normal.label}</p>
           </div>
           {dust && (
             <div className="min-w-0">
               <p className="tabular text-2xl font-extrabold leading-none" suppressHydrationWarning>
                 {fmtDust(dust.ug)}
               </p>
-              <p className="mt-1.5 text-balance text-[12px] text-white/70">fine dust breathed since midnight</p>
-              <p className="mt-0.5 text-balance text-[12px] text-white/70" suppressHydrationWarning>
+              <p className="mt-1.5 text-balance text-label text-white/70">fine dust breathed since midnight</p>
+              <p className="mt-0.5 text-balance text-label text-white/70" suppressHydrationWarning>
                 A normal day by now: {fmtDust(dust.normalUg)}
               </p>
             </div>
           )}
         </div>
       )}
-      <details className="mt-3 text-[12px]">
+      <details className="mt-3 text-label">
         <summary className="cursor-pointer font-semibold text-[#ffb27a]">How is this worked out?</summary>
         <p className="mt-2 text-white/75">{CIGARETTE_NOTES.join(" ")}</p>
         {BREATH_NOTES.map((t) => (

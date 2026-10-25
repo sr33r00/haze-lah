@@ -66,7 +66,7 @@ const markIcon = (label: string) =>
   L.divIcon({
     className: "",
     iconSize: [0, 0],
-    html: `<span class="absolute size-2 -translate-x-1/2 -translate-y-1/2 rounded-full border-[1.5px] bg-white" style="border-color:${TRAIL_COLOR}"></span><span class="absolute left-2 top-0 -translate-y-1/2 whitespace-nowrap text-[11px] font-bold text-white [text-shadow:0_0_3px_#000,0_1px_2px_#000]">${label}</span>`,
+    html: `<span class="absolute size-2 -translate-x-1/2 -translate-y-1/2 rounded-full border-[1.5px] bg-white" style="border-color:${TRAIL_COLOR}"></span><span class="absolute left-2 top-0 -translate-y-1/2 whitespace-nowrap text-fine font-bold text-white [text-shadow:0_0_3px_#000,0_1px_2px_#000]">${label}</span>`,
   });
 
 /** The PM2.5 veil as a Web Mercator picture of the grid's box, which Leaflet's image overlay places exactly. */

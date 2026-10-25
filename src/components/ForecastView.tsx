@@ -45,14 +45,14 @@ export default function ForecastView(props: {
     <div className="lg:grid lg:grid-cols-[20rem_minmax(0,1fr)] lg:gap-x-8">
       <div className="mt-6 px-4 lg:mt-10 lg:pt-1">
         <p className="text-balance text-[22px] font-bold leading-snug tracking-tight">{answer.headline}</p>
-        <p className="mt-1 text-[15px] text-muted">{answer.detail}</p>
+        <p className="mt-1 text-body text-muted">{answer.tip}</p>
       </div>
 
       <Section title="Next 48 hours" aside="PM2.5 µg/m³, island-wide">
         <div className="px-4">
           <Instrument hours={hours} windFailed={outlook.failed} />
-          {hours.length > 0 && outlook.steps && <p className="mt-1 text-[13px] text-muted">{OUTLOOK_NOTE}</p>}
-          {props.savedFrom && <p className="mt-1 text-[13px] text-muted">Saved forecast from {fmtDayHour(props.savedFrom)}. The live model is not answering.</p>}
+          {hours.length > 0 && outlook.steps && <p className="mt-1 text-label text-muted">{OUTLOOK_NOTE}</p>}
+          {props.savedFrom && <p className="mt-1 text-label text-muted">Saved forecast from {fmtDayHour(props.savedFrom)}. The live model is not answering.</p>}
         </div>
       </Section>
 
@@ -66,7 +66,7 @@ export default function ForecastView(props: {
       <Section className="lg:col-span-2" title="Last 7 days" aside="Peak 24-hr PSI">
         <PsiWeek days={props.psiDaily} />
         {since && (
-          <p className="mt-2 px-4 text-[13px] text-muted">
+          <p className="mt-2 px-4 text-label text-muted">
             This week&apos;s peak {weekPeak} is the {since[0].toLowerCase() + since.slice(1)}.{" "}
             <a href={HISTORY_URL} target="_blank" rel="noreferrer" className="underline">
               NEA data

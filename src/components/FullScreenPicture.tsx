@@ -9,7 +9,7 @@ import { SG } from "@/lib/util";
 export function Chip({ at, children }: { at: "top" | "bottom"; children: React.ReactNode }) {
   return (
     <span
-      className={`tabular absolute left-2 rounded-lg bg-black/60 px-2 py-1 text-[13px] font-semibold text-white ${at === "top" ? "top-2" : "bottom-2"}`}
+      className={`tabular absolute left-2 rounded-lg bg-black/60 px-2 py-1 text-label font-semibold text-white ${at === "top" ? "top-2" : "bottom-2"}`}
     >
       {children}
     </span>
@@ -18,7 +18,7 @@ export function Chip({ at, children }: { at: "top" | "bottom"; children: React.R
 
 /** What stands in the picture's box instead of the picture when it cannot be shown: a span, so it can sit inside a button. */
 export function PictureNote({ children }: { children: React.ReactNode }) {
-  return <span className="absolute inset-0 grid place-items-center p-4 text-center text-[15px] text-white/80">{children}</span>;
+  return <span className="absolute inset-0 grid place-items-center p-4 text-center text-label text-white/80">{children}</span>;
 }
 
 /** The picture's box while it waits to load, the same shape so that nothing shifts. */
@@ -102,7 +102,7 @@ export default function FullScreenPicture({ name, disabled, inline, full, chips,
               >
                 <X size={20} aria-hidden />
               </button>
-              <p className="pointer-events-none absolute bottom-2 left-1/2 hidden -translate-x-1/2 rounded-full bg-black/60 px-3 py-1 text-[13px] text-white pointer-coarse:block">Pinch to zoom</p>
+              <p className="pointer-events-none absolute bottom-2 left-1/2 hidden -translate-x-1/2 rounded-full bg-black/60 px-3 py-1 text-label text-white pointer-coarse:block">Pinch to zoom</p>
             </div>
             <div className="shrink-0 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2 lg:px-6">{controls}</div>
           </>

@@ -10,7 +10,7 @@ export default function AccuracyTable({ a }: { a: Accuracy }) {
   return (
     <div className="space-y-3">
       {h?.days > 0 && (
-        <div className="rounded-2xl bg-surface p-3 text-[14px]">
+        <div className="rounded-2xl bg-surface p-3 text-label">
           <p className="font-semibold">
             Hazy days called the night before (11pm)
           </p>
@@ -25,7 +25,7 @@ export default function AccuracyTable({ a }: { a: Accuracy }) {
         </div>
       )}
       <div className="overflow-x-auto rounded-2xl bg-surface">
-        <table className="w-full text-left text-xs">
+        <table className="w-full text-left text-label">
           <thead>
             <tr className="border-b border-line">
               <th className="p-2">Ahead</th>

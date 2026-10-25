@@ -29,7 +29,9 @@ const decode = (s: string) =>
     if (!isNaN(cp)) return cp > 0 && cp <= 0x10ffff ? String.fromCodePoint(cp) : "";
     return NAMED[name.toLowerCase()] ?? m;
   });
-const stripTags = (s: string) => s.replace(/<[^>]*>/g, " ");
+const BLOCK_TAG = /<\/?(?:p|div|br|li|h[1-6]|tr|td|th|ul|ol|table)\b[^>]*>/gi;
+/** Block-level tags become a space; inline ones vanish, so "<b>Th</b>e" stays "The". */
+const stripTags = (s: string) => s.replace(BLOCK_TAG, " ").replace(/<[^>]*>/g, "");
 
 /** HTML to plain text. Entities are decoded twice because NEA sometimes double-escapes. */
 export const toText = (html: string) => stripTags(decode(stripTags(decode(html)))).replace(/\s+/g, " ").replace(/\s+([.,;:!?])/g, "$1").trim();

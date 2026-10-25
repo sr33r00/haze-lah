@@ -3,10 +3,10 @@ import type { Accuracy } from "@/lib/accuracy";
 import { skillRows, skillSentence } from "@/lib/forecastHours";
 import { Section } from "../ui";
 
-const W = 280; // viewBox width; the chart scales to its card, so its text stays at least 11 px at 360 px wide
-const LABEL_W = 32; // room for the lead on the left
-const VALUE_W = 28; // and for the number at the end of the longest bar
-const BAR = { h: 11, gap: 2, group: 12 } as const; // px: one bar, between bars, between leads
+const W = 280; // viewBox width; the chart scales to its card, so its text stays about 15 px at 360 px wide
+const LABEL_W = 38; // room for the lead on the left
+const VALUE_W = 34; // and for the number at the end of the longest bar
+const BAR = { h: 16, gap: 2, group: 14 } as const; // px: one bar, between bars, between leads
 const METHODS = [
   { key: "ours", label: "This site", fill: "var(--accent)", opacity: 1 },
   { key: "cams", label: "Copernicus", fill: "var(--fg)", opacity: 0.75 },
@@ -30,7 +30,7 @@ export default function Skill({ accuracy, bias, sigma, className }: { accuracy: 
   return (
     <Section className={className} title="How sure we are" aside="Average error, µg/m³">
       <div className="mx-4 rounded-3xl bg-surface p-4">
-        <p className="mb-3 flex flex-wrap gap-x-4 gap-y-1 text-[13px] text-muted">
+        <p className="mb-3 flex flex-wrap gap-x-4 gap-y-1 text-label text-muted">
           {METHODS.map((m) => (
             <span key={m.key} className="inline-flex items-center gap-1.5">
               <span aria-hidden className="size-2.5 rounded-sm" style={{ background: m.fill, opacity: m.opacity }} />
@@ -43,7 +43,7 @@ export default function Skill({ accuracy, bias, sigma, className }: { accuracy: 
             const top = i * (groupH + BAR.group);
             return (
               <g key={r.lead}>
-                <text x={0} y={top + groupH / 2 + 4} fontSize={12} fontWeight={600} fill="var(--fg)">
+                <text x={0} y={top + groupH / 2 + 5} fontSize={14} fontWeight={600} fill="var(--fg)">
                   {r.lead} h
                 </text>
                 {METHODS.map((m, k) => {
@@ -51,7 +51,7 @@ export default function Skill({ accuracy, bias, sigma, className }: { accuracy: 
                   return (
                     <g key={m.key}>
                       <rect x={LABEL_W} y={y} width={Math.max(1, r[m.key] * scale)} height={BAR.h} rx={2} fill={m.fill} fillOpacity={m.opacity} />
-                      <text x={LABEL_W + Math.max(1, r[m.key] * scale) + 4} y={y + BAR.h - 1} fontSize={12} fontWeight={m.key === "ours" ? 700 : 400} fill={m.key === "ours" ? "var(--fg)" : "var(--muted)"}>
+                      <text x={LABEL_W + Math.max(1, r[m.key] * scale) + 4} y={y + BAR.h - 2} fontSize={14} fontWeight={m.key === "ours" ? 700 : 400} fill={m.key === "ours" ? "var(--fg)" : "var(--muted)"}>
                         {r[m.key]}
                       </text>
                     </g>
@@ -61,14 +61,14 @@ export default function Skill({ accuracy, bias, sigma, className }: { accuracy: 
             );
           })}
         </svg>
-        {claim && <p className="mt-3 text-[15px]">{claim}</p>}
+        {claim && <p className="mt-3 text-label">{claim}</p>}
         {bias != null && (
-          <p className="mt-2 text-[13px] text-muted">
+          <p className="mt-2 text-label text-muted">
             Today: Copernicus × {bias.toFixed(1)}
             {sigma != null && `, typical error ±${Math.round((Math.exp(sigma) - 1) * 100)}%`}.
           </p>
         )}
-        <Link href="/about#accuracy" className="mt-1 inline-flex min-h-[44px] items-center text-[13px] font-semibold text-accent underline">
+        <Link href="/about#accuracy" className="mt-1 inline-flex min-h-[44px] items-center text-label font-semibold text-accent underline">
           How we measure this
         </Link>
       </div>

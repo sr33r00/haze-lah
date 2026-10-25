@@ -23,7 +23,7 @@ export default function AlertsButton({ href }: { href: string }) {
       target="_blank"
       rel="noreferrer"
       aria-label="Get haze alerts on Telegram"
-      className="flex h-9 min-w-9 items-center justify-center gap-1.5 rounded-full bg-accent px-2.5 text-[13px] font-semibold text-bg min-[400px]:px-3"
+      className="flex h-9 min-w-9 items-center justify-center gap-1.5 rounded-full bg-accent px-2.5 text-label font-semibold text-bg min-[400px]:px-3"
     >
       <Bell size={16} aria-hidden className={ring ? "origin-top animate-ring" : ""} />
       {/* Icon only on narrow phones so the title bar fits. */}

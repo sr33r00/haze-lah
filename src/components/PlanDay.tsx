@@ -44,12 +44,12 @@ function ChipSelect({ label, value, options, onChange }: { label: string; value:
 function Answer({ slot }: { slot: Slot }) {
   return (
     <>
-      <p className="text-[12px] font-semibold uppercase tracking-wide text-muted">
+      <p className="text-label font-semibold uppercase tracking-wide text-muted">
         {cap(slot.day)} · {isOk(slot.rating) ? "Best time" : "Least hazy time"}
       </p>
       <div className="mt-1 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <p className="tabular text-[28px] font-bold leading-tight">{fmtSlot(slot)}</p>
-        <p className="flex items-center gap-2 text-[15px] font-semibold">
+        <p className="flex items-center gap-2 text-label font-semibold">
           <span aria-hidden className="size-2.5 shrink-0 rounded-full" style={{ background: TONE_COLOR[slot.rating.tone].bg }} />
           {slot.rating.text}
         </p>
@@ -70,8 +70,8 @@ function Stats({ slot }: { slot: Slot }) {
     <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-4">
       {stats.map(([name, value]) => (
         <div key={name}>
-          <dt className="text-[11px] text-muted">{name}</dt>
-          <dd className="tabular text-[15px] font-semibold">{value}</dd>
+          <dt className="text-label text-muted">{name}</dt>
+          <dd className="tabular text-label font-semibold">{value}</dd>
         </div>
       ))}
     </dl>
@@ -91,7 +91,7 @@ export default function PlanDay({ hourly, group, now }: { hourly: ForecastPoint[
   const [chosen, chooseLength] = useStored(`duration-${activity}`, DURATION_KEYS, String(usual));
   const len = Number(chosen);
 
-  if (!hourly.length) return <p className="px-4 text-[15px] text-muted">Forecast unavailable.</p>;
+  if (!hourly.length) return <p className="px-4 text-label text-muted">Forecast unavailable.</p>;
   const hours = planStrip(hourly, activity, group, now);
   // Only the next window, and only inside the strip's hours: further ahead the forecast is less sure.
   const until = hours.length ? Date.parse(hours[0].time) + hours.length * 3600_000 : 0;
@@ -120,12 +120,12 @@ export default function PlanDay({ hourly, group, now }: { hourly: ForecastPoint[
       </div>
 
       <div aria-live="polite" className="mt-4">
-        {slot ? <Answer slot={slot} /> : <p className="text-[15px] text-muted">No forecast for these hours yet.</p>}
+        {slot ? <Answer slot={slot} /> : <p className="text-label text-muted">No forecast for these hours yet.</p>}
       </div>
 
       {n > 0 && (
         <div className="mt-4 pr-6">
-          <div aria-hidden className="relative h-4 text-[11px] font-semibold text-muted">
+          <div aria-hidden className="relative h-4 text-fine font-semibold text-muted">
             {/* "Now" needs about a tenth of the strip before the Tomorrow label. */}
             {(midnight < 0 || midnight / n >= 0.1) && <span className="absolute left-0">Now</span>}
             {/* Near the right edge the label would run past the strip; the divider still shows. */}
@@ -152,7 +152,7 @@ export default function PlanDay({ hourly, group, now }: { hourly: ForecastPoint[
             </ol>
             {bandI < top && (
               <div aria-hidden className="pointer-events-none absolute inset-x-0 border-t border-dashed border-muted/60" style={{ bottom: `${(bandI / top) * 100}%` }}>
-                <span className="absolute left-full top-0 -translate-y-1/2 pl-1 text-[10px] leading-none text-muted">{bandI}</span>
+                <span className="absolute left-full top-0 -translate-y-1/2 pl-1 text-fine leading-none text-muted">{bandI}</span>
               </div>
             )}
             {outline && (
@@ -164,7 +164,7 @@ export default function PlanDay({ hourly, group, now }: { hourly: ForecastPoint[
             )}
             {midnight > 0 && <div aria-hidden className="pointer-events-none absolute -top-4 bottom-0 w-px bg-muted" style={{ left: pct(midnight) }} />}
           </div>
-          <div aria-hidden className="relative mt-1 h-4 text-[11px] text-muted">
+          <div aria-hidden className="relative mt-1 h-4 text-fine text-muted">
             {hours.map((h, i) =>
               sgHour(h.time) % 6 === 0 && i > 0 && i < n - 1 ? (
                 <span key={h.time} className="absolute -translate-x-1/2 whitespace-nowrap" style={{ left: pct(i + 0.5) }}>
@@ -179,7 +179,7 @@ export default function PlanDay({ hourly, group, now }: { hourly: ForecastPoint[
       {slot && <Stats slot={slot} />}
 
       {n > 0 && (
-        <ul className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-muted">
+        <ul className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-label text-muted">
           {ratingLegend(activity, group).map((r) => (
             <li key={r.text} className="flex items-center gap-1.5">
               {r.tones.map((t) => (
@@ -192,7 +192,7 @@ export default function PlanDay({ hourly, group, now }: { hourly: ForecastPoint[
       )}
 
       <div className="mt-4 space-y-2 border-t border-line pt-3">
-        <p className="flex gap-2 text-[13px] text-muted">
+        <p className="flex gap-2 text-label text-muted">
           <TriangleAlert aria-hidden size={16} className="mt-px shrink-0" />
           <span>This is a forecast and may be wrong. Winds can change suddenly, and the haze changes with them.</span>
         </p>

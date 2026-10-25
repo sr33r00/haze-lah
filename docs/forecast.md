@@ -96,16 +96,16 @@ The forecast page shows an "instrument": one hourly axis with the last measured 
 | `instrumentHours` | Joins the last 12 measured hours, the first 48 forecast hours, the rain chance and the 3-hourly wind outlook into one sorted list of `InstrumentHour` |
 | `peakAhead` | The highest forecast hour, ignoring measured-only hours |
 | `bestWindow` | The best stretch of daylight (07:00 to 19:00 Singapore time): the run of at least 3 consecutive forecast hours, all at or under 55 µg/m³, with the lowest maximum (the earliest on a tie), widened to neighbouring daylight hours that stay at or under that maximum. Null if no run qualifies |
-| `answerText` | The headline and detail sentences at the top of the page |
+| `answerText` | The headline and the tip line at the top of the page |
 | `readoutLines`, `readoutText` | The text for one hour: time, PM2.5 with range, chance above 55, the model value, wind, fires on the way, rain |
 
 `answerText` picks the headline like this:
 
-- "Worst right now, near N" when the latest measured value is above 55 and at least the forecast peak.
-- "Normal air for the next 48 hours." when the whole forecast stays at or under 55 (the detail then names the highest hour and the best window).
-- Otherwise "Worst <day> around <hour>, near N".
+- "Haziest right now: PM2.5 N." when the latest measured value is above 55 and at least the forecast peak.
+- "Clear air for the next 48 hours: PM2.5 up to N." when the whole forecast stays at or under 55.
+- Otherwise "Haziest <day> around <hour>: PM2.5 N."
 
-The detail adds the best window, or "No clear window in the next 48 hours", and ends with a short-lead clause when the scores say so (see below).
+The tip line is "Best time to go out: <window>", or "No clear window to go out in the next 48 hours.", and ends with a short-lead clause when the scores say so (see below).
 
 Wind and fires on the instrument come from the browser-side replay (`fetchReplay`), so the instrument still works without them. The Now page's "Plan your day" (and the alert's best time out) uses `bestSlots` in `src/lib/exercise.ts`: the session whose worst likely hour (highest forecast `high`) is lowest.
 
@@ -143,6 +143,6 @@ For each it keeps `n` (matched forecasts), `mae` (mean absolute error), `rmse` a
 
 - `skillRows` keeps leads with at least 20 forecasts and all three errors.
 - `skillSentence` says where the forecast starts to beat both CAMS and "same as now".
-- `shortLeadNote` adds "For the next N hours, today's reading is the better guide" (or "Copernicus alone is closer") when the forecast loses at short leads.
+- `shortLeadNote` adds "Next N hours: check Now." (or "the raw Copernicus model is closer") when the forecast loses at short leads.
 
 Forecasts are estimates and can be wrong, especially when the wind shifts or fires flare up. The archive is public, so anyone can reproduce the scores.

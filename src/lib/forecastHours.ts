@@ -109,10 +109,11 @@ export function latestObserved(hours: InstrumentHour[]): number | null {
 }
 
 /**
- * The sentences that open the forecast page. The headline is "Worst right now" when the latest measured value (`latest`) is
- * already at or above the forecast peak and over 55, "Normal air" when the whole forecast stays at or under 55, else when the
- * next 48 hours peak. The detail has the best daylight window (after the day's highest hour on a normal day) and ends with
- * `leadNote`, the short-lead clause from `shortLeadNote`, when there is one.
+ * The two plain lines that open the forecast page, numbers first. The headline is "Haziest right now: PM2.5 N." when the latest
+ * measured value (`latest`) is already at or above the forecast peak and over 55, "Clear air for the next 48 hours: PM2.5 up to N."
+ * when the whole forecast stays at or under 55, else "Haziest <day> around <hour>: PM2.5 N." for the next 48 hours' peak. The tip
+ * is the best daylight window to go out (after the day's highest hour on a normal day) and ends with `leadNote`, the short-lead
+ * clause from `shortLeadNote`, when there is one.
  */
 export function answerText(
   peak: { t: string; pm25: number } | null,
@@ -120,17 +121,14 @@ export function answerText(
   now: Date,
   latest: number | null = null,
   leadNote: string | null = null,
-): { headline: string; detail: string } {
-  const windowText = window ? `Best window: ${dayWord(window.from, now)} ${fmtHourRange(window.from, window.to)}.` : "No clear window in the next 48 hours.";
+): { headline: string; tip: string } {
+  const tip = window ? `Best time to go out: ${dayWord(window.from, now)} ${fmtHourRange(window.from, window.to)}.` : "No clear window to go out in the next 48 hours.";
   let headline: string;
-  let detail = windowText;
   if (!peak) headline = "No forecast for the next 48 hours.";
-  else if (latest != null && latest > HIGH_PM25 && latest >= peak.pm25) headline = `Worst right now, near ${Math.round(latest)} µg/m³.`;
-  else if (peak.pm25 <= HIGH_PM25) {
-    headline = "Normal air for the next 48 hours.";
-    detail = `Highest ${dayWord(peak.t, now)} around ${fmtHour(peak.t)}, near ${Math.round(peak.pm25)} µg/m³. ${windowText}`;
-  } else headline = `Worst ${dayWord(peak.t, now)} around ${fmtHour(peak.t)}, near ${Math.round(peak.pm25)} µg/m³.`;
-  return { headline, detail: leadNote ? `${detail} ${leadNote}` : detail };
+  else if (latest != null && latest > HIGH_PM25 && latest >= peak.pm25) headline = `Haziest right now: PM2.5 ${Math.round(latest)}.`;
+  else if (peak.pm25 <= HIGH_PM25) headline = `Clear air for the next 48 hours: PM2.5 up to ${Math.round(peak.pm25)}.`;
+  else headline = `Haziest ${dayWord(peak.t, now)} around ${fmtHour(peak.t)}: PM2.5 ${Math.round(peak.pm25)}.`;
+  return { headline, tip: leadNote ? `${tip} ${leadNote}` : tip };
 }
 
 /**
@@ -181,15 +179,15 @@ const beatsBoth = (r: SkillRow) => r.ours < r.persistence && r.ours < r.cams;
 const losesToNoChange = (r: SkillRow) => r.ours >= r.persistence;
 
 /**
- * The short-lead clause for the forecast page: "For the next 6 hours, today's reading is the better guide." (or "Copernicus
- * alone is closer"), up to the last lead that loses. Null when no lead loses, or when every lead loses to "assuming no
- * change" (`skillSentence` says that). It says "today's reading" when any losing lead loses to persistence.
+ * The short-lead clause for the forecast page: "Next 6 hours: check Now." (or "the raw Copernicus model is closer"), up to the
+ * last lead that loses. Null when no lead loses, or when every lead loses to "assuming no change" (`skillSentence` says that). It
+ * points to the Now reading when any losing lead loses to persistence.
  */
 export function shortLeadNote(rows: SkillRow[]): string | null {
   const last = rows.findLastIndex((r) => !beatsBoth(r));
   if (last < 0 || rows.every(losesToNoChange)) return null;
-  const better = rows.some((r) => !beatsBoth(r) && losesToNoChange(r)) ? "today's reading is the better guide" : "Copernicus alone is closer";
-  return `For the next ${rows[last].lead} hours, ${better}.`;
+  const better = rows.some((r) => !beatsBoth(r) && losesToNoChange(r)) ? "check Now" : "the raw Copernicus model is closer";
+  return `Next ${rows[last].lead} hours: ${better}.`;
 }
 
 /**

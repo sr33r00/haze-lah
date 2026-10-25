@@ -27,8 +27,8 @@ export default function LiveViews({ cameras, region }: { cameras: Camera[]; regi
                 className="aspect-video h-auto w-full object-cover"
               />
               <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 to-transparent px-3 pb-2 pt-8 text-white">
-                <span className="block truncate text-[14px] font-semibold">{c.name}</span>
-                <span className="block text-[12px] opacity-85">
+                <span className="block truncate text-label font-semibold">{c.name}</span>
+                <span className="block text-label opacity-85">
                   {cap(c.region)} · {fmtTime(c.time)}
                 </span>
               </span>
@@ -36,7 +36,7 @@ export default function LiveViews({ cameras, region }: { cameras: Camera[]; regi
           </li>
         ))}
       </ul>
-      <p className="mt-1 px-5 text-[12px] text-muted">
+      <p className="mt-1 px-5 text-label text-muted">
         Grey, washed-out views mean haze. Contains information from LTA&apos;s traffic images, made available under the{" "}
         <a href={OPEN_DATA_LICENCE} target="_blank" rel="noreferrer" className="underline">
           Singapore Open Data Licence

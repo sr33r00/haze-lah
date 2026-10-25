@@ -44,7 +44,7 @@ const PANEL = "bg-[#070b16]/85 backdrop-blur-md";
 /** From the tablet width up the card and the timeline are two panels side by side (Tailwind needs these class names whole). */
 const SIDE_PANEL = "min-[700px]:rounded-2xl min-[700px]:border min-[700px]:border-white/10 min-[700px]:bg-[#070b16]/85 min-[700px]:backdrop-blur-md";
 
-const chip = "grid h-11 shrink-0 place-items-center rounded-full border px-4 text-[14px] font-semibold transition-colors";
+const chip = "grid h-11 shrink-0 place-items-center rounded-full border px-4 text-label font-semibold transition-colors";
 
 type History = { date: string; day: HistoryDay | null; before: HistoryDay[] };
 
@@ -197,7 +197,7 @@ export default function MapScreen({ dots: dotData, psiDaily, summary }: Props) {
   };
 
   const summaryBlock = (
-    <section aria-label="Summary" className={failed ? "mx-auto max-w-xl space-y-3 px-6 pb-12 pt-6 text-[16px] leading-6" : "sr-only"}>
+    <section aria-label="Summary" className={failed ? "mx-auto max-w-xl space-y-3 px-6 pb-12 pt-6 text-body leading-6" : "sr-only"}>
       <h1 className={failed ? "text-[26px] font-extrabold leading-8" : ""}>Air over Singapore and the region today</h1>
       {failed && <p className="text-white/70">{failed === "map" ? "The map could not be loaded." : "The globe needs WebGL, which this device or browser does not give."} Here is the air today in words.</p>}
       {summary.map((line) => (
@@ -218,7 +218,7 @@ export default function MapScreen({ dots: dotData, psiDaily, summary }: Props) {
 
   return (
     <div className="fixed inset-0 overflow-hidden bg-[#02030a] text-white">
-      <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-2 focus:top-2 focus:z-[1100] focus:rounded-full focus:bg-white focus:px-4 focus:py-2 focus:text-[14px] focus:font-semibold focus:text-[#02030a]">
+      <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-2 focus:top-2 focus:z-[1100] focus:rounded-full focus:bg-white focus:px-4 focus:py-2 focus:text-label focus:font-semibold focus:text-[#02030a]">
         Skip to content
       </a>
       {failed ? (
@@ -265,7 +265,7 @@ export default function MapScreen({ dots: dotData, psiDaily, summary }: Props) {
           </header>
 
           {note && (
-            <p role="status" className={`pointer-events-none absolute left-1/2 top-[calc(max(0.75rem,env(safe-area-inset-top))+3.75rem)] z-20 -translate-x-1/2 rounded-full px-4 py-2 text-[13px] font-semibold ${PANEL} border border-white/15`}>
+            <p role="status" className={`pointer-events-none absolute left-1/2 top-[calc(max(0.75rem,env(safe-area-inset-top))+3.75rem)] z-20 -translate-x-1/2 rounded-full px-4 py-2 text-label font-semibold ${PANEL} border border-white/15`}>
               {note}
             </p>
           )}

@@ -24,8 +24,8 @@ export default function ReleaseList({ on = "sheet", onNavigate }: { on?: keyof t
               <Icon className="size-5" aria-hidden />
             </span>
             <span className="min-w-0 flex-1">
-              <span className="block text-[15px] font-semibold">{title}</span>
-              <span className="mt-0.5 block text-[13px] leading-snug text-muted">{text}</span>
+              <span className="block text-label font-semibold">{title}</span>
+              <span className="mt-0.5 block text-label leading-snug text-muted">{text}</span>
             </span>
             <ChevronRight className="size-5 shrink-0 text-muted" aria-hidden />
           </Link>

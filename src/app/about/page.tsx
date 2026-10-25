@@ -104,14 +104,14 @@ const SOURCE_GROUPS = [
 ];
 
 const H2 = "text-[20px] font-bold";
-const H3 = "text-[16px] font-semibold";
+const H3 = "text-body font-semibold";
 
 export default async function About() {
   const [data, accuracy] = await Promise.all([getHazeData(), fetchAccuracy(1)]);
   const groups = Object.keys(GROUP_LABEL) as Group[];
   return (
     <AppShell data={data} title="About">
-      <div className="mt-4 px-4 pb-10 text-[15px] leading-relaxed">
+      <div className="mt-4 px-4 pb-10 text-body leading-relaxed">
         <div className="max-w-2xl space-y-2">
           <p>
             Haze Lah is a free, independent haze tracker for Singapore. It turns NEA&apos;s official readings into a plain answer on whether
@@ -152,14 +152,14 @@ export default async function About() {
                         <a href={url} target="_blank" rel="noreferrer" className="font-semibold text-accent">
                           {name}
                         </a>
-                        <div className="text-[14px] text-muted">{what}</div>
+                        <div className="text-label text-muted">{what}</div>
                       </li>
                     ))}
                   </ul>
                   </div>
                 ))}
               </div>
-              <p className="text-[13px] text-muted">
+              <p className="text-label text-muted">
                 Contains information from NEA and LTA made available under the{" "}
                 <a href={OPEN_DATA_LICENCE} target="_blank" rel="noreferrer" className="underline">
                   Singapore Open Data Licence
@@ -176,7 +176,7 @@ export default async function About() {
               <Bullets items={ADVICE_POINTS} />
               <h3 className={`pt-2 ${H3}`}>NEA health advisory (24-hour PSI)</h3>
               <div className="overflow-x-auto rounded-2xl bg-surface">
-                <table className="w-full text-left text-[13px]">
+                <table className="w-full text-left text-label">
                   <thead>
                     <tr className="border-b border-line">
                       <th className="p-2">PSI</th>
@@ -207,7 +207,7 @@ export default async function About() {
                   </tbody>
                 </table>
               </div>
-              <p className="text-[13px] text-muted">
+              <p className="text-label text-muted">
                 1-hr PM2.5 bands (µg/m³): Band I Normal 0–55, Band II Elevated 56–150, Band III High 151–250, Band IV Very high ≥251.
                 Personal guide for the next hour: band II reduce strenuous outdoor activity (vulnerable persons avoid it), band III avoid
                 strenuous outdoor activity (vulnerable persons avoid all outdoor activity), band IV minimise all outdoor activity
@@ -230,7 +230,7 @@ export default async function About() {
                 The forecast starts from Copernicus CAMS, the EU&apos;s global atmosphere model. It usually gets the timing of haze right
                 but is often far off on how bad it gets, so Haze Lah corrects it against what NEA measured over the past 48 hours.
               </p>
-              <p className="text-[14px] text-muted">
+              <p className="text-label text-muted">
                 <b>Technical detail: </b>
                 {FORECAST_METHOD}
               </p>
@@ -251,7 +251,7 @@ export default async function About() {
               {accuracy ? (
                 <>
                   <AccuracyTable a={accuracy} />
-                  <p className="text-[13px] text-muted">
+                  <p className="text-label text-muted">
                     {accuracy.forecasts} forecasts since {accuracy.from?.slice(0, 10)}. Raw data is public in the project repository.
                   </p>
                 </>
@@ -265,7 +265,7 @@ export default async function About() {
               {CIGARETTE_NOTES.map((t) => (
                 <p key={t}>{t}</p>
               ))}
-              <p className="text-[13px] text-muted">
+              <p className="text-label text-muted">
                 Sources:{" "}
                 {CIGARETTE_SOURCES.map(([name, url], i) => (
                   <span key={url}>
@@ -289,7 +289,7 @@ export default async function About() {
 
             <section id="whats-new" className="scroll-mt-20 space-y-3">
               <h2 className={H2}>What&apos;s new</h2>
-              <p className="text-[13px] text-muted">{RELEASE_LABEL}</p>
+              <p className="text-label text-muted">{RELEASE_LABEL}</p>
               <ReleaseList on="page" />
             </section>
 

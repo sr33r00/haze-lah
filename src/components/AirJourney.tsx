@@ -14,8 +14,8 @@ const canSharePictures = () => !!navigator.canShare?.({ files: [new File([""], "
 /** One end of the ticket: where, and when. */
 const End = ({ text, at, right }: { text: string; at: string; right?: boolean }) => (
   <div className={`min-w-0 flex-1 ${right ? "text-right" : ""}`}>
-    <p className="text-[16px] font-bold leading-tight text-fg">{text}</p>
-    <p className="tabular mt-1 text-[13px] text-muted">{at}</p>
+    <p className="text-body font-bold leading-tight text-fg">{text}</p>
+    <p className="tabular mt-1 text-label text-muted">{at}</p>
   </div>
 );
 
@@ -59,7 +59,7 @@ function ShareJourney({ text, onShared }: { text: string; onShared: () => void }
         disabled={busy}
         aria-busy={busy}
         aria-label="Share the journey as a picture"
-        className="flex min-h-11 shrink-0 items-center gap-2 rounded-full border border-line bg-bg px-4 text-[15px] font-semibold transition-colors hover:bg-line disabled:opacity-60"
+        className="flex min-h-11 shrink-0 items-center gap-2 rounded-full border border-line bg-bg px-4 text-label font-semibold transition-colors hover:bg-line disabled:opacity-60"
       >
         <Share2 size={18} aria-hidden />
         Share picture
@@ -86,7 +86,7 @@ export default function AirJourney({ day, shareable = true }: { day: ReplayDay; 
         <div className="relative mx-1 mt-4 border-t-2 border-dashed" style={{ borderColor: TRAIL_COLOR }}>
           <span aria-hidden className="absolute -left-1.5 -top-[7px] size-3 rounded-full border-2 bg-surface" style={{ borderColor: TRAIL_COLOR }} />
           <span aria-hidden className="absolute -right-1.5 -top-[7px] size-3 rounded-full" style={{ background: TRAIL_COLOR }} />
-          <p className="tabular absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 whitespace-nowrap bg-surface px-2 text-[13px] font-semibold">{t.trip}</p>
+          <p className="tabular absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 whitespace-nowrap bg-surface px-2 text-label font-semibold">{t.trip}</p>
         </div>
       </div>
       <div className="relative mt-4 border-t border-dashed border-line">
@@ -94,13 +94,13 @@ export default function AirJourney({ day, shareable = true }: { day: ReplayDay; 
         <span aria-hidden className="absolute -right-2 -top-2 size-4 rounded-full border border-line bg-bg" />
       </div>
       <div className="flex min-h-[3.75rem] items-center justify-between gap-3 px-4 py-2">
-        <p className="flex items-center gap-2 text-[15px] font-bold">
+        <p className="flex items-center gap-2 text-label font-bold">
           {day.near > 0 && <span aria-hidden className="size-2.5 shrink-0 rounded-full" style={{ background: FIRE_COLOR }} />}
           {t.fires}
         </p>
         {shareable && <ShareJourney text={`Today's air travelled ${t.trip} to reach Singapore.`} onShared={() => setShared(true)} />}
       </div>
-      <div aria-live="polite" className={`px-4 text-[13px] leading-snug text-muted ${shared ? "pb-3" : ""}`}>
+      <div aria-live="polite" className={`px-4 text-label leading-snug text-muted ${shared ? "pb-3" : ""}`}>
         {shared && "Thanks for sharing."}
       </div>
     </div>

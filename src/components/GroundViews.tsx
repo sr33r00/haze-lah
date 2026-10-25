@@ -51,7 +51,7 @@ export default function GroundViews() {
   }, [loaded]);
 
   if (!loaded) return <div className="mx-4 aspect-video animate-pulse rounded-2xl bg-line" />;
-  if (!views.length) return <p className="px-4 text-[15px] text-muted">Camera photos are unavailable right now.</p>;
+  if (!views.length) return <p className="px-4 text-label text-muted">Camera photos are unavailable right now.</p>;
   const v = views[Math.min(i, views.length - 1)];
   const go = (d: number) => setI((n) => (n + d + views.length) % views.length);
 
@@ -71,8 +71,8 @@ export default function GroundViews() {
           />
         </a>
         <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 to-transparent px-3 pb-2.5 pt-10 text-white">
-          <p className="truncate text-[15px] font-semibold">{v.title}</p>
-          <p className="text-[12px] opacity-85">
+          <p className="truncate text-label font-semibold">{v.title}</p>
+          <p className="text-label opacity-85">
             {v.area} · {fmtTime(v.time)}
           </p>
         </div>
@@ -81,7 +81,7 @@ export default function GroundViews() {
           target="_blank"
           rel="noreferrer"
           aria-label={`${v.title} on a map`}
-          className="absolute right-2 top-2 flex min-h-[36px] items-center gap-1 rounded-full bg-black/50 px-3 text-[12px] font-semibold text-white backdrop-blur-sm"
+          className="absolute right-2 top-2 flex min-h-[36px] items-center gap-1 rounded-full bg-black/50 px-3 text-label font-semibold text-white backdrop-blur-sm"
         >
           <MapPin size={14} aria-hidden />
           Map
@@ -118,13 +118,13 @@ export default function GroundViews() {
                   className={`${THUMB} object-cover ${t.key === v.key ? "ring-fg" : "opacity-70 ring-transparent hover:opacity-100"}`}
                 />
               )}
-              <span className={`mt-1 block truncate text-[11px] font-semibold ${t.key === v.key ? "" : "text-muted"}`}>{t.area}</span>
+              <span className={`mt-1 block truncate text-label font-semibold ${t.key === v.key ? "" : "text-muted"}`}>{t.area}</span>
             </button>
           </li>
         ))}
       </ul>
 
-      <p className="mt-2 text-[12px] text-muted">
+      <p className="mt-2 text-label text-muted">
         Grey, washed-out views mean haze. Road cameras contain information from LTA&apos;s traffic images, made available under the{" "}
         <a href={OPEN_DATA_LICENCE} target="_blank" rel="noreferrer" className="underline">
           Singapore Open Data Licence
@@ -133,7 +133,7 @@ export default function GroundViews() {
       </p>
       {/* Windy's courtesy line, in the corner of the viewer, worded as their terms give it. */}
       {webcams.length > 0 && (
-        <p className="mt-1 text-right text-[12px] text-muted">
+        <p className="mt-1 text-right text-label text-muted">
           Webcams provided by{" "}
           <a href="https://www.windy.com/" target="_blank" rel="noreferrer" className="underline">
             windy.com

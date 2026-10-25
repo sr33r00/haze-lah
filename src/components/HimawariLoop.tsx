@@ -82,7 +82,7 @@ function Controls({ playing, onPlaying, loading, n, at, onSeek, caption, onDark 
         />
       </div>
       {/* Announced only while paused: a loop at 4 pictures a second would read out every one. */}
-      <p aria-live={playing ? "off" : "polite"} className="tabular mt-1 min-h-5 text-[15px] font-semibold">
+      <p aria-live={playing ? "off" : "polite"} className="tabular mt-1 min-h-5 text-label font-semibold">
         {caption}
       </p>
     </>
@@ -144,7 +144,7 @@ function Player({ times, playing, onPlaying, overlay, chips }: { times: string[]
 export function LiveKey({ replay, fresh, layers }: { replay: Replay | null; fresh: [number, number][]; layers: Record<SmokeLayer, boolean> }) {
   return (
     <>
-      <ul className="mt-1.5 space-y-1.5 text-[13px] text-muted">
+      <ul className="mt-1.5 space-y-1.5 text-label text-muted">
         <Key mark={<span className="size-3.5 rounded-sm" style={{ background: "#9b8f84" }} />}>Smoke: smooth grey-brown veil, often over Sumatra and Borneo</Key>
         <Key mark={<span className="size-3.5 rounded-sm border border-fg/30 bg-white" />}>Cloud: bright white, lumpy</Key>
         {layers.fires && hasLayer(replay, "fires") && <Key mark={<span className="size-2.5 rounded-full" style={{ background: FIRE_COLOR }} />}>Fire seen by NASA today</Key>}
@@ -153,7 +153,7 @@ export function LiveKey({ replay, fresh, layers }: { replay: Replay | null; fres
         )}
         {layers.ahead && hasLayer(replay, "ahead") && <Key mark={<span className="w-5 border-t-[3px] border-dashed" style={{ borderColor: FIRE_COLOR }} />}>{AHEAD_LABEL}</Key>}
       </ul>
-      <p className="mt-2 text-[13px] text-muted">Fires and paths: latest, not the loop&apos;s time.</p>
+      <p className="mt-2 text-label text-muted">Fires and paths: latest, not the loop&apos;s time.</p>
     </>
   );
 }
@@ -185,8 +185,8 @@ export default function HimawariLoop({ pm25, replay, failed, fresh, layers, near
       <div aria-live="polite" className={failed || day ? "" : "min-h-[5.5rem]"}>
         {day ? (
           <>
-            <p className="text-[15px] font-bold text-fg">{trailCaption(day)}</p>
-            {day.ahead && <p className="mt-1 text-[15px] text-fg">{reach ? [reach.reach, reach.source].filter(Boolean).join(" ") : AHEAD_NONE}</p>}
+            <p className="text-label font-bold text-fg">{trailCaption(day)}</p>
+            {day.ahead && <p className="mt-1 text-label text-fg">{reach ? [reach.reach, reach.source].filter(Boolean).join(" ") : AHEAD_NONE}</p>}
           </>
         ) : (
           !failed && <div className="h-[5.5rem] animate-pulse rounded-2xl bg-line" />
@@ -209,7 +209,7 @@ export default function HimawariLoop({ pm25, replay, failed, fresh, layers, near
         ) : (
           <PictureSkeleton />
         )}
-        {frames?.night && <p className="mt-1 text-[13px] text-muted">Night: smoke can&apos;t be seen in the dark, so this is the last good light. Fires and smoke paths are the latest.</p>}
+        {frames?.night && <p className="mt-1 text-label text-muted">Night: smoke can&apos;t be seen in the dark, so this is the last good light. Fires and smoke paths are the latest.</p>}
       </div>
     </>
   );

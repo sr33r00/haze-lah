@@ -52,7 +52,7 @@ export function TopNav({ newest }: { newest: number | null }) {
               <Link
                 href={href}
                 aria-current={on ? "page" : undefined}
-                className={`relative flex h-14 items-center gap-1.5 px-3 text-[14px] font-semibold hover:text-fg xl:px-4 ${on ? "text-fg" : "text-muted"}`}
+                className={`relative flex h-14 items-center gap-1.5 px-3 text-label font-semibold hover:text-fg xl:px-4 ${on ? "text-fg" : "text-muted"}`}
               >
                 <span className="relative hidden xl:block">
                   <Icon size={18} aria-hidden />
@@ -88,7 +88,7 @@ export default function BottomNav({ newest }: { newest: number | null }) {
               <Link
                 href={href}
                 aria-current={on ? "page" : undefined}
-                className={`flex min-h-[56px] flex-col items-center justify-center gap-0.5 text-[11px] font-semibold ${on ? "text-fg" : "text-muted"}`}
+                className={`flex min-h-[56px] flex-col items-center justify-center gap-0.5 text-fine font-semibold ${on ? "text-fg" : "text-muted"}`}
               >
                 <span className="relative">
                   <Icon size={20} aria-hidden />

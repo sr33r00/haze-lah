@@ -6,7 +6,7 @@ export function Section(props: { title: string; aside?: React.ReactNode; childre
     <section id={props.id} className={`mt-10 scroll-mt-20 ${props.className ?? ""}`}>
       <div className="mb-3 flex items-baseline justify-between gap-3 px-4">
         <h2 className="text-balance text-[22px] font-bold tracking-tight">{props.title}</h2>
-        {props.aside && <div className="text-[13px] text-muted">{props.aside}</div>}
+        {props.aside && <div className="text-label text-muted">{props.aside}</div>}
       </div>
       {props.children}
     </section>
@@ -23,7 +23,7 @@ export function Segmented<T extends string>({ label, options, on, onSelect, clas
           type="button"
           aria-pressed={on(o.id)}
           onClick={() => onSelect(o.id)}
-          className={`min-h-[44px] rounded-xl px-2 text-[14px] font-semibold ${on(o.id) ? "bg-fg text-bg" : "text-muted hover:bg-line"}`}
+          className={`min-h-[44px] rounded-xl px-2 text-label font-semibold leading-tight ${on(o.id) ? "bg-fg text-bg" : "text-muted hover:bg-line"}`}
         >
           {o.label}
         </button>

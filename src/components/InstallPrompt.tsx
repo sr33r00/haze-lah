@@ -72,7 +72,7 @@ export default function InstallPrompt() {
       className="fixed inset-x-3 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-[999] mx-auto flex max-w-md animate-rise items-center gap-3 rounded-3xl bg-fg p-3 pl-4 text-bg shadow-xl ring-1 ring-black/10 lg:inset-x-auto lg:bottom-6 lg:right-6 lg:w-[380px]"
     >
       <Smartphone size={22} aria-hidden className="shrink-0" />
-      <div className="min-w-0 flex-1 text-[14px] leading-snug">
+      <div className="min-w-0 flex-1 text-label leading-snug">
         <p className="font-bold">Add Haze Lah to your home screen</p>
         {mode === "install" ? (
           <p className="opacity-75">Today&apos;s haze, one tap away.</p>
@@ -83,7 +83,7 @@ export default function InstallPrompt() {
         )}
       </div>
       {mode === "install" && (
-        <button onClick={install} className="min-h-11 shrink-0 rounded-full bg-accent px-4 text-[14px] font-semibold text-bg ring-2 ring-bg/30 hover:opacity-90">
+        <button onClick={install} className="min-h-11 shrink-0 rounded-full bg-accent px-4 text-label font-semibold text-bg ring-2 ring-bg/30 hover:opacity-90">
           Install
         </button>
       )}

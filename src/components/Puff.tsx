@@ -1,5 +1,6 @@
 import { useId, type CSSProperties } from "react";
 import { verdictFor, type Step, type Verdict } from "@/lib/bands";
+import { fadeLayers, useLeaving } from "./puffFade";
 
 /** How Puff feels; the face, colour and motion all follow from it. */
 export type PuffMood = "happy" | "uneasy" | "worried" | "sad" | "sleepy";
@@ -12,14 +13,21 @@ export function puffMood(step: Step | null): { mood: PuffMood; mask: boolean } {
   return { mood: step == null ? "sleepy" : TONE_MOOD[verdictFor(step).tone], mask: step === MASK_STEP };
 }
 
-// Per mood: the air colour, the outline, rim and top-light shades, the blush, the float rhythm and which extra loop the body plays.
-const LOOK: Record<PuffMood, { top: string; bottom: string; line: string; rim: string; glow: string; blush: number; secs: number; lift: number; body: string }> = {
-  happy: { top: "#ffffff", bottom: "#eef3f8", line: "#7f93ad", rim: "#a9bcd3", glow: "#8cc4f0", blush: 0.75, secs: 2.6, lift: 4, body: "animate-puff-squash origin-bottom" },
-  uneasy: { top: "#fbfaf6", bottom: "#ece8df", line: "#8d8777", rim: "#b8b2a3", glow: "#a6cbe8", blush: 0.35, secs: 3.4, lift: 3.5, body: "" },
-  worried: { top: "#f7f1e6", bottom: "#e6dccb", line: "#8a7a5c", rim: "#b5a78a", glow: "#ffffff", blush: 0.25, secs: 3.2, lift: 3.5, body: "" },
-  sad: { top: "#e6e9f0", bottom: "#c3c9d6", line: "#4f5a70", rim: "#8f9ab0", glow: "#ffffff", blush: 0, secs: 4.5, lift: 2.5, body: "" },
-  sleepy: { top: "#ffffff", bottom: "#eef3f8", line: "#7f93ad", rim: "#a9bcd3", glow: "#8cc4f0", blush: 0.5, secs: 5, lift: 2.5, body: "animate-puff-breathe origin-bottom" },
+// Per mood: the air colour, the outline, rim and top-light shades, the blush, the float rhythm, how hard it lands (sq) and how deep it breathes.
+const LOOK: Record<PuffMood, { top: string; bottom: string; line: string; rim: string; glow: string; blush: number; secs: number; lift: number; sq: number; breath: number }> = {
+  happy: { top: "#ffffff", bottom: "#eef3f8", line: "#7f93ad", rim: "#a9bcd3", glow: "#8cc4f0", blush: 0.75, secs: 2.6, lift: 4, sq: 1, breath: 0.015 },
+  uneasy: { top: "#fbfaf6", bottom: "#ece8df", line: "#8d8777", rim: "#b8b2a3", glow: "#a6cbe8", blush: 0.35, secs: 3.4, lift: 3.5, sq: 0.8, breath: 0.015 },
+  worried: { top: "#f7f1e6", bottom: "#e6dccb", line: "#8a7a5c", rim: "#b5a78a", glow: "#ffffff", blush: 0.25, secs: 3.2, lift: 3.5, sq: 0.8, breath: 0.015 },
+  sad: { top: "#e6e9f0", bottom: "#c3c9d6", line: "#4f5a70", rim: "#8f9ab0", glow: "#ffffff", blush: 0, secs: 4.5, lift: 2.5, sq: 0.5, breath: 0.012 },
+  sleepy: { top: "#ffffff", bottom: "#eef3f8", line: "#7f93ad", rim: "#a9bcd3", glow: "#8cc4f0", blush: 0.5, secs: 5, lift: 2.5, sq: 0.5, breath: 0.03 },
 };
+
+/** A colour change takes this long: the body's colours tween while the face cross-fades. */
+const TWEEN = "500ms ease";
+const tween = (prop: "stopColor" | "stroke" | "opacity", value: string | number): CSSProperties => ({
+  [prop]: value,
+  transition: `${prop === "stopColor" ? "stop-color" : prop} ${TWEEN}`,
+});
 
 const INK = "#2a2a35";
 const MOUTH = "#7c2d3b";
@@ -35,7 +43,7 @@ const BODY =
 const DROP = "M0-4.6C1.8-1.8 3-.2 3 1.6A3 3 0 0 1-3 1.6C-3-.2-1.8-1.8 0-4.6Z";
 const STAR = "M0-6Q1-1 6 0Q1 1 0 6Q-1 1-6 0Q-1-1 0-6Z";
 
-type Cadence = CSSProperties & { "--puff-lift"?: string; "--puff-fall"?: string };
+type Cadence = CSSProperties & { "--puff-lift"?: string; "--puff-fall"?: string; "--puff-sq"?: string; "--puff-breath"?: string };
 
 /** A small light-blue drop (tear, rain or sweat) that forms, slides down `fall` units and fades; at rest it sits mid-fall. */
 function Drop(props: { x: number; y: number; fall: number; secs: number; delay: number; size?: number }) {
@@ -68,7 +76,9 @@ function Eyes({ mood, uid }: { mood: PuffMood; uid: string }) {
   const sad = mood === "sad";
   // Unease glances away now and then, slowly; worry looks around more.
   const glance = mood === "uneasy" ? { animationDuration: "9s" } : undefined;
+  // Besides the glance, the eyes always drift a pixel or so on a long, uneven loop.
   return (
+    <g className="animate-puff-gaze">
     <g className={mood === "worried" || mood === "uneasy" ? "animate-puff-glance" : undefined} style={glance}>
       {EYES.map((cx, i) => {
         // Lid heights at the left and right edge: the outer corner droops.
@@ -90,6 +100,7 @@ function Eyes({ mood, uid }: { mood: PuffMood; uid: string }) {
           </g>
         );
       })}
+    </g>
     </g>
   );
 }
@@ -155,32 +166,103 @@ function Mask() {
   );
 }
 
+/** The face for a mood: eyes, brows and mouth. Sleepy has closed eyes; the rest look out and drift. */
+function Face({ mood, uid }: { mood: PuffMood; uid: string }) {
+  if (mood === "sleepy") {
+    return (
+      <>
+        <g fill="none" stroke={INK} strokeWidth="2.4" strokeLinecap="round">
+          {EYES.map((cx) => (
+            <path key={cx} d={`M${cx - 6} ${EYE_Y + 1}Q${cx} ${EYE_Y + 7} ${cx + 6} ${EYE_Y + 1}`} />
+          ))}
+        </g>
+        <Mouth mood={mood} uid={uid} />
+      </>
+    );
+  }
+  return (
+    <>
+      <Eyes mood={mood} uid={uid} />
+      {(mood === "uneasy" || mood === "worried" || mood === "sad") && <Brows mood={mood} />}
+      <Mouth mood={mood} uid={uid} />
+    </>
+  );
+}
+
+/** What a mood adds in front of the body: the sad cheeks' tear streaks and drops, the worried sweat drop. */
+function Extras({ mood }: { mood: PuffMood }) {
+  if (mood === "sad") {
+    return (
+      <>
+        <g fill="none" stroke={TEAR} strokeWidth="2.4" strokeLinecap="round" opacity=".45">
+          <path d="M40.5 73Q38 80 39 88" />
+          <path d="M87.5 73Q90 80 89 88" />
+        </g>
+        <Drop x={39} y={82} fall={10} secs={2.6} delay={0} />
+        <Drop x={89} y={82} fall={10} secs={2.6} delay={0.9} />
+      </>
+    );
+  }
+  return mood === "worried" ? <Drop x={106} y={50} fall={10} secs={3} delay={0} /> : null;
+}
+
+/** Little extras that do not move with the body: a happy sparkle or two, the sleepy z's. */
+function Backdrop({ mood }: { mood: PuffMood }) {
+  if (mood === "happy") {
+    return (
+      <>
+        <Sparkle x={118} y={44} size={0.8} delay={0} />
+        <Sparkle x={14} y={30} size={0.75} delay={0.9} />
+      </>
+    );
+  }
+  if (mood !== "sleepy") return null;
+  return (
+    <>
+      {[
+        { x: 98, y: 29, size: 9, delay: 0 },
+        { x: 106, y: 19, size: 11, delay: 1.2 },
+        { x: 114, y: 9, size: 13, delay: 2.4 },
+      ].map((z) => (
+        <text key={z.delay} x={z.x} y={z.y} fontSize={z.size} fontWeight="800" textAnchor="middle" fill="currentColor" opacity=".6" className="animate-puff-z" style={{ animationDelay: `${z.delay}s` }}>
+          z
+        </text>
+      ))}
+    </>
+  );
+}
+
 /**
  * Puff, the cloud mascot: an inline SVG that feels the air (see `puffMood`). Decorative, so hidden from assistive tech;
  * the verdict text already says what Puff shows. Size it with `className` (the width; the height follows the viewBox).
+ * Motion: a soft eased float, a squash as it lands, a slow breath, drifting eyes and blinks. When the mood changes the body
+ * colours tween, the old face fades out as the new one fades in, and the body hops once; nothing remounts, so nothing shifts.
  */
 export default function Puff({ step, className = "" }: { step: Step | null; className?: string }) {
   const uid = useId().replace(/[^a-zA-Z0-9_-]/g, "");
   const { mood, mask } = puffMood(step);
   const look = LOOK[mood];
+  const goneMood = useLeaving(mood);
+  const goneMask = useLeaving(mask);
   const cadence: Cadence = { animationDuration: `${look.secs}s`, "--puff-lift": `${look.lift}px` };
-  const wet = mood === "sad";
+  const land: Cadence = { animationDuration: `${look.secs}s`, "--puff-sq": `${look.sq}` };
+  const breathe: Cadence = { animationDuration: `${(look.secs * 1.7).toFixed(2)}s`, "--puff-breath": `${look.breath}` };
 
   return (
     <svg viewBox="0 0 128 112" aria-hidden="true" className={`pointer-events-none aspect-[128/112] shrink-0 select-none ${className}`}>
       <defs>
         <linearGradient id={`${uid}-body`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor={look.top} />
-          <stop offset="1" stopColor={look.bottom} />
+          <stop offset="0" style={tween("stopColor", look.top)} />
+          <stop offset="1" style={tween("stopColor", look.bottom)} />
         </linearGradient>
         <linearGradient id={`${uid}-top`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor={look.glow} stopOpacity=".5" />
-          <stop offset=".22" stopColor={look.glow} stopOpacity="0" />
+          <stop offset="0" style={tween("stopColor", look.glow)} stopOpacity=".5" />
+          <stop offset=".22" style={tween("stopColor", look.glow)} stopOpacity="0" />
         </linearGradient>
         <radialGradient id={`${uid}-rim`} cx=".5" cy="1" r=".75">
-          <stop offset="0" stopColor={look.rim} stopOpacity=".7" />
-          <stop offset=".6" stopColor={look.rim} stopOpacity=".25" />
-          <stop offset="1" stopColor={look.rim} stopOpacity="0" />
+          <stop offset="0" style={tween("stopColor", look.rim)} stopOpacity=".7" />
+          <stop offset=".6" style={tween("stopColor", look.rim)} stopOpacity=".25" />
+          <stop offset="1" style={tween("stopColor", look.rim)} stopOpacity="0" />
         </radialGradient>
         <radialGradient id={`${uid}-ground`}>
           <stop offset="0" stopColor="#1a1a22" stopOpacity=".4" />
@@ -192,65 +274,37 @@ export default function Puff({ step, className = "" }: { step: Step | null; clas
       </defs>
 
       <ellipse cx="64" cy="106" rx="38" ry="4.6" fill={`url(#${uid}-ground)`} className="animate-puff-shadow" style={cadence} />
-      {mood === "happy" && (
-        <>
-          <Sparkle x={114} y={22} size={1} delay={0} />
-          <Sparkle x={14} y={30} size={0.75} delay={0.9} />
-        </>
-      )}
-      {mood === "sleepy" &&
-        [
-          { x: 98, y: 29, size: 9, delay: 0 },
-          { x: 106, y: 19, size: 11, delay: 1.2 },
-          { x: 114, y: 9, size: 13, delay: 2.4 },
-        ].map((z) => (
-          <text key={z.delay} x={z.x} y={z.y} fontSize={z.size} fontWeight="800" textAnchor="middle" fill="currentColor" opacity=".6" className="animate-puff-z" style={{ animationDelay: `${z.delay}s` }}>
-            z
-          </text>
-        ))}
+      {fadeLayers(mood, goneMood, (m) => (
+        <Backdrop mood={m} />
+      ))}
 
       <g className="animate-puff-float" style={cadence}>
-        <g key={`${mood}${mask}`} className="animate-puff-swap origin-bottom">
-          {wet && [50, 76].map((x, i) => <Drop key={x} x={x} y={101} fall={8} secs={2.4} delay={i * 1.1} size={0.85} />)}
-          <g className={look.body} style={cadence}>
-            <path d={BODY} fill={`url(#${uid}-body)`} />
-            <ellipse cx="63" cy="100" rx="62" ry="32" fill={`url(#${uid}-rim)`} clipPath={`url(#${uid}-clip)`} />
-            <path d={BODY} fill="none" stroke={look.line} strokeOpacity=".35" strokeWidth="1.5" strokeLinejoin="round" />
-            <path d={BODY} fill="none" stroke={`url(#${uid}-top)`} strokeWidth="4" clipPath={`url(#${uid}-clip)`} />
-            <ellipse cx="51" cy="30" rx="8.5" ry="4.5" transform="rotate(-32 51 30)" fill="#fff" opacity=".85" />
-            <circle cx="42.5" cy="38.5" r="2" fill="#fff" opacity=".7" />
+        <g className={goneMood ? "animate-puff-hop origin-bottom" : "origin-bottom"}>
+          <g className="animate-puff-land origin-bottom" style={land}>
+            <g className="animate-puff-breathe origin-bottom" style={breathe}>
+              {fadeLayers(mood, goneMood, (m) => (m === "sad" ? [50, 76].map((x, i) => <Drop key={x} x={x} y={101} fall={8} secs={2.4} delay={i * 1.1} size={0.85} />) : null))}
+              <path d={BODY} fill={`url(#${uid}-body)`} />
+              <ellipse cx="63" cy="100" rx="62" ry="32" fill={`url(#${uid}-rim)`} clipPath={`url(#${uid}-clip)`} />
+              <path d={BODY} fill="none" style={{ ...tween("stroke", look.line), strokeOpacity: 0.35 }} strokeWidth="1.5" strokeLinejoin="round" />
+              <path d={BODY} fill="none" stroke={`url(#${uid}-top)`} strokeWidth="4" clipPath={`url(#${uid}-clip)`} />
+              <ellipse cx="51" cy="30" rx="8.5" ry="4.5" transform="rotate(-32 51 30)" fill="#fff" opacity=".85" />
+              <circle cx="42.5" cy="38.5" r="2" fill="#fff" opacity=".7" />
 
-            <g transform={`translate(0 ${FACE_Y})`}>
-              {look.blush > 0 && (
-                <g fill="#ff9aa8" opacity={look.blush}>
+              <g transform={`translate(0 ${FACE_Y})`}>
+                <g fill="#ff9aa8" style={tween("opacity", look.blush)}>
                   <ellipse cx="38" cy="76" rx="6.5" ry="3.8" />
                   <ellipse cx="90" cy="76" rx="6.5" ry="3.8" />
                 </g>
-              )}
-              {mood === "sleepy" ? (
-                <g fill="none" stroke={INK} strokeWidth="2.4" strokeLinecap="round">
-                  {EYES.map((cx) => (
-                    <path key={cx} d={`M${cx - 6} ${EYE_Y + 1}Q${cx} ${EYE_Y + 7} ${cx + 6} ${EYE_Y + 1}`} />
-                  ))}
-                </g>
-              ) : (
-                <Eyes mood={mood} uid={uid} />
-              )}
-              {(mood === "uneasy" || mood === "worried" || mood === "sad") && <Brows mood={mood} />}
-              {mask ? <Mask /> : <Mouth mood={mood} uid={uid} />}
+                {fadeLayers(mood, goneMood, (m) => (
+                  <Face mood={m} uid={`${uid}-${m}`} />
+                ))}
+                {fadeLayers(mask ? "mask" : null, goneMask && { v: goneMask.v ? "mask" : null }, (m) => (m ? <Mask /> : null))}
+              </g>
+              {fadeLayers(mood, goneMood, (m) => (
+                <Extras mood={m} />
+              ))}
             </g>
           </g>
-          {wet && (
-            <>
-              <g fill="none" stroke={TEAR} strokeWidth="2.4" strokeLinecap="round" opacity=".45">
-                <path d="M40.5 73Q38 80 39 88" />
-                <path d="M87.5 73Q90 80 89 88" />
-              </g>
-              <Drop x={39} y={82} fall={10} secs={2.6} delay={0} />
-              <Drop x={89} y={82} fall={10} secs={2.6} delay={0.9} />
-            </>
-          )}
-          {mood === "worried" && <Drop x={106} y={50} fall={10} secs={3} delay={0} />}
         </g>
       </g>
     </svg>

@@ -23,7 +23,7 @@ export default function GlanceView({ data }: { data: HazeData }) {
       className="flex min-h-dvh flex-col justify-between px-6 py-5"
       style={tone ? { background: tone.bg, color: tone.fg } : { background: "var(--surface)", color: "var(--fg)" }}
     >
-      <Link href="/" className="flex items-center gap-2 text-[15px] font-extrabold tracking-tight">
+      <Link href="/" className="flex items-center gap-2 text-label font-extrabold tracking-tight">
         <Logo size={28} />
         Haze Lah
       </Link>
@@ -35,7 +35,7 @@ export default function GlanceView({ data }: { data: HazeData }) {
         </h1>
         <p className="tabular mt-3 text-[clamp(1.25rem,4vw,2rem)] opacity-80">PSI {psi ?? "–"}, 24-hour</p>
       </div>
-      <p className="text-[15px] opacity-80">
+      <p className="text-label opacity-80">
         {latest ? `NEA reading at ${fmtTime(latest.time)}` : "Waiting for NEA"} · <Freshness generatedAt={data.generatedAt} />
       </p>
     </main>

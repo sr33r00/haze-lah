@@ -64,10 +64,10 @@ const CAMERA_ICON = L.divIcon({
 
 /** The four kinds of number badge, biggest first. `z` stacks them (Leaflet adds it to the marker's own latitude-based order). */
 const BADGE = {
-  nea: { h: 24, minW: 40, font: 13, border: 0, radius: 12, z: 40000 },
-  aqicn: { h: 26, minW: 26, font: 12, border: 2, radius: 13, z: 20000 },
-  my: { h: 22, minW: 22, font: 11, border: 2, radius: 6, z: 10000 },
-  sensor: { h: 20, minW: 20, font: 11, border: 1, radius: 10, z: 0 },
+  nea: { h: 28, minW: 44, font: 15, border: 0, radius: 14, z: 40000 },
+  aqicn: { h: 26, minW: 26, font: 13, border: 2, radius: 13, z: 20000 },
+  my: { h: 24, minW: 24, font: 13, border: 2, radius: 6, z: 10000 },
+  sensor: { h: 22, minW: 22, font: 13, border: 1, radius: 11, z: 0 },
 } as const;
 type BadgeKind = keyof typeof BADGE;
 const ME_Z = 30000; // "you are here": above the sensors, below the NEA pills
@@ -164,7 +164,7 @@ export default function SgMap(props: {
       <div className="relative isolate h-[300px] overflow-hidden rounded-3xl">
         <button
           onClick={locate}
-          className="absolute right-3 top-3 z-[500] flex min-h-[40px] items-center gap-1.5 rounded-full bg-surface px-3 text-[13px] font-semibold shadow"
+          className="absolute right-3 top-3 z-[500] flex min-h-[40px] items-center gap-1.5 rounded-full bg-surface px-3 text-label font-semibold shadow"
         >
           <LocateFixed size={16} aria-hidden />
           My location
@@ -240,11 +240,11 @@ export default function SgMap(props: {
         </MapContainer>
       </div>
       <div aria-live="polite">
-        {note && <p className="mt-3 text-[14px] text-muted">{note}</p>}
+        {note && <p className="mt-3 text-label text-muted">{note}</p>}
         {spot && !note && <SpotCard spot={spot} psi24={props.psi24} history={history} sensors={fresh} />}
       </div>
-      {!spot && !note && <p className="mt-3 text-[14px] text-muted">Tap the map or use your location to see the reading there.</p>}
-      <div className="mt-3 space-y-2 text-[12px] text-muted">
+      {!spot && !note && <p className="mt-3 text-label text-muted">Tap the map or use your location to see the reading there.</p>}
+      <div className="mt-3 space-y-2 text-label text-muted">
         <LegendRow>
           <Key swatch={<span className={`h-2.5 w-4 rounded-full ${aqi ? "bg-muted" : "bg-[#d9a118]"}`} />}>NEA regions</Key>
           <Key swatch={<span className={`h-2.5 w-2.5 rounded-full border border-white ring-1 ring-black/20 ${aqi ? "bg-muted" : "bg-[#d9a118]"}`} />}>Sensors</Key>
@@ -305,18 +305,18 @@ function SpotCard({ spot, psi24, history, sensors }: { spot: Spot; psi24: NeaNow
   const lv = psi != null && !isNaN(psi) ? psiLevel(psi) : null;
   return (
     <div className="mt-3 rounded-2xl bg-surface p-3">
-      <p className="text-[13px] text-muted">{spot.mine ? `You are in the ${cap(r)} region` : `${cap(r)} region`}</p>
+      <p className="text-label text-muted">{spot.mine ? `You are in the ${cap(r)} region` : `${cap(r)} region`}</p>
       <p className="mt-0.5 flex items-baseline gap-2">
         <span className="tabular text-[28px] font-bold leading-none">{lv != null ? psi : "–"}</span>
-        <span className="text-[15px] font-semibold">
+        <span className="text-label font-semibold">
           24-hr PSI{lv != null && <span style={{ color: LEVEL_TEXT[lv] }}>, {LEVEL_NAME[lv]}</span>}
         </span>
       </p>
-      <p className="mt-1.5 text-[14px] text-muted">
+      <p className="mt-1.5 text-label text-muted">
         1-hr PM2.5 {pm != null ? Math.round(pm) : "–"} µg/m³ from NEA.
         {near && ` Nearest sensor, ${near.s.name}, ${near.km < 1 ? `${Math.round(near.km * 1000)} m` : `${near.km.toFixed(1)} km`} away: ${near.s.pm25} µg/m³.`}
       </p>
-      <p className="mt-1.5 text-[12px] text-muted">NEA publishes PSI for five regions, so this is the reading for your region.</p>
+      <p className="mt-1.5 text-label text-muted">NEA publishes PSI for five regions, so this is the reading for your region.</p>
     </div>
   );
 }

@@ -53,11 +53,11 @@ export default function FromSpace({ pm25, psiDaily }: { pm25: number | null; psi
           </div>
           <div className="mt-3 lg:mt-0">
             {shown.length > 0 && <LayerChips shown={shown} layers={layers} onToggle={(id) => setLayers((old) => ({ ...old, [id]: !old[id] }))} />}
-            <h3 className="text-[13px] font-semibold text-fg">How to read this</h3>
+            <h3 className="text-label font-semibold text-fg">How to read this</h3>
             {live ? <LiveKey replay={replay} fresh={fresh} layers={layers} /> : <WeekKey replay={replay} layers={layers} />}
           </div>
         </div>
-        <p className="mt-2 text-[13px] text-muted">
+        <p className="mt-2 text-label text-muted">
           {live
             ? `Himawari-9 (JMA) via NASA GIBS · Fires: NASA FIRMS · Wind: ECMWF via Open-Meteo${pm25 != null ? " · PM2.5: NEA" : ""}`
             : "Smoke: NASA VIIRS Deep Blue (NOAA-20, NOAA-21, Suomi NPP) via NASA GIBS · Fires: NASA FIRMS · PSI: NEA"}

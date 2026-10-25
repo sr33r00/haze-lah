@@ -24,7 +24,7 @@ export default function Readout({ hour, className = "" }: { hour: InstrumentHour
 
   return (
     <div className={className}>
-      <div aria-hidden className="tabular text-[15px] leading-5">
+      <div aria-hidden className="tabular text-label leading-5">
         <p className="line-clamp-2 h-10 font-bold">
           {[when, ...figures].map((part, i) => (
             <span key={i} className="mr-2 inline-block whitespace-nowrap">

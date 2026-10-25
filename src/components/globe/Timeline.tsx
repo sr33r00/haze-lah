@@ -126,9 +126,9 @@ export default function Timeline({ bars, marks, selected, readout, busy, playing
       <div className="flex items-center gap-3">
         <PlayButton playing={playing} loading={busy && playing} onClick={onPlay} what="the timeline" className="bg-white text-[#02030a]" />
         <div aria-live={quiet ? "off" : "polite"} aria-atomic="true" className="min-w-0 flex-1">
-          <p className="truncate text-[16px] font-bold leading-6 tabular">
+          <p className="truncate text-body font-bold leading-6 tabular">
             {readout.text}
-            {readout.tag && <span className="ml-2 rounded-full bg-white/15 px-2 py-0.5 align-[1px] text-[11px] font-semibold uppercase tracking-wide text-white/85">{readout.tag}</span>}
+            {readout.tag && <span className="ml-2 rounded-full bg-white/15 px-2 py-0.5 align-[1px] text-fine font-semibold uppercase tracking-wide text-white/85">{readout.tag}</span>}
           </p>
         </div>
       </div>
@@ -160,7 +160,7 @@ export default function Timeline({ bars, marks, selected, readout, busy, playing
             {groups.map(({ label, first, last }) => {
               const left = at(last) > 55;
               return (
-                <span key={label} className="absolute top-0 whitespace-nowrap text-[11px] font-semibold leading-4 text-white/85" style={left ? { left: `calc(${at(first)}% - 9px)`, transform: "translateX(-100%)" } : { left: `calc(${at(last)}% + 9px)` }}>
+                <span key={label} className="absolute top-0 whitespace-nowrap text-fine font-semibold leading-4 text-white/85" style={left ? { left: `calc(${at(first)}% - 9px)`, transform: "translateX(-100%)" } : { left: `calc(${at(last)}% + 9px)` }}>
                   {label}
                 </span>
               );
@@ -183,7 +183,7 @@ export default function Timeline({ bars, marks, selected, readout, busy, playing
             })}
           </div>
           {/* Months, and today */}
-          <div aria-hidden className="relative mt-1 h-3.5 text-[11px] leading-[14px] text-white/65">
+          <div aria-hidden className="relative mt-1 h-3.5 text-fine leading-[14px] text-white/65">
             {bars.map((b, k) =>
               b.date.endsWith("-01") && k > 0 && k < n - 2 ? (
                 <span key={b.date} className="absolute" style={{ left: `${(k / n) * 100}%` }}>

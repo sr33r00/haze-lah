@@ -20,7 +20,7 @@ export default function AppShell({ data, title, children }: { data?: HazeData; t
       <WhatsNew />
       <a
         href="#main"
-        className="sr-only focus:not-sr-only focus:fixed focus:left-2 focus:top-2 focus:z-[1100] focus:rounded-full focus:bg-surface focus:px-4 focus:py-2 focus:text-[14px] focus:font-semibold"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-2 focus:top-2 focus:z-[1100] focus:rounded-full focus:bg-surface focus:px-4 focus:py-2 focus:text-label focus:font-semibold"
       >
         Skip to content
       </a>
@@ -31,7 +31,7 @@ export default function AppShell({ data, title, children }: { data?: HazeData; t
             <span className="min-w-0">
               <span className="block text-[17px] font-extrabold leading-5 tracking-tight">Haze Lah</span>
               {data && (
-                <span className="block truncate text-[12px] leading-4 text-muted">
+                <span className="block truncate text-label leading-5 text-muted">
                   <Freshness generatedAt={data.generatedAt} />
                 </span>
               )}
@@ -54,7 +54,7 @@ export default function AppShell({ data, title, children }: { data?: HazeData; t
         </div>
       </header>
       <main id="main" className="mx-auto max-w-lg lg:max-w-6xl 2xl:max-w-[1400px] min-[1920px]:max-w-[1600px] [&>h1+section]:mt-4">
-        {data?.mock && <p className="mx-4 mb-3 rounded-xl bg-[var(--lv2)]/15 px-3 py-2 text-[13px]">Demo data. These are not real readings.</p>}
+        {data?.mock && <p className="mx-4 mb-3 rounded-xl bg-[var(--lv2)]/15 px-3 py-2 text-label">Demo data. These are not real readings.</p>}
         {title && <h1 className="px-4 pt-1 text-[28px] lg:pt-4 text-balance font-extrabold leading-tight tracking-tight">{title}</h1>}
         {children}
       </main>

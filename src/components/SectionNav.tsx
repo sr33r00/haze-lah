@@ -10,7 +10,7 @@ export default function SectionNav({ label, sections }: { label: string; section
         <a
           key={id}
           href={`#${id}`}
-          className="inline-flex min-h-9 items-center gap-1.5 rounded-full bg-surface px-3 py-1.5 text-[13px] font-semibold lg:rounded-xl lg:bg-transparent lg:hover:bg-surface"
+          className="inline-flex min-h-9 items-center gap-1.5 rounded-full bg-surface px-3 py-1.5 text-label font-semibold lg:rounded-xl lg:bg-transparent lg:hover:bg-surface"
         >
           {Icon && <Icon size={14} aria-hidden className="shrink-0 text-muted" />}
           {title}

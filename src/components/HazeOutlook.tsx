@@ -17,8 +17,8 @@ export default function HazeOutlook({ days, psiNow }: { days: DayOutlook[]; psiN
       <span className="flex items-start gap-2.5">
         <Icon size={20} aria-hidden className="mt-0.5 shrink-0 text-muted" />
         <span className="min-w-0 flex-1">
-          <span className="block text-[16px] font-bold leading-snug first-letter:uppercase">{t.text}</span>
-          {t.rain && <span className="block text-[13px] text-muted">{t.rain}</span>}
+          <span className="block text-body font-bold leading-snug first-letter:uppercase">{t.text}</span>
+          {t.rain && <span className="block text-label text-muted">{t.rain}</span>}
         </span>
         <ChevronRight size={18} aria-hidden className="mt-0.5 shrink-0 text-muted transition-transform group-hover:translate-x-0.5" />
       </span>
@@ -26,8 +26,8 @@ export default function HazeOutlook({ days, psiNow }: { days: DayOutlook[]; psiN
         {days.map((d, k) => (
           <span key={d.date} className="text-center">
             <span className="block h-1.5 rounded-full" style={{ background: LEVEL_COLOR[psiLevel(d.psiMax)] }} />
-            <span className="mt-1 block text-[11px] text-muted">{fmtDay(d.date, k)}</span>
-            <span className="tabular block text-[13px] font-semibold">{d.psiMax}</span>
+            <span className="mt-1 block text-label text-muted">{fmtDay(d.date, k)}</span>
+            <span className="tabular block text-label font-semibold">{d.psiMax}</span>
           </span>
         ))}
       </span>

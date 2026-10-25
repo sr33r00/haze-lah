@@ -11,20 +11,20 @@ import Readout from "./Readout";
 
 const HOUR = 3600_000;
 const PAD = 14; // px kept free at the left of the plot
-const PAD_R = 28; // and at the right, where the 55 line is labelled
+const PAD_R = 32; // and at the right, where the 55 line is labelled
 const WIDE = 640; // px; from this width the PM2.5 lane is taller (the wrapper's `@[640px]` class below says the same in CSS)
 const LANE = { pm: 140, pmWide: 200, wind: 28, rain: 22 } as const; // px
 const GAP = { pmWind: 8, windRain: 4 } as const;
-const AXIS_H = 22;
+const AXIS_H = 24;
 /** Height of the whole SVG at a plot-lane height; the wrapper reserves it by CSS before the first measure, so nothing jumps. */
 const heightFor = (pmH: number) => 6 + pmH + GAP.pmWind + LANE.wind + GAP.windRain + LANE.rain + AXIS_H;
 const SERIES_GAP = 1.5 * HOUR; // a longer hole in the hours breaks a line instead of bridging it
 const HALO = { stroke: "var(--bg)", strokeWidth: 3, strokeLinejoin: "round", paintOrder: "stroke" } as const; // so a label reads on a line
 const Y_TICKS = [20, 40, 100, 150, 200, 300, 400, 500, 600, 800]; // µg/m³ values the PM2.5 lane may label at its right edge
-const TICK_GAP = 22; // px kept between two tick labels, and between a label and the 55 line's
+const TICK_GAP = 24; // px kept between two tick labels, and between a label and the 55 line's
 /** The line under the instrument that says how to read it. */
 const KEY = "Solid: measured. Dashed: forecast. Shade: likely range. PM2.5 forecast: Copernicus CAMS, calibrated to NEA readings.";
-const LABEL = { fontSize: 11, fill: "var(--muted)" } as const;
+const LABEL = { fontSize: 13, fill: "var(--muted)" } as const;
 
 type Pt = [number, number];
 
@@ -69,7 +69,7 @@ export default function Instrument({ hours, windFailed }: { hours: InstrumentHou
   const nowIdx = useMemo(() => hours.findLastIndex((h) => h.observed != null), [hours]);
   const peakT = useMemo(() => peakAhead(hours)?.t, [hours]);
 
-  if (!hours.length) return <p className="text-[15px] text-muted">The forecast is not available right now.</p>;
+  if (!hours.length) return <p className="text-label text-muted">The forecast is not available right now.</p>;
 
   const t0 = times[0];
   const span = Math.max(HOUR, times[times.length - 1] - t0);
@@ -171,7 +171,7 @@ export default function Instrument({ hours, windFailed }: { hours: InstrumentHou
                   {HIGH_PM25}
                 </text>
                 {yTicks.map((v) => (
-                  <text key={v} x={PAD + plotW + 5} y={y(v) + 3.5} fontSize={10} fill="var(--muted)" fillOpacity={0.8}>
+                  <text key={v} x={PAD + plotW + 5} y={y(v) + 4.5} fontSize={13} fill="var(--muted)" fillOpacity={0.8}>
                     {v}
                   </text>
                 ))}
@@ -216,7 +216,7 @@ export default function Instrument({ hours, windFailed }: { hours: InstrumentHou
                   Rain
                 </text>
                 {ticks.map(({ h, x: tx, midnight }, i) => (
-                  <text key={i} x={tx} y={bottom + 16} textAnchor={tx < PAD + 10 ? "start" : tx > w - PAD_R - 10 ? "end" : "middle"} {...LABEL} fontWeight={midnight ? 700 : 400} fill={midnight ? "var(--fg)" : "var(--muted)"}>
+                  <text key={i} x={tx} y={bottom + 17} textAnchor={tx < PAD + 10 ? "start" : tx > w - PAD_R - 10 ? "end" : "middle"} {...LABEL} fontWeight={midnight ? 700 : 400} fill={midnight ? "var(--fg)" : "var(--muted)"}>
                     {midnight ? fmtWeekday(sgDate(0, new Date(h.t))) : fmtHour(h.t)}
                   </text>
                 ))}
@@ -227,7 +227,7 @@ export default function Instrument({ hours, windFailed }: { hours: InstrumentHou
           </svg>
         </div>
       </div>
-      <p className="mt-2 text-[13px] text-muted">{KEY}</p>
+      <p className="mt-2 text-label text-muted">{KEY}</p>
     </div>
   );
 }

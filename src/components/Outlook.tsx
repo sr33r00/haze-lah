@@ -21,7 +21,7 @@ const PARTS = ["Morning", "Afternoon", "Evening"];
  */
 export default function Outlook({ days, group, outlook = null }: { days: DayOutlook[]; group: Group; outlook?: OutlookStep[] | null }) {
   const [open, setOpen] = useState(false);
-  if (!days.length) return <p className="px-4 text-[15px] text-muted">The forecast is not available right now.</p>;
+  if (!days.length) return <p className="px-4 text-label text-muted">The forecast is not available right now.</p>;
   return (
     <div className="px-4">
       <ul className="divide-y divide-line rounded-3xl bg-surface px-4">
@@ -30,7 +30,7 @@ export default function Outlook({ days, group, outlook = null }: { days: DayOutl
           const deg = dayWind(outlook, d.date);
           return (
             <li key={d.date} className="grid grid-cols-[3.6rem_1fr_auto] items-center gap-x-3 py-3.5">
-              <div className="text-[15px] font-bold">{fmtDay(d.date, i)}</div>
+              <div className="text-label font-bold">{fmtDay(d.date, i)}</div>
               <div>
                 <div className="flex gap-1" role="img" aria-label={PARTS.map((p, k) => `${p} ${d.parts[k] ?? "no data"}`).join(", ")}>
                   {d.parts.map((p, k) => (
@@ -42,15 +42,15 @@ export default function Outlook({ days, group, outlook = null }: { days: DayOutl
                     />
                   ))}
                 </div>
-                <div className="mt-1.5 text-[14px] font-semibold">
+                <div className="mt-1.5 text-label font-semibold">
                   {verdict(lv, group).headline.replace(".", "")}
                   {d.rainProb != null && d.rainProb >= 40 && (
-                    <span className="block text-[13px] font-normal text-muted">
+                    <span className="block text-label font-normal text-muted">
                       <CloudRain size={13} aria-hidden className="mr-1 inline align-[-2px]" />
                       {rainText(d)}
                     </span>
                   )}
-                  <span className="block text-[13px] font-normal text-muted">{Math.round(d.pHigh * 100)}% chance above {HIGH_PM25}</span>
+                  <span className="block text-label font-normal text-muted">{Math.round(d.pHigh * 100)}% chance above {HIGH_PM25}</span>
                 </div>
               </div>
               <div className="tabular text-right">
@@ -58,14 +58,14 @@ export default function Outlook({ days, group, outlook = null }: { days: DayOutl
                   PSI {d.psiMax}
                 </div>
                 {deg != null && (
-                  <div className="text-[13px] text-muted" role="img" aria-label={`Wind from the ${windFrom(deg)}`}>
+                  <div className="text-label text-muted" role="img" aria-label={`Wind from the ${windFrom(deg)}`}>
                     <ArrowUp size={12} aria-hidden className="mr-0.5 inline align-[-1px]" style={{ transform: `rotate(${deg + 180}deg)` }} />
                     {windFromShort(deg)}
                   </div>
                 )}
               </div>
               {open && (
-                <div className="col-span-3 mt-1 text-[12px] text-muted">
+                <div className="col-span-3 mt-1 text-label text-muted">
                   Peak hour {d.low === d.high ? d.high : `${d.low}–${d.high}`} µg/m³
                 </div>
               )}
@@ -76,11 +76,11 @@ export default function Outlook({ days, group, outlook = null }: { days: DayOutl
       <button
         onClick={() => setOpen(!open)}
         aria-expanded={open}
-        className="mt-1 flex min-h-[44px] items-center px-1 text-[13px] font-semibold text-accent"
+        className="mt-1 flex min-h-[44px] items-center px-1 text-label font-semibold text-accent"
       >
         {open ? "Hide details" : "Show details"}
       </button>
-      {open && <p className="px-1 text-[12px] text-muted">Strips show morning, afternoon and evening. Peak is the likely range of the day&apos;s highest hour. Rain is the day&apos;s total; gusts are the strongest at 10 m above ground.</p>}
+      {open && <p className="px-1 text-label text-muted">Strips show morning, afternoon and evening. Peak is the likely range of the day&apos;s highest hour. Rain is the day&apos;s total; gusts are the strongest at 10 m above ground.</p>}
     </div>
   );
 }

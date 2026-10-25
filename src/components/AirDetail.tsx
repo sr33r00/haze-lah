@@ -22,11 +22,11 @@ export default function AirDetail({ nea, region }: { nea: NeaNow; region: Region
           const ok = !isNaN(v);
           return (
             <li key={p.key}>
-              <div className="flex items-baseline justify-between text-[15px]">
+              <div className="flex items-baseline justify-between text-label">
                 <span className="font-semibold">
                   {p.name}
                   {v === top && (
-                    <span className="ml-2 text-[12px]">
+                    <span className="ml-2 text-label">
                       <Tag color={LEVEL_TEXT[psiLevel(v)]}>Sets the PSI</Tag>
                     </span>
                   )}
@@ -41,12 +41,12 @@ export default function AirDetail({ nea, region }: { nea: NeaNow; region: Region
                   />
                 )}
               </div>
-              <div className="mt-0.5 text-[12px] text-muted">{p.note}</div>
+              <div className="mt-0.5 text-label text-muted">{p.note}</div>
             </li>
           );
         })}
       </ul>
-      <p className="mt-4 text-[13px] text-muted">
+      <p className="mt-4 text-label text-muted">
         Concentrations: PM2.5 <b className="tabular text-fg">{fmt(nea.pm25_24h[region])}</b>, PM10 <b className="tabular text-fg">{fmt(nea.pm10_24h[region])}</b>, nitrogen
         dioxide <b className="tabular text-fg">{fmt(nea.no2_1h_max[region])}</b> µg/m³. Bars show each pollutant&apos;s PSI sub-index, from the 24-hour average (8-hour maximum for ozone and carbon
         monoxide); the highest one is the PSI.

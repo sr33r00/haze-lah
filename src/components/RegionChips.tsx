@@ -31,12 +31,12 @@ export default function RegionChips(props: {
               onClick={() => props.onPick(r)}
               aria-pressed={on}
               aria-label={`${cap(r)}${v != null ? `, PM2.5 ${Math.round(v)}` : ""}`}
-              className={`min-w-0 flex-1 rounded-2xl border bg-surface px-0.5 pb-2 pt-1.5 text-center transition-colors ${
+              className={`min-w-0 flex-1 rounded-2xl border bg-surface px-0 pb-2 pt-1.5 text-center transition-colors ${
                 on ? "border-fg ring-1 ring-inset ring-fg" : "border-line"
               }`}
             >
-              <span className="block text-[12px] leading-tight text-muted">{cap(r)}</span>
-              <span className="tabular block text-[15px] font-bold leading-tight">{v != null ? Math.round(v) : "–"}</span>
+              <span className="block text-label leading-tight text-muted">{cap(r)}</span>
+              <span className="tabular block text-label font-bold leading-tight">{v != null ? Math.round(v) : "–"}</span>
               <span
                 aria-hidden
                 className="mx-auto mt-1 block h-1 w-6 rounded-full"
@@ -47,7 +47,7 @@ export default function RegionChips(props: {
         })}
       </div>
       {/* The chips show PM2.5, not PSI; say so, since the hero shows both. */}
-      <p className="mt-1 px-4 text-right text-[11px] text-muted">PM2.5 now, µg/m³</p>
+      <p className="mt-1 px-4 text-right text-label text-muted">PM2.5 now, µg/m³</p>
     </>
   );
 }

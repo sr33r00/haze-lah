@@ -45,15 +45,15 @@ export default function WhatsNew() {
         <h2 id="whats-new-title" tabIndex={-1} autoFocus className="text-[22px] font-extrabold leading-tight tracking-tight">
           New in Haze Lah
         </h2>
-        <p className="mt-0.5 text-[13px] text-muted">{RELEASE_LABEL}</p>
-        <p className="mt-0.5 text-[13px] text-muted">Tap one to see it.</p>
+        <p className="mt-0.5 text-label text-muted">{RELEASE_LABEL}</p>
+        <p className="mt-0.5 text-label text-muted">Tap one to see it.</p>
         <div className="mt-3">
           <ReleaseList onNavigate={close} />
         </div>
         <button
           type="button"
           onClick={close}
-          className="mt-4 min-h-11 w-full rounded-full bg-accent px-5 text-[15px] font-semibold text-bg transition-opacity hover:opacity-90"
+          className="mt-4 min-h-11 w-full rounded-full bg-accent px-5 text-label font-semibold text-bg transition-opacity hover:opacity-90"
         >
           Got it
         </button>

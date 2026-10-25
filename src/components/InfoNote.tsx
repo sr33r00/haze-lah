@@ -8,7 +8,7 @@ export default function InfoNote({ lead, children }: { lead?: React.ReactNode; c
   const [open, setOpen] = useState(false);
   const id = useId();
   return (
-    <div className="text-[12px] text-muted">
+    <div className="text-label text-muted">
       <div className="flex items-center gap-1">
         {lead}
         <button

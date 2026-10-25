@@ -55,7 +55,7 @@ function DaySlider({ dates, sel, onSel, onDark = false }: { dates: string[]; sel
         aria-valuetext={`${today ? "Today, " : ""}${fmtWeekday(date, "long")} ${fmtFullDate(date)}`}
         className={`h-11 w-full ${onDark ? "accent-white" : "accent-[var(--accent)]"}`}
       />
-      <div aria-hidden className={`flex justify-between text-[13px] ${onDark ? "text-white/70" : "text-muted"}`}>
+      <div aria-hidden className={`flex justify-between text-label ${onDark ? "text-white/70" : "text-muted"}`}>
         <span>{fmtDateShort(dates[0])}</span>
         <span>Today</span>
       </div>
@@ -68,7 +68,7 @@ function AodKey() {
   return (
     <div role="img" aria-label={`Colour scale of aerosol optical depth, from 0 in pale yellow to ${AOD_MAX} and above in dark red`}>
       <div className="h-3 rounded-full border border-fg/20" style={{ background: KEY_GRADIENT }} />
-      <div aria-hidden className="tabular relative mt-1 h-5 text-[13px] text-muted">
+      <div aria-hidden className="tabular relative mt-1 h-5 text-fine text-muted">
         {TICKS.map((v, i) => (
           <span key={v} className="absolute top-0" style={{ left: `${(v / AOD_MAX) * 100}%`, transform: `translateX(${i === 0 ? "0" : i === TICKS.length - 1 ? "-100%" : "-50%"})` }}>
             {v === AOD_MAX ? `${v}+` : v}
@@ -87,11 +87,11 @@ export function WeekKey({ replay, layers }: { replay: Replay | null; layers: Rec
         <AodKey />
       </div>
       {layers.fires && hasLayer(replay, "fires") && (
-        <ul className="mt-2 space-y-1.5 text-[13px] text-muted">
+        <ul className="mt-2 space-y-1.5 text-label text-muted">
           <Key mark={<span className="size-2.5 rounded-full" style={{ background: FIRE_COLOR }} />}>Fire seen by NASA that day</Key>
         </ul>
       )}
-      <p className="mt-2 text-[13px] text-muted">
+      <p className="mt-2 text-label text-muted">
         Aerosol optical depth: how much sunlight the smoke and haze block. Above about 1 is thick haze.{" "}
         <a href={NASA_AOD_URL} target="_blank" rel="noreferrer" className="text-accent underline">
           Source
@@ -131,7 +131,7 @@ export default function SmokeThickness({ psiDaily, replay, layers, near }: { psi
   if (!dates || !date) {
     return (
       <>
-        <div aria-hidden className="min-h-12 sm:min-h-6" />
+        <div aria-hidden className="min-h-[4.25rem] sm:min-h-6" />
         <div className="mt-2">
           <PictureSkeleton />
         </div>
@@ -150,7 +150,7 @@ export default function SmokeThickness({ psiDaily, replay, layers, near }: { psi
   const stack = <Stack dates={dates} current={date} load={near} onError={(d) => setFailed((old) => ({ ...old, [d]: true }))} />;
   const overlay = <SmokeOverlay fires={fires ?? []} layers={layers} reading={reading} />;
   const captionEl = (
-    <p aria-live="polite" className="tabular min-h-12 text-[15px] font-bold sm:min-h-6">
+    <p aria-live="polite" className="tabular min-h-12 text-label font-bold sm:min-h-6">
       {caption}
     </p>
   );
@@ -185,7 +185,7 @@ export default function SmokeThickness({ psiDaily, replay, layers, near }: { psi
         <div className="mt-2">
           <DaySlider dates={dates} sel={sel} onSel={setSel} />
         </div>
-        <p className="mt-1 text-[13px] text-muted">Blank patches are clouds or gaps between satellite passes. NASA posts the newest day or two late.</p>
+        <p className="mt-1 text-label text-muted">Blank patches are clouds or gaps between satellite passes. NASA posts the newest day or two late.</p>
       </div>
     </>
   );

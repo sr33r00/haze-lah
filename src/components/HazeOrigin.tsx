@@ -190,7 +190,7 @@ export default function HazeOrigin({
         >
           <OriginMap layers={layers} onTap={(at) => tap(...at)} />
           {day && step && (
-            <div className="pointer-events-none absolute inset-x-3 bottom-7 z-[500] rounded-2xl bg-surface/90 px-3 py-2 text-[13px] leading-snug shadow">
+            <div className="pointer-events-none absolute inset-x-3 bottom-7 z-[500] rounded-2xl bg-surface/90 px-3 py-2 text-label leading-snug shadow">
               {future ? (
                 <p className="font-bold">Forecast, {fmtDayHour(step.t)}</p>
               ) : (
@@ -206,13 +206,13 @@ export default function HazeOrigin({
           {reduced && winds && <WindMotionButton motion={motion} onToggle={toggle} className="absolute right-3 top-3 z-[500]" />}
         </div>
 
-        <div className="mt-3 min-h-[13.5rem]">
+        <div className="mt-3 min-h-[15rem]">
           {day && step && (
             <>
               <div className="flex items-center gap-3">
                 <PlayButton playing={playing} onClick={() => setPlaying((p) => !p)} disabled={steps.length < 2} what="the smoke map" />
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-baseline justify-between gap-3 text-[13px]">
+                  <div className="flex items-baseline justify-between gap-3 text-label">
                     <span className="tabular font-bold">{label}</span>
                     <span className="flex items-center gap-3 text-muted">
                       {when}
@@ -245,11 +245,11 @@ export default function HazeOrigin({
                   />
                 </div>
               </div>
-              <p aria-live="polite" className={`mt-1 text-[13px] ${reading ? "font-semibold text-fg" : "text-muted"}`}>
+              <p aria-live="polite" className={`mt-1 text-label ${reading ? "font-semibold text-fg" : "text-muted"}`}>
                 {prompt}
                 {reading && <span className="font-normal text-muted"> (model)</span>}
               </p>
-              <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-[12px] text-muted">
+              <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-label text-muted">
                 <span className="font-semibold">Smoke PM2.5</span>
                 {names.map((n, i) => (
                   <span key={n} className="flex items-center gap-1.5">
@@ -325,12 +325,12 @@ export default function HazeOrigin({
           )}
         </div>
 
-        <figcaption className="mt-3 min-h-[14rem] text-[13px] text-muted">
+        <figcaption className="mt-3 min-h-[16rem] text-label text-muted">
           {day && step && (
             <>
-              {day.journey ? <AirJourney day={day} shareable={step.kind !== "past"} /> : <p className="text-[15px] font-bold text-fg">{trailCaption(day)}</p>}
+              {day.journey ? <AirJourney day={day} shareable={step.kind !== "past"} /> : <p className="text-label font-bold text-fg">{trailCaption(day)}</p>}
               <p className="mt-3">Traced back 3 days along the wind {WIND_HEIGHT}. Fires near the path are a likely, not certain, source.</p>
-              <Link href="/map?view=path" className="mt-1 inline-block py-1 text-[14px] font-semibold text-accent">
+              <Link href="/map?view=path" className="mt-1 inline-block py-1 text-label font-semibold text-accent">
                 See it on the map
               </Link>
               {replay?.days.at(-1)?.ahead && (

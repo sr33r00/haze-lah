@@ -19,7 +19,7 @@ export default function GuideView() {
   const sections = GUIDE.map((s) => ({ id: s.id, title: s.title, icon: ICONS[s.id] }));
   return (
     <div className="mt-4 px-4 pb-10">
-      <p className="text-[15px] text-muted">Short answers from NEA, MOH, MOE and MOM. Tap a question to open it.</p>
+      <p className="text-body text-muted">Short answers from NEA, MOH, MOE and MOM. Tap a question to open it.</p>
       <div className="mt-4 space-y-8 lg:grid lg:grid-cols-[13rem_minmax(0,1fr)] lg:gap-x-10 lg:space-y-0">
         <SectionNav label="Guide sections" sections={sections} />
         <div className="max-w-2xl space-y-8 xl:max-w-none xl:columns-2 xl:gap-8 xl:space-y-0 xl:[&>*]:mb-8 xl:[&>*]:break-inside-avoid">
@@ -35,13 +35,13 @@ export default function GuideView() {
                   {s.items.map((it) => (
                     <details key={it.id} id={it.id} className="group scroll-mt-20">
                       <summary className="flex min-h-[52px] cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 focus-visible:rounded-xl focus-visible:-outline-offset-2 [&::-webkit-details-marker]:hidden">
-                        <span className="text-[16px] font-semibold leading-snug">{it.q}</span>
+                        <span className="text-body font-semibold leading-snug">{it.q}</span>
                         <ChevronDown size={18} aria-hidden className="shrink-0 text-muted transition-transform group-open:rotate-180" />
                       </summary>
                       <div className="px-4 pb-4">
-                        <p className="text-[16px] font-medium leading-relaxed">{it.a}</p>
-                        {it.points && <Bullets items={it.points} className="mt-2 text-[15px] leading-relaxed" />}
-                        <p className="mt-3 text-[13px] text-muted">
+                        <p className="text-body font-medium leading-relaxed">{it.a}</p>
+                        {it.points && <Bullets items={it.points} className="mt-2 text-body leading-relaxed" />}
+                        <p className="mt-3 text-label text-muted">
                           Source:{" "}
                           {it.sources.map(([name, url], i) => (
                             <span key={url}>
@@ -59,7 +59,7 @@ export default function GuideView() {
               </section>
             );
           })}
-          <Link href="/about" className="flex min-h-[52px] items-center gap-3 rounded-2xl bg-surface p-4 text-[15px] font-semibold">
+          <Link href="/about" className="flex min-h-[52px] items-center gap-3 rounded-2xl bg-surface p-4 text-label font-semibold">
             <Info size={18} aria-hidden className="shrink-0 text-muted" />
             <span className="flex-1">How this site works and where the data comes from</span>
             <ChevronRight size={18} aria-hidden className="shrink-0 text-muted" />

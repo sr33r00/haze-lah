@@ -3,7 +3,7 @@ import SupportLinks from "./SupportLinks";
 
 export default function Footer({ errors }: { errors: string[] }) {
   return (
-    <footer className="mt-12 space-y-3 px-6 text-center text-[13px] leading-relaxed text-muted">
+    <footer className="mt-12 space-y-3 px-6 text-center text-label leading-relaxed text-muted">
       <SupportLinks />
       <p>
         Readings from NEA via data.gov.sg and Malaysia&apos;s Department of Environment. Fires from NASA FIRMS. Forecast from Copernicus CAMS and ECMWF via

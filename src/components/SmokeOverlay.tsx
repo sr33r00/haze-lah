@@ -16,10 +16,10 @@ export const SMOKE_LAYERS = [
 export type SmokeLayer = (typeof SMOKE_LAYERS)[number]["id"];
 
 const LABELLED_AREAS = 3; // provinces named: the ones with most fires that day
-const LABEL_GAP = { x: 80, y: 14 }; // px; a province label this close to an earlier one is left out
-const LABEL_W = 7; // px a character of a 12 px semi-bold province label takes, for its box
-const LABEL_H = 15; // px; a province label's height, halo included
-const SG_TEXT_W = 6.6; // px a character of Singapore's reading takes, for its box
+const LABEL_GAP = { x: 80, y: 16 }; // px; a province label this close to an earlier one is left out
+const LABEL_W = 7.6; // px a character of a 13 px semi-bold province label takes, for its box
+const LABEL_H = 17; // px; a province label's height, halo included
+const SG_TEXT_W = 8.3; // px a character of Singapore's 15 px reading takes, for its box
 const HALO = { stroke: "rgb(0 0 0 / 0.75)", strokeWidth: 3, strokeLinejoin: "round", paintOrder: "stroke" } as const; // so text reads on cloud and on dark land
 const DARK = "rgb(0 0 0 / 0.45)";
 
@@ -91,7 +91,7 @@ export default function SmokeOverlay({
   const sg = at(SG.lat, SG.lon);
   const edge = (x: number, width: number) => (x < width / 2 ? "start" : x > w - width / 2 ? "end" : "middle");
   // Singapore's dot, name and reading as one box, to keep province labels off.
-  const sgBox: Box = { left: sg.x - 7, top: sg.y - 17, right: sg.x + 9 + Math.max(70, (reading?.length ?? 0) * SG_TEXT_W), bottom: reading ? sg.y + 16 : sg.y + 7 };
+  const sgBox: Box = { left: sg.x - 7, top: sg.y - 21, right: sg.x + 9 + Math.max(80, (reading?.length ?? 0) * SG_TEXT_W), bottom: reading ? sg.y + 20 : sg.y + 7 };
   /** The box a province label takes: its text sits on the baseline `l.y - 9`, anchored as `edge` says. */
   const boxOf = (l: { name: string; x: number; y: number }): Box => {
     const width = l.name.length * LABEL_W;
@@ -148,7 +148,7 @@ export default function SmokeOverlay({
             </g>
           )}
           {layers.labels && (
-            <g fill="#fff" fontSize={12} fontWeight={600} textAnchor="middle">
+            <g fill="#fff" fontSize={13} fontWeight={600} textAnchor="middle">
               {labels.map((l) => (
                 <text key={l.name} x={l.x} y={l.y - 9} textAnchor={edge(l.x, 90)} {...HALO}>
                   {l.name}
@@ -157,12 +157,12 @@ export default function SmokeOverlay({
             </g>
           )}
           <circle cx={sg.x} cy={sg.y} r={4.5} fill="#fff" stroke="rgb(0 0 0 / 0.65)" strokeWidth={2} />
-          <g fill="#fff" fontWeight={700} fontSize={13} {...HALO}>
-            <text x={sg.x + 9} y={sg.y - 5}>
+          <g fill="#fff" fontWeight={700} fontSize={15} {...HALO}>
+            <text x={sg.x + 9} y={sg.y - 6}>
               Singapore
             </text>
             {reading && (
-              <text x={sg.x + 9} y={sg.y + 10} fontSize={12} fontWeight={600}>
+              <text x={sg.x + 9} y={sg.y + 12} fontSize={15} fontWeight={600}>
                 {reading}
               </text>
             )}

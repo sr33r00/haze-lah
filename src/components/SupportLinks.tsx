@@ -2,7 +2,7 @@ import { Bell } from "lucide-react";
 import { ALERTS_URL } from "@/lib/links";
 import FeedbackForm from "./FeedbackForm";
 
-const pill = "inline-flex items-center gap-2 rounded-full border border-line bg-surface px-4 py-2 text-[14px] font-semibold text-fg";
+const pill = "inline-flex items-center gap-2 rounded-full border border-line bg-surface px-4 py-2 text-label font-semibold text-fg";
 
 /** Alerts and feedback links for the footer. */
 export default function SupportLinks() {
