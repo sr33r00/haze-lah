@@ -41,9 +41,6 @@ yarn-error.log*
 next-env.d.ts
 !.env.example
 
-# readings capture buffer (kept between runs by the workflow cache)
-/.readings-cache/
-
 # Private agent notes and plans (kept locally, never public)
 AGENTS.md
 CLAUDE.md

@@ -6,7 +6,7 @@ import type { Fire } from "./types";
 import { sgtTime } from "./util";
 import type { WindFrame } from "./wind";
 
-// Day files of the air globe's timeline: data/history/<date>.json, one per Singapore day, written by scripts/history.ts.
+// Day files of the air globe's timeline: history/<date>.json in the data bucket, one per Singapore day, written by src/lib/jobs/history.ts.
 
 /** Most fires a day file keeps (the strongest); the totals still count all. */
 const DAY_FIRES = 1500;

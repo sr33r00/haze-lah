@@ -1,4 +1,5 @@
 import { hasCurrentHour, sgtDate, signature, type NeaItem } from "./nea.ts";
+import { JOB_TIMEOUT_MS, jobForCron, type JobName } from "./schedule.ts";
 
 const NEA_PM25 = "https://api-open.data.gov.sg/v2/real-time/api/pm25";
 const USER_AGENT = "haze-lah (open-source haze tracker)";
@@ -43,7 +44,21 @@ async function warm(env: Env): Promise<void> {
   }
 }
 
-/** One check: when NEA's newest reading differs from the last one seen, tell the site to refresh, then warm it. Once this hour's reading is in, the remaining checks of the hour skip NEA. */
+/** Starts one of the site's jobs (`POST /api/jobs/<job>`, same bearer as the refresh) and logs how it went; the site answers with each step's result. */
+async function startJob(env: Env, job: JobName): Promise<void> {
+  try {
+    const res = await fetch(`${env.SITE_URL}/api/jobs/${job}`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${env.REFRESH_SECRET}`, "User-Agent": USER_AGENT },
+      signal: AbortSignal.timeout(JOB_TIMEOUT_MS[job]),
+    });
+    log("job", { job, status: res.status, result: (await res.text()).slice(0, 2000) });
+  } catch (e) {
+    log("job-error", { job, error: String(e) });
+  }
+}
+
+/** One check: when NEA's newest reading differs from the last one seen, tell the site to refresh, then warm it and start the hourly jobs. Once this hour's reading is in, the remaining checks of the hour skip NEA. */
 async function run(env: Env): Promise<void> {
   const seen = await env.STATE.get("nea");
   if (hasCurrentHour(seen, new Date())) return log("have-hour");
@@ -66,13 +81,15 @@ async function run(env: Env): Promise<void> {
   }
   await env.STATE.put("nea", sig);
   await warm(env);
+  await startJob(env, "hourly");
 }
 
 export default {
   async fetch() {
     return new Response("Not found", { status: 404 });
   },
-  async scheduled(_controller, env, ctx) {
-    ctx.waitUntil(run(env));
+  async scheduled(controller, env, ctx) {
+    const job = jobForCron(controller.cron);
+    ctx.waitUntil(job ? startJob(env, job) : run(env));
   },
 } satisfies ExportedHandler<Env>;

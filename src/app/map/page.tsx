@@ -43,7 +43,7 @@ export default async function MapPage() {
       {[SMOKE_URL, REPLAY_URL].map((href) => (
         <link key={href} rel="preload" as="fetch" href={href} crossOrigin="anonymous" fetchPriority="low" />
       ))}
-      {["https://tiles.openfreemap.org", "https://gibs.earthdata.nasa.gov", "https://cdn.jsdelivr.net"].map((href) => (
+      {["https://tiles.openfreemap.org", "https://gibs.earthdata.nasa.gov"].map((href) => (
         <link key={href} rel="preconnect" href={href} crossOrigin="anonymous" />
       ))}
       <MapScreen dots={dotData(data)} psiDaily={data.psiDaily} summary={summaryOf(data, replay)} />

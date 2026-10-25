@@ -1,6 +1,7 @@
 // Forecast verification: our corrected forecast vs raw CAMS vs persistence ("same as now"),
 // matched on issue time and lead time against NEA island-mean 1-hr PM2.5.
 
+import { readJson } from "./dataStore";
 import { sgHour } from "./util";
 
 export type ArchiveRecord = {
@@ -111,17 +112,8 @@ export function scoreHazyDays(records: ArchiveRecord[], observed: Map<number, nu
   return out;
 }
 
-const ACCURACY_URL =
-  process.env.ACCURACY_URL || "https://raw.githubusercontent.com/sr33r00/haze-lah/main/data/accuracy.json";
-
-/** Published scores, or null until the archive has enough matched forecasts. */
+/** Published scores (`accuracy.json`, written by the hourly job), or null until the archive has enough matched forecasts. */
 export async function fetchAccuracy(minN = 20): Promise<Accuracy | null> {
-  try {
-    const res = await fetch(ACCURACY_URL, { next: { revalidate: 3600 }, signal: AbortSignal.timeout(8000) });
-    if (!res.ok) return null;
-    const a = (await res.json()) as Accuracy;
-    return a.leads.some((l) => l.ours.n >= minN) ? a : null;
-  } catch {
-    return null;
-  }
+  const a = await readJson<Accuracy>("accuracy.json");
+  return a?.leads.some((l) => l.ours.n >= minN) ? a : null;
 }

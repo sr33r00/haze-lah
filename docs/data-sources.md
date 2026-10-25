@@ -1,6 +1,6 @@
 # Data sources
 
-Every upstream the site or its scheduled jobs call, read from `src/lib/sources/`, `src/lib/satellite.ts`, `src/lib/globe.ts` and `scripts/`. For licences and terms in full, see the data sources table in [README.md](../README.md). This page does not repeat them. Where a source needs a credit, the notes below say where it is shown.
+Every upstream the site or its scheduled jobs call, read from `src/lib/sources/`, `src/lib/satellite.ts`, `src/lib/globe.ts` and `src/lib/jobs/`. For licences and terms in full, see the data sources table in [README.md](../README.md). This page does not repeat them. Where a source needs a credit, the notes below say where it is shown.
 
 Keys are read from environment variables listed in `.env.example`. Every key is optional: a missing key turns off one feature and nothing else. How failures behave is in [architecture](architecture.md#failure-handling).
 
@@ -22,9 +22,9 @@ Keys are read from environment variables listed in `.env.example`. Every key is 
 | Windy webcams | `api.windy.com` | `windy.ts` | 5 min | `WINDY_WEBCAMS_KEY` | No webcams |
 | NASA GIBS | `gibs.earthdata.nasa.gov` | `gibsTexture.ts` (server), `satellite.ts` and `globe.ts` (browser) | 6 h to 7 days (server picture) | none | n/a |
 | OpenFreeMap, OpenStreetMap | `tiles.openfreemap.org`, `tile.openstreetmap.org` | Browser | Browser cache | none | n/a |
-| The project's own `data/` files | `cdn.jsdelivr.net`, `raw.githubusercontent.com` | `historyClient.ts`, `accuracy.ts` | See [data pipelines](data-pipelines.md) | none | History and accuracy sections hide |
+| The project's own data (private R2 bucket) | none: read through the `DATA` binding on the server, and `/data/history/` on this origin for the browser | `dataStore.ts`, `historyClient.ts`, `accuracy.ts` | See [data pipelines](data-pipelines.md) | none | History and accuracy sections hide |
 
-`FIRMS_SOURCE` (not listed in `.env.example`) picks the FIRMS product; it defaults to `VIIRS_SNPP_NRT`. `ACCURACY_URL` (also not listed) overrides where `fetchAccuracy` reads `accuracy.json` from.
+`FIRMS_SOURCE` picks the FIRMS product; it defaults to `VIIRS_SNPP_NRT`.
 
 ## NEA via data.gov.sg
 
@@ -43,7 +43,7 @@ Keys are read from environment variables listed in `.env.example`. Every key is 
 - **File:** `src/lib/sources/apims.ts`. An ArcGIS layer behind the Department of Environment's APIMS site.
 - **Fetched:** every station within 700 km of Singapore, nearest first, with its latest hour of API (air pollutant index), PM2.5, PM10, O3, CO, SO2 and NO2. APIMS serves only that latest hour, never history.
 - **Time:** the feed stores Malaysian local time as if it were UTC; the code subtracts 8 hours.
-- **Also used by:** the hourly capture in `scripts/readings.ts --capture`, which builds the readings archive (see [data pipelines](data-pipelines.md)).
+- **Also used by:** the hourly capture in `captureApims` in `src/lib/jobs/readings.ts`, which builds the readings archive (see [data pipelines](data-pipelines.md)).
 - **Terms:** public data, attributed on the About page.
 
 ## Copernicus CAMS and ECMWF, via Open-Meteo
@@ -54,7 +54,7 @@ Keys are read from environment variables listed in `.env.example`. Every key is 
   - `fetchWeather`: wind and direction at 850 hPa, rain probability, rain and gusts, 1 past day and 5 forecast days.
   - `fetchUpwindModel`: CAMS PM2.5 for five Indonesian cities (Pekanbaru, Jambi, Palembang, Pontianak, Palangka Raya). There is no open real-time station feed for them, so these are model values, not measurements.
 - **Regional grid (3 hours):** `fetchSmokeGrid` (for `/api/smoke`) asks for a 1 degree grid, latitude -6 to 7 and longitude 95 to 120. It returns PM2.5 and the other CAMS gases, sampled every 3 hours for about 72 hours, plus 850 hPa wind. `fetchWindFrames` returns the past week and next 3 days of wind for the replay.
-- **History jobs only:** `fetchHistoryAQ` and `fetchHistoryWind` read Open-Meteo's archives for `scripts/history.ts`. They use a 90-second timeout and retry after 10 s and 65 s.
+- **History jobs only:** `fetchHistoryAQ` and `fetchHistoryWind` read Open-Meteo's archives for the history job (`src/lib/jobs/history.ts`). They use a 90-second timeout and retry after 10 s and 65 s.
 - **Key:** none.
 - **Terms:** CC BY 4.0; contains modified Copernicus Atmosphere Monitoring Service information. The credit is on the About page and in the footer.
 
@@ -63,7 +63,7 @@ Keys are read from environment variables listed in `.env.example`. Every key is 
 - **File:** `src/lib/sources/firms.ts`, parser in `firmsCsv.ts`.
 - **Fetched:** VIIRS active fire detections for the box 95, -6.5, 120, 7.5 (Sumatra, Peninsular Malaysia, Borneo), last 5 days. Low-confidence detections and fires outside the three areas are dropped. The 5-day CSV is over 2 MB, above Next's fetch cache limit, so only the parsed rows are cached (30 minutes). The map keeps the 600 strongest fires.
 - **Key:** `FIRMS_MAP_KEY` (free). Without it `fetchFires` returns `available: false` with a reason, and the page shows no fire data.
-- **History:** `fetchFiresRange` reads old days in 5-day windows for `scripts/history.ts`. The near-real-time product keeps only recent months, so an empty answer is retried on the standard-processing product (`_SP`). A window that stays empty throws, so a false "no fires" is never saved.
+- **History:** `fetchFiresRange` reads old days in 5-day windows for the history job. The near-real-time product keeps only recent months, so an empty answer is retried on the standard-processing product (`_SP`). A window that stays empty throws, so a false "no fires" is never saved.
 - **Terms:** NASA open data. Credit on the About page.
 
 ## OpenAQ
@@ -79,7 +79,7 @@ Keys are read from environment variables listed in `.env.example`. Every key is 
 - **File:** `src/lib/sources/waqi.ts`. Official JSON API, `/v2/map/bounds`.
 - **Fetched:** stations inside the Singapore box with a recent reading, shown on the Now map's US AQI view. NEA's own regional monitors (named "North, Singapore" and so on) are dropped because the map already shows NEA's regions. Faulty values (negative or above 999) are dropped.
 - **Key:** `WAQI_TOKEN` (free). Without it no stations are shown.
-- **Rule: live only.** AQICN's terms forbid redistributing cached or archived data. The stations are fetched only inside `getHazeData`. They are never written to `data/`, to the forecast archive, to the history or readings files, or to any script output. `scripts/archive.ts` saves only chosen fields of the forecast data, no workflow gives it the AQICN token, and `scripts/alert.ts` keeps only its alert state. They pass through the 30-minute page cache, and the public `/api/haze` response sends `aqiStations` empty, so other sites cannot take them from us. See [ADR 0005](decisions/0005-no-archive-of-aqicn.md).
+- **Rule: live only.** AQICN's terms forbid redistributing cached or archived data. The stations are fetched only inside `getHazeData`. They are never written to the data bucket, to the forecast archive, to the history or readings files, or to any job result. The archive job saves only chosen fields of the forecast data, and the alerts job keeps only its alert state. They pass through the 30-minute page cache, and the public `/api/haze` response sends `aqiStations` empty, so other sites cannot take them from us. See [ADR 0005](decisions/0005-no-archive-of-aqicn.md).
 - **Credit:** `WAQI_NAME` and `WAQI_URL` in `src/lib/links.ts`. The credit line must stay wherever the data is shown: it is under the map in `src/components/SgMap.tsx`, on the About page, and in `/llms.txt`. If you show AQICN data in a new place, show the credit there too.
 - **Token handling:** the token is in the request URL, so errors log only the API status, never the response body.
 
@@ -122,7 +122,7 @@ These are not data sources, but the code calls them.
 
 | Service | Used by | Key |
 |---|---|---|
-| Telegram Bot API | `scripts/alert.ts` (alerts) and `src/app/api/feedback/route.ts` | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `FEEDBACK_CHAT_ID` |
+| Telegram Bot API | `src/lib/jobs/alerts.ts` (alerts) and `src/app/api/feedback/route.ts` | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `FEEDBACK_CHAT_ID` |
 | Resend | `src/app/api/feedback/route.ts` | `RESEND_API_KEY`, `FEEDBACK_EMAIL` |
 
 ## Adding a source

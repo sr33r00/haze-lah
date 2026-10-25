@@ -51,7 +51,7 @@ Haze Lah is independent and is not an official NEA service. For official advisor
 
 Reference only: [ASEAN Specialised Meteorological Centre](https://asmc.asean.org) and [MyCMAQ](https://mycmaq.met.gov.my).
 
-Every air reading the site shows (except AQICN's) is also saved to `data/readings/`, one file per Singapore day, so it outlives the live page. How the archive works, and what is saved from each source, is in [docs/data-pipelines.md](docs/data-pipelines.md). Per-source detail is in [docs/data-sources.md](docs/data-sources.md).
+Every air reading the site shows (except AQICN's) is also saved, one file per Singapore day, so it outlives the live page. How the archive works, and what is saved from each source, is in [docs/data-pipelines.md](docs/data-pipelines.md). Per-source detail is in [docs/data-sources.md](docs/data-sources.md).
 
 ## How the forecast works
 
@@ -62,7 +62,7 @@ Every air reading the site shows (except AQICN's) is also saved to `data/reading
 
 Advice follows NEA's guidance: 1-hour PM2.5 for what to do right now, and the 24-hour PSI for planning ahead.
 
-**Verification.** A scheduled GitHub Actions job (`.github/workflows/archive.yml`) saves each forecast as issued to `data/archive/` and writes `data/accuracy.json`. Scores are reported at 6, 24, 48, 72 and 96 hours ahead against two baselines, the raw model and "no change": mean absolute error, RMSE and bias in µg/m³, precision and recall for PM2.5 above 55 µg/m³, and a hazy-day hit rate for forecasts made at 11 pm the night before. The archive is open, so anyone can reproduce the scores.
+**Verification.** A scheduled job saves each forecast as issued and scores the archive. Scores are reported at 6, 24, 48, 72 and 96 hours ahead against two baselines, the raw model and "no change": mean absolute error, RMSE and bias in µg/m³, precision and recall for PM2.5 above 55 µg/m³, and a hazy-day hit rate for forecasts made at 11 pm the night before.
 
 More in [docs/forecast.md](docs/forecast.md).
 
@@ -100,10 +100,9 @@ All variables are optional. Copy `.env.example` to `.env.local` to set them. Key
 | `WINDY_WEBCAMS_KEY` | [Windy webcams](https://api.windy.com/keys) API key (free tier) for webcam photos |
 | `HAZE_MOCK` | `1` renders synthetic demo data (offline development) |
 | `FIRMS_SOURCE` | FIRMS product for the live fires (default `VIIRS_SNPP_NRT`) |
-| `ACCURACY_URL` | Forecast accuracy file (default `data/accuracy.json` on GitHub's raw host) |
-| `HAZE_JSON_URL` | JSON the alert script reads (default `${SITE_URL}/api/haze`) |
+| `REFRESH_SECRET` | Random string that protects `/api/refresh` and the job routes (`/api/jobs/<job>`) |
 | `NEXT_PUBLIC_ALERTS_URL` | Telegram channel link (`https://t.me/...`) for the "Get alerts" button |
-| `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` | Bot and channel used by `scripts/alert.ts` to post alerts |
+| `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` | Bot and channel the alerts job posts to |
 | `RESEND_API_KEY`, `FEEDBACK_EMAIL` | Free [Resend](https://resend.com) key and the address that receives the feedback form |
 | `FEEDBACK_CHAT_ID` | Or your own Telegram chat id: the feedback form messages you through the same bot |
 | `SITE_URL` | Site link in alert messages (default `https://hazelah.app`) |
@@ -125,9 +124,9 @@ src/app/          pages and API routes
 src/components/   page sections
 src/lib/          data assembly, forecast, bands and advice
 src/lib/sources/  one module per data provider
-scripts/          archive, scoring, alert, history and readings jobs
-data/             open archives: forecasts, readings, history, accuracy
-.github/          issue forms and scheduled jobs
+src/lib/jobs/     scheduled jobs: archive and score, alerts, history, readings
+workers/          the Cloudflare Worker that checks NEA and starts the jobs
+.github/          issue forms
 ```
 
 How the parts fit together is in [docs/architecture.md](docs/architecture.md).
@@ -138,7 +137,7 @@ How the parts fit together is in [docs/architecture.md](docs/architecture.md).
 - [docs/architecture.md](docs/architecture.md): how the app is put together
 - [docs/data-sources.md](docs/data-sources.md): each provider, what is used and how
 - [docs/forecast.md](docs/forecast.md): the forecast method in full
-- [docs/data-pipelines.md](docs/data-pipelines.md): the scheduled jobs and the open data archives
+- [docs/data-pipelines.md](docs/data-pipelines.md): the scheduled jobs and the data they keep
 - [docs/development.md](docs/development.md): working on the code
 - [docs/decisions/](docs/decisions/): why things are the way they are
 

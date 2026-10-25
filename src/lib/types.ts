@@ -78,7 +78,7 @@ export type WeatherHour = {
   gust: number | null; // km/h, strongest gust at 10 m in that hour
 };
 
-/** The last live forecast, written hourly to data/forecast-latest.json and read back when CAMS is down. */
+/** The last live forecast, written hourly to `forecast-latest.json` in the data bucket and read back when CAMS is down. */
 export type SavedForecast = { issued: string; hourly: ForecastPoint[]; biasFactor: number | null; sigma: number | null };
 
 export type ForecastPoint = {

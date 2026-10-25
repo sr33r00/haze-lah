@@ -144,7 +144,7 @@ export async function fetchWindFrames(): Promise<WindFrame[]> {
   return windFramesOf(w, lats, lons);
 }
 
-// History: Open-Meteo's archives, for the day files (scripts/history.ts). Large answers, so a longer timeout; and a rate-limited or
+// History: Open-Meteo's archives, for the day files (src/lib/jobs/history.ts). Large answers, so a longer timeout; and a rate-limited or
 // overloaded answer (429, 503) is tried again after 10 s, then 65 s (the limit is per minute).
 const HISTORY_RETRY = [10_000, 65_000];
 const HISTORY_TIMEOUT = 90_000;

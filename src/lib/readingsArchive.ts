@@ -1,12 +1,12 @@
 // The readings archive: every air reading the site shows, kept after the live page moves on. One file per SGT day,
-// data/readings/<date>.json, built by scripts/readings.ts. This file holds the pure parts (formats, builders, merges).
+// readings/<date>.json in the data bucket, built by src/lib/jobs/readings.ts. This file holds the pure parts (formats, builders, merges).
 // Hours are the clock hour (0 to 23, SGT) of the instant a reading is stamped with, as the sources stamp them: NEA's
 // timestamp, the APIMS DATETIME (Malaysian time is the same clock as SGT) and the end of an OpenAQ hour.
 import { REGIONS, type Region } from "./bands";
 import type { ApimsReading, ApimsRow } from "./sources/apims";
 import type { NeaItem } from "./sources/nea";
 import type { Location } from "./sources/openaq";
-import { num, sgDate, sgHour, sgtTime } from "./util";
+import { num, sgDate, sgHour } from "./util";
 
 export const SOURCES = ["nea", "apims", "openaq"] as const;
 export type SourceId = (typeof SOURCES)[number];
@@ -62,14 +62,11 @@ export type ReadingsDay = {
   missing?: Partial<Record<SourceId, string>>;
 };
 
-/** What the capture run keeps for a day until the daily run adds it to the day's file. */
+/** What the hourly capture keeps for a day (`readings/pending/<date>.json`) until the daily run adds it to the day's file. */
 export type PendingDay = {
   v: 1;
   date: string;
   apims: ApimsPart;
-  /** The newest reading's stamp (ms), and the newest one already committed. */
-  latest: number;
-  flushed: number;
 };
 
 export type ReadingsIndex = { updated: string; days: { date: string; sources: SourceId[]; missing: SourceId[] }[] };
@@ -185,23 +182,7 @@ export function addToReadingsIndex(index: ReadingsIndex, day: ReadingsDay, now =
   return { updated: now.toISOString(), days };
 }
 
-/** A pending capture day with `part` added. `flushed` is kept, `latest` moves to the newest stamp seen. */
+/** A pending capture day with `part` added; an hour captured again is replaced by itself. */
 export function addToPending(pending: PendingDay | undefined, date: string, part: ApimsPart): PendingDay {
-  const stamps = Object.values(part.hours).flatMap((h) => h.flatMap((v, hour) => (v ? [sgtTime(date, hour)] : [])));
-  return {
-    v: 1,
-    date,
-    apims: mergeApims(pending?.apims, part),
-    latest: Math.max(pending?.latest ?? 0, ...stamps),
-    flushed: pending?.flushed ?? 0,
-  };
-}
-
-/**
- * Whether a pending day should be committed now: at least `everyMs` of readings are uncommitted, or the day is over and
- * has any. Commits stay a few a day; the hours in between wait in the workflow's cache.
- */
-export function flushDue(p: PendingDay, today: string, everyMs: number): boolean {
-  if (p.latest <= p.flushed) return false;
-  return p.date < today || p.latest - p.flushed >= everyMs;
+  return { v: 1, date, apims: mergeApims(pending?.apims, part) };
 }

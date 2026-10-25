@@ -1,7 +1,8 @@
 // The site Worker (vinext). The separate NEA refresh Worker has its own config in workers/nea-refresh.
 //
 // Secrets are not in this file. Upload each with `npx wrangler secret put <NAME>`:
-//   FIRMS_MAP_KEY, OPENAQ_API_KEY, WAQI_TOKEN, WINDY_WEBCAMS_KEY, REFRESH_SECRET, TELEGRAM_BOT_TOKEN, FEEDBACK_CHAT_ID
+//   FIRMS_MAP_KEY, OPENAQ_API_KEY, WAQI_TOKEN, WINDY_WEBCAMS_KEY, REFRESH_SECRET, TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, FEEDBACK_CHAT_ID
+// and, optionally, DATA_GOV_SG_API_KEY.
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "haze-lah",
@@ -28,5 +29,8 @@
     "run_worker_first": ["/*", "!/_next/static/*", "!/*/_next/static/*"]
   },
   // The data cache (ISR pages, unstable_cache and revalidateTag) behind kvDataAdapter() in vite.config.ts: namespace haze-lah-cache.
-  "kv_namespaces": [{ "binding": "VINEXT_KV_CACHE", "id": "48f28b2a5e24498fb3fe8091c06e5594" }]
+  "kv_namespaces": [{ "binding": "VINEXT_KV_CACHE", "id": "48f28b2a5e24498fb3fe8091c06e5594" }],
+  // The site's private data (globe history, readings archive, forecast archive, accuracy, alert state): bucket haze-lah-data, not public.
+  // src/lib/dataStore.ts is the only code that touches it; the browser gets the globe's history files through /data/history/.
+  "r2_buckets": [{ "binding": "DATA", "bucket_name": "haze-lah-data" }]
 }

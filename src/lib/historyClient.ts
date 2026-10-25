@@ -1,22 +1,21 @@
 import type { HistoryDay, HistoryIndex } from "@/lib/historyTypes";
 
-/** The daily history files the globe's timeline plays, served from the repo by jsDelivr (no per-visitor server route). */
-export const HISTORY_BASE = "https://cdn.jsdelivr.net/gh/sr33r00/haze-lah@main/data/history/";
+/** The daily history files the globe's timeline plays and their index, served by this site from its private data bucket (`/data/history/`). */
+export const HISTORY_BASE = "/data/history/";
 
-/** The URL of a day's file (`YYYY-MM-DD`). */
+/** The URL of a day's file (`YYYY-MM-DD`), or of the index (`index`). */
 export const historyUrl = (name: string) => `${HISTORY_BASE}${name}.json`;
 
-/** The index changes daily, and jsDelivr can keep an old copy of a branch file for hours even after a purge, so it comes
- * from GitHub's raw host (cached 5 minutes, open to any origin). Day files never change once written, so they stay on jsDelivr. */
-export const INDEX_URL = "https://raw.githubusercontent.com/sr33r00/haze-lah/main/data/history/index.json";
+/** The index of days: it changes daily, so the server lets a browser keep it for 5 minutes only. */
+export const INDEX_URL = historyUrl("index");
 
 /** What `getJson` answers for a 404: the file is not there, and asking again will not change that. */
 const MISSING = Symbol("missing");
 
 /** The JSON at `url`; MISSING on a 404; null on a network error, any other non-2xx status (5xx, 429) or a body that is not JSON. Never throws. */
-async function getJson(url: string, fetchFn: typeof fetch, init?: RequestInit): Promise<unknown> {
+async function getJson(url: string, fetchFn: typeof fetch): Promise<unknown> {
   try {
-    const res = await fetchFn(url, init);
+    const res = await fetchFn(url);
     if (res.status === 404) return MISSING;
     return res.ok ? await res.json() : null;
   } catch {
@@ -26,12 +25,9 @@ async function getJson(url: string, fetchFn: typeof fetch, init?: RequestInit): 
 
 const asIndex = (json: unknown) => (json && json !== MISSING && Array.isArray((json as HistoryIndex).days) ? (json as HistoryIndex) : null);
 
-/**
- * The index of days, or null on any failure. It changes daily, so a stale browser copy is revalidated. When GitHub's raw host does not
- * answer (some content blockers stop it), jsDelivr's copy stands in: perhaps hours old, but every day the timeline plays is still there.
- */
+/** The index of days, or null on any failure. */
 export async function loadIndex(fetchFn: typeof fetch = fetch): Promise<HistoryIndex | null> {
-  return asIndex(await getJson(INDEX_URL, fetchFn, { cache: "no-cache" })) ?? asIndex(await getJson(historyUrl("index"), fetchFn));
+  return asIndex(await getJson(INDEX_URL, fetchFn));
 }
 
 /** One request per date for the session; a day that loaded, or that is definitely not there (a 404: a gap day), is remembered. */

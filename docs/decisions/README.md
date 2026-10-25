@@ -11,5 +11,6 @@ Short records of design decisions the code shows. Each one has a context, the de
 | [0005](0005-no-archive-of-aqicn.md) | Use AQICN data live only |
 | [0006](0006-server-built-satellite-pictures.md) | Build the satellite smoke picture on the server |
 | [0007](0007-browser-only-personal-data.md) | Keep location and preferences in the browser |
+| [0008](0008-data-in-cloudflare-r2.md) | Keep the site's data in a private R2 bucket and run the jobs in the Worker (replaces 0004) |
 
 To add one, copy the layout of an existing record, use the next number and keep it to about 15 to 30 lines. If a decision changes, add a new record that says which one it replaces; do not rewrite the old one. Back to [docs index](../README.md).

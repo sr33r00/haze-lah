@@ -1,4 +1,5 @@
 import { unstable_cache } from "next/cache";
+import { readJson } from "./dataStore";
 import { FORECAST_METHOD, buildForecast, dailyOutlook, fromHour } from "./forecast";
 import { mockInputs } from "./mock";
 import { fetchApims } from "./sources/apims";
@@ -65,20 +66,11 @@ async function fetchInputs(): Promise<Inputs> {
   };
 }
 
-const FORECAST_URL =
-  process.env.FORECAST_URL || "https://raw.githubusercontent.com/sr33r00/haze-lah/main/data/forecast-latest.json";
-
-/** The last live forecast saved in the repo, without the hours already past; null when it is missing or has run out. */
+/** The last live forecast the hourly job saved (`forecast-latest.json`), without the hours already past; null when it is missing or has run out. */
 async function fetchSavedForecast(): Promise<SavedForecast | null> {
-  try {
-    const res = await fetch(FORECAST_URL, { next: { revalidate: 300 }, signal: AbortSignal.timeout(8000) });
-    if (!res.ok) return null;
-    const saved = (await res.json()) as SavedForecast;
-    const hourly = fromHour(saved.hourly);
-    return hourly.length ? { ...saved, hourly } : null;
-  } catch {
-    return null;
-  }
+  const saved = await readJson<SavedForecast>("forecast-latest.json");
+  const hourly = saved ? fromHour(saved.hourly) : [];
+  return saved && hourly.length ? { ...saved, hourly } : null;
 }
 
 async function buildHazeData(mock: boolean): Promise<HazeData> {

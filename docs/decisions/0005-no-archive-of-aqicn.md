@@ -11,7 +11,7 @@ The Now map has a US AQI view that adds stations from the World Air Quality Inde
 AQICN station data is a live-only source.
 
 - `fetchAqiStations` (`src/lib/sources/waqi.ts`) is called only from `fetchInputs` inside `getHazeData`.
-- Nothing writes it to `data/`, the forecast archive, the history or readings files, or script output. `scripts/archive.ts` stores chosen forecast fields only; `scripts/readings.ts` and `scripts/history.ts` do not call the AQICN fetcher; `scripts/alert.ts` keeps alert state only.
+- Nothing writes it to the data bucket (`src/lib/dataStore.ts`), the forecast archive, the history or readings files, or a job result. The archive job stores chosen forecast fields only; the readings and history jobs do not call the AQICN fetcher; the alerts job keeps alert state only.
 - Wherever the data is shown, its credit line stays: `WAQI_NAME` and `WAQI_URL` in `src/lib/links.ts`, used under the map, on the About page and in `/llms.txt`.
 - The token is read from `WAQI_TOKEN` on the server. Without it the list is empty and the map shows no AQICN stations.
 - The map explains that US AQI reads higher than Singapore's PSI for the same air (`US_AQI_NOTE`).
@@ -19,7 +19,7 @@ AQICN station data is a live-only source.
 ## Consequences
 
 - There is no history of AQICN stations, so the globe timeline cannot replay them.
-- The data passes through the shared 30-minute cache, the same live path as the page itself; it is not stored in the repository.
+- The data passes through the shared 30-minute cache, the same live path as the page itself; it is not stored anywhere.
 - The public `/api/haze` response, open to any origin, sends `aqiStations` as an empty list, so the endpoint does not republish AQICN's data.
 - Any new feature that stores or exports page data must leave `aqiStations` out. Check this when you add one.
 - A new place that shows AQICN data needs the credit line there.

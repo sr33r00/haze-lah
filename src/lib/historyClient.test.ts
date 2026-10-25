@@ -15,9 +15,10 @@ function fake(routes: Record<string, { status?: number; body?: unknown }>) {
   return { fn, calls };
 }
 
-test("historyUrl joins the base and the date; the index comes from GitHub's raw host", () => {
+test("historyUrl joins the base and the date; the index is a file of the same folder on this origin", () => {
   assert.equal(historyUrl("2026-10-01"), `${HISTORY_BASE}2026-10-01.json`);
-  assert.ok(INDEX_URL.startsWith("https://raw.githubusercontent.com/") && INDEX_URL.endsWith("/data/history/index.json"));
+  assert.equal(HISTORY_BASE, "/data/history/");
+  assert.equal(INDEX_URL, "/data/history/index.json");
 });
 
 test("loadIndex returns null when fetch rejects", async () => {
@@ -30,11 +31,6 @@ test("loadIndex returns null on 404", async () => {
 
 test("loadIndex returns null when the JSON is not an index", async () => {
   assert.equal(await loadIndex(fake({ [INDEX_URL]: { body: { days: "x" } } }).fn), null);
-});
-
-test("loadIndex falls back to jsDelivr's copy when GitHub's raw host is blocked", async () => {
-  const body = { updated: "2026-10-23T00:00:00Z", days: [] };
-  assert.deepEqual(await loadIndex(fake({ [historyUrl("index")]: { body } }).fn), body);
 });
 
 test("loadIndex returns the index", async () => {

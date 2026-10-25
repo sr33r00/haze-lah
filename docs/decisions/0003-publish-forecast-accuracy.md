@@ -8,10 +8,10 @@ Health advice depends on the forecast, and a forecast with no track record is on
 
 ## Decision
 
-- Every hour `scripts/archive.ts` appends the forecast as issued (the last 24 hours of NEA data and leads 1 to 96) to `data/archive/YYYY-MM.jsonl`. Only forecast fields are stored.
-- `scripts/score.ts` runs `scoreArchive` (`src/lib/accuracy.ts`) over the whole archive and writes `data/accuracy.json`. Leads are 6, 24, 48, 72 and 96 hours. For each, ours, raw CAMS and persistence get mean absolute error, RMSE and bias. "PM2.5 above 55" gets precision, recall and F1. A "hazy day" score covers the 11 pm call for the next day.
+- Every hour the archive job (`src/lib/jobs/archive.ts`) appends the forecast as issued (the last 24 hours of NEA data and leads 1 to 96) to `archive/YYYY-MM.jsonl`. Only forecast fields are stored.
+- The same job runs `scoreArchive` (`src/lib/accuracy.ts`) over the whole archive and writes `accuracy.json`. Leads are 6, 24, 48, 72 and 96 hours. For each, ours, raw CAMS and persistence get mean absolute error, RMSE and bias. "PM2.5 above 55" gets precision, recall and F1. A "hazy day" score covers the 11 pm call for the next day.
 - The About page and the forecast page show the numbers. `skillSentence` and `shortLeadNote` say plainly where the forecast loses.
-- The archive and the scores are committed to the public repository, so anyone can recompute them.
+- The archive and the scores were first committed to the public repository so anyone could recompute them; they now live in a private bucket ([0008](0008-data-in-cloudflare-r2.md)), and the site publishes the scores.
 
 Details: [forecast](../forecast.md#7-verification).
 
@@ -19,6 +19,6 @@ Details: [forecast](../forecast.md#7-verification).
 
 - The site can say "from N hours ahead this beats both baselines", and also "for the next 6 hours, today's reading is the better guide", when that is what the numbers show.
 - Scores are only shown once a lead has at least 20 matched forecasts (the About page accepts 1), so early numbers do not mislead.
-- The repository grows by one line an hour. Monthly files keep each file small.
+- The archive grows by one line an hour. Monthly files keep each file small.
 - Results depend on the period covered. A calm month and a haze month score differently, so read `from` and `to` beside the numbers.
 - The archive is the training set for any later learned correction.

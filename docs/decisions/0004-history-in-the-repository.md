@@ -1,6 +1,6 @@
 # 0004: Keep history in the repository, not a database
 
-Date: 2026-10. Status: accepted.
+Date: 2026-10. Status: replaced by [0008](0008-data-in-cloudflare-r2.md).
 
 ## Context
 

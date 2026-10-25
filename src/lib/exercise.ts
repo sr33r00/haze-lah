@@ -116,7 +116,7 @@ export function bestSlots(forecast: ForecastPoint[], activity: Activity, group: 
 /** One bar of the plan's hour strip: the forecast PM2.5 and how the chosen activity rates in it. */
 export type StripHour = { time: string; pm25: number; rating: Rating };
 
-/** How far ahead Plan your day looks, in hours: the forecast's error grows with lead time (data/accuracy.json). */
+/** How far ahead Plan your day looks, in hours: the forecast's error grows with lead time (`accuracy.json`). */
 export const PLAN_HOURS = 16;
 
 /**

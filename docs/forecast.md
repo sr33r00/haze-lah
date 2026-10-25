@@ -2,7 +2,7 @@
 
 The forecast takes a global air-quality model, corrects it with what NEA's monitors measured in the last two days, and gives a number, a likely range and a chance of going above the "Normal" limit. Every forecast is saved when it is made and scored later against what NEA measured, and the scores are published.
 
-Code: `src/lib/forecast.ts`, `src/lib/forecastHours.ts`, `src/lib/accuracy.ts`, `src/lib/bands.ts`. Archive and scoring jobs: `scripts/archive.ts`, `scripts/score.ts`, `.github/workflows/archive.yml` (see [data pipelines](data-pipelines.md)). The decisions behind it: [ADR 0001](decisions/0001-calibrate-cams-to-nea.md) and [ADR 0003](decisions/0003-publish-forecast-accuracy.md).
+Code: `src/lib/forecast.ts`, `src/lib/forecastHours.ts`, `src/lib/accuracy.ts`, `src/lib/bands.ts`. Archive and scoring job: `src/lib/jobs/archive.ts` (see [data pipelines](data-pipelines.md)). The decisions behind it: [ADR 0001](decisions/0001-calibrate-cams-to-nea.md) and [ADR 0003](decisions/0003-publish-forecast-accuracy.md).
 
 ## The advice rule
 
@@ -19,7 +19,7 @@ NEA sources already cited in the code and on the About page: the [PSI and PM2.5 
 
 `fetchCamsSingapore` in `src/lib/sources/openmeteo.ts` reads the CAMS global PM2.5 forecast for Singapore through Open-Meteo: 2 past days and 5 forecast days, hourly. The grid is about 0.4 degrees (roughly 45 km), the model output is 3-hourly and Open-Meteo interpolates it to hourly. `FORECAST_METHOD` in `forecast.ts` is the one-paragraph description shown on the About page.
 
-CAMS gets the timing of smoke episodes broadly right but is often far off in size for peat haze. In the scores published so far (`data/accuracy.json`) the raw CAMS bias is negative at every lead time: it under-predicts. That is why the next step exists.
+CAMS gets the timing of smoke episodes broadly right but is often far off in size for peat haze. In the scores published so far (`accuracy.json`) the raw CAMS bias is negative at every lead time: it under-predicts. That is why the next step exists.
 
 ## 2. Calibration
 
@@ -115,9 +115,9 @@ The 5-day outlook is the `days` array from section 4. `Outlook.tsx` draws it on 
 
 ## 7. Verification
 
-Every hour, `scripts/archive.ts` saves the forecast as issued, and `scripts/score.ts` scores everything saved so far.
+Every hour, the archive job (`src/lib/jobs/archive.ts`) saves the forecast as issued and then scores everything saved so far.
 
-**Archive.** One JSON line per forecast in `data/archive/YYYY-MM.jsonl` (`ArchiveRecord` in `accuracy.ts`):
+**Archive.** One JSON line per forecast in `archive/YYYY-MM.jsonl` in the data bucket (`ArchiveRecord` in `accuracy.ts`):
 
 | Field | Meaning |
 |---|---|
@@ -137,7 +137,7 @@ Every hour, `scripts/archive.ts` saves the forecast as issued, and `scripts/scor
 
 For each it keeps `n` (matched forecasts), `mae` (mean absolute error), `rmse` and `bias` (forecast minus observed), all in µg/m³ to one decimal. An `event` score treats "PM2.5 above 55" as the event and reports `precision`, `recall` and `f1`. `hazyDays` scores the night-before call: the forecast issued closest to 23:00 Singapore time (from 21:00 on) against the next day's observed peak, counting `hits` and `clearRight` days for ours and for persistence, out of `days` with `hazy` ones.
 
-**Output.** `data/accuracy.json` holds `updated`, `forecasts`, `from`, `to`, `leads` and `hazyDays`. The site reads it from GitHub's raw host (`fetchAccuracy`, kept for an hour) and ignores it until some lead has at least 20 matched forecasts (the About page accepts 1).
+**Output.** `accuracy.json` in the data bucket holds `updated`, `forecasts`, `from`, `to`, `leads` and `hazyDays`. The site reads it from the bucket (`fetchAccuracy`) and ignores it until some lead has at least 20 matched forecasts (the About page accepts 1).
 
 **What the site says about it.**
 

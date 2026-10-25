@@ -1,71 +1,64 @@
 # Data pipelines
 
-Four GitHub Actions workflows in `.github/workflows/` run scripts from `scripts/` on a schedule. Three of them commit their output to `data/` in this repository. The site then reads those files over the network. There is no database ([ADR 0004](decisions/0004-history-in-the-repository.md)).
+Scheduled jobs run inside the site Worker and keep the site's own data in a private Cloudflare R2 bucket (`haze-lah-data`, bound as `DATA`). A separate Cloudflare Worker, `workers/nea-refresh`, starts them on a schedule. The repository holds no data and nothing writes to it. There is no database ([ADR 0008](decisions/0008-data-in-cloudflare-r2.md)).
 
 For where the inputs come from, see [data sources](data-sources.md). For the forecast scoring in particular, see [forecast](forecast.md#7-verification).
 
 ## Overview
 
-| Workflow | File | Schedule (UTC, and Singapore time) | Script | Writes |
-|---|---|---|---|---|
-| Telegram alerts | `alerts.yml` | `10 * * * *`: hourly at :10 | `scripts/alert.ts`, then `scripts/readings.ts --capture` | `data/alert-state.json`, `data/readings/pending/<date>.json` |
-| Archive and score forecasts | `archive.yml` | `7 * * * *`: hourly at :07 | `scripts/archive.ts`, then `scripts/score.ts` | `data/archive/YYYY-MM.jsonl`, `data/accuracy.json` |
-| Air globe history | `history.yml` | `30 17 * * *`: 01:30 SGT daily | `scripts/history.ts` | `data/history/<date>.json`, `data/history/index.json` |
-| Readings archive | `readings.yml` | `45 17 * * *`: 01:45 SGT daily | `scripts/readings.ts` | `data/readings/<date>.json`, `data/readings/index.json` |
+The jobs are code in `src/lib/jobs/`, run by `POST /api/jobs/<job>` (`src/app/api/jobs/[job]/route.ts`). The route accepts the same `Authorization: Bearer <REFRESH_SECRET>` as `/api/refresh` (`src/lib/routeAuth.ts`), answers with each step's result or error as JSON, and gives status 500 if any step failed. Every step logs one JSON line (`job-step`). The only code that touches the bucket is `src/lib/dataStore.ts`.
 
-All four also have `workflow_dispatch`, so they can be started by hand or by a call to GitHub's "create a workflow dispatch event" API.
+| Job | Started by (UTC) | Steps | Writes (bucket keys) |
+|---|---|---|---|
+| `hourly` | After every NEA refresh (`2,5,10,20 * * * *` check), and `40 * * * *` as a safety net | Archive and score forecasts, Telegram alerts, APIMS capture | `archive/YYYY-MM.jsonl`, `forecast-latest.json`, `accuracy.json`, `alert-state.json`, `readings/pending/<date>.json` |
+| `history` | `30 17 * * *`: 01:30 SGT daily | Air globe history | `history/<date>.json`, `history/index.json` |
+| `readings` | `45 17 * * *`: 01:45 SGT daily | Readings archive | `readings/<date>.json`, `readings/index.json` |
 
-**GitHub's cron is not reliable.** Scheduled runs can be delayed or skipped. Because every workflow accepts `workflow_dispatch`, an external scheduler can trigger them on time. The hourly alert job and the two daily jobs can all be triggered this way. Each workflow has a `concurrency` group with `cancel-in-progress: false`, so a late run queues instead of cancelling the one before it (GitHub keeps only one pending run per group).
+The schedules and the job each starts are in `workers/nea-refresh/src/schedule.ts`. Cloudflare's Cron Triggers are reliable, and every job is idempotent, so a repeated run is harmless: the archive skips an NEA hour it already saved, alerts send once per reading, the capture replaces an hour it already holds.
 
-Each job checks out the repository, sets up Node 22, runs `npm ci --ignore-scripts`, runs its script, then commits what changed as the bot user, runs `git pull --rebase` and pushes. Commit messages start with `data:`. Because bots commit to `main` every few hours, pull before you commit your own work.
+Each step is its own `try/catch`: a failed archive does not stop the alerts. The hourly job writes each key by reading it and writing it back whole (R2 has no append); runs are minutes apart, so they do not overlap.
 
 ## Secrets
 
-Names only, as read by the workflows. Each is a repository secret; values never go in the repository.
+Names only, as read by the site Worker (`process.env`); see [AGENTS.md](../AGENTS.md#secrets) for how to set them. Values never go in the repository.
 
 | Secret | Used by | If missing |
 |---|---|---|
-| `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` | `alerts.yml` | `scripts/alert.ts` prints what it would send and sends nothing. `ALERT_TEST` mode throws |
-| `FIRMS_MAP_KEY` | `archive.yml`, `history.yml` | `history.yml` stops at once with an error, because every day would have no fires. `archive.yml` records no fire counts |
-| `DATA_GOV_SG_API_KEY` | `archive.yml`, `history.yml`, `readings.yml` | Optional. Works anonymously with a lower rate limit |
-| `OPENAQ_API_KEY` | `readings.yml` | A warning; the community sensors are skipped and each day file says so. The job does not fail |
+| `REFRESH_SECRET` | The job routes | The routes answer 503 |
+| `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` | `hourly` (alerts) | The alerts step records its state and reports what it would send; `?test=1` fails |
+| `FIRMS_MAP_KEY` | `history`, and the live fire counts in `hourly` | `history` stops at once with an error, because every day would have no fires. The archive records no fire counts |
+| `DATA_GOV_SG_API_KEY` | `history`, `readings` | Optional. Works anonymously with a lower rate limit |
+| `OPENAQ_API_KEY` | `readings` | A note in the result; the community sensors are skipped and each day file says so. The job does not fail |
 
-All four workflows have `contents: write` permission so they can push.
+## Alerts (`hourly`, `src/lib/jobs/alerts.ts`)
 
-## Alerts (`alerts.yml`, `scripts/alert.ts`)
+Runs after NEA has published the last hour's reading.
 
-Every hour at :10, after NEA has published the last hour's reading.
-
-1. Fetch `${SITE_URL}/api/haze` (`HAZE_JSON_URL` overrides it). The job reads the live site's data and does not build its own.
-2. `detect` in `src/lib/alerts.ts` compares it with `data/alert-state.json` and decides what fired: the PSI level changed, the PM2.5 band changed (confirmed by two readings in a row), a new NEA advisory, a new CNA or Straits Times haze story, the 07:00 morning brief (only if today is above PSI 100 in reading or outlook), the 19:00 outlook (only if tomorrow is above 100) and one update per new NEA hourly reading. A field missing from an older state file is recorded without sending.
+1. Read the page data with `getHazeData()` (the same shared build as the pages; not `/api/haze`).
+2. `detect` in `src/lib/alerts.ts` compares it with `alert-state.json` and decides what fired: the PSI level changed, the PM2.5 band changed (confirmed by two readings in a row), a new NEA advisory, a new CNA or Straits Times haze story, the 07:00 morning brief (only if today is above PSI 100 in reading or outlook), the 19:00 outlook (only if tomorrow is above 100) and one update per new NEA hourly reading. A field missing from an older state file is recorded without sending. The state holds the last reading, level and stories sent, so a second run for the same reading sends nothing.
 3. At most one post goes out: the card image from `/alert-card` plus a short caption (`caption`). Posts between 23:00 and 07:00 are silent (`quietHours`). If the photo fails the caption is sent as text.
-4. The new state is written to `data/alert-state.json` and committed.
+4. The new state is written to `alert-state.json`. If Telegram fails the step fails and the state is not saved, so the next run tries again.
 
-`workflow_dispatch` has a `test_alert` option that sends one test message and leaves the state alone.
+`POST /api/jobs/hourly?test=1` runs only this step, sends one test message and leaves the state alone.
 
-The same job then captures Malaysian APIMS readings. APIMS serves only each station's latest hour, so the only way to keep history is to read it every hour:
+## APIMS capture (`hourly`, `captureApims` in `src/lib/jobs/readings.ts`)
 
-1. The buffer folder `.readings-cache` is restored from the Actions cache.
-2. `scripts/readings.ts --capture` appends the latest APIMS hour to the buffer.
-3. About every 6 hours (`FLUSH_EVERY_MS`) it copies the buffer to `data/readings/pending/<date>.json` and sets `flush=true`; only then does the workflow commit that folder, so commits stay few.
-4. This step has `continue-on-error`, so a failure never blocks the alerts or their commit.
+APIMS serves only each station's latest hour, so the only way to keep history is to read it every hour. Each run adds the latest hour straight to `readings/pending/<date>.json` (`PendingDay`). An hour captured again replaces itself.
 
-## Archive and score (`archive.yml`)
+## Archive and score (`hourly`, `src/lib/jobs/archive.ts`)
 
-Hourly at :07.
-
-- `scripts/archive.ts` calls `getHazeData`, then appends one line to `data/archive/YYYY-MM.jsonl`: the forecast as issued, with the last 24 hours of NEA readings and leads 1 to 96. It exits with an error if there are no NEA observations.
-- `scripts/score.ts` reads every `.jsonl` file in `data/archive/` and writes `data/accuracy.json`.
+- The archive step calls `getHazeData`, then appends one line to `archive/YYYY-MM.jsonl`: the forecast as issued, with the last 24 hours of NEA readings and leads 1 to 96. It fails if there are no NEA observations, and does nothing if the month file's last record has the same `issued`. A live forecast is also saved as `forecast-latest.json`, which the pages show when the model is down.
+- The score step reads every `.jsonl` file under `archive/` and writes `accuracy.json`. It runs when a new record was archived.
 
 The record format and the scoring are explained in [forecast](forecast.md#7-verification). Only forecast fields, fire counts and error labels are archived; AQICN data is not ([ADR 0005](decisions/0005-no-archive-of-aqicn.md)).
 
-## Air globe history (`history.yml`, `scripts/history.ts`)
+## Air globe history (`history`, `src/lib/jobs/history.ts`)
 
 Daily at 01:30 Singapore time, once the day is over. It writes one file per Singapore day and an index.
 
 **Inputs.** NASA FIRMS fires (`FIRMS_MAP_KEY`), Open-Meteo's CAMS air-quality archive and historical-forecast archive for 850 hPa wind, and NEA's dated feeds. Days are built in chunks of 10 from one pair of Open-Meteo requests to stay under their limits. NEA is read one day at a time with a pause.
 
-**Day file** `data/history/<date>.json` (`HistoryDay` in `src/lib/historyTypes.ts`, built by `buildDay` in `src/lib/history.ts`):
+**Day file** `history/<date>.json` (`HistoryDay` in `src/lib/historyTypes.ts`, built by `buildDay` in `src/lib/history.ts`):
 
 | Field | Meaning |
 |---|---|
@@ -79,19 +72,23 @@ Daily at 01:30 Singapore time, once the day is over. It writes one file per Sing
 | `trail` | The air that reached Singapore at 2 pm: 72 hours of back-trail, one point an hour |
 | `nea` | NEA's highest 24-hour PSI and highest 1-hour PM2.5 of the day, or null |
 
-**Index** `data/history/index.json` (`HistoryIndex`): `updated` and `days`, a list of `{date, fires, psiMax}` (fires are Sumatra plus Borneo), oldest first.
+**Index** `history/index.json` (`HistoryIndex`): `updated` and `days`, a list of `{date, fires, psiMax}` (fires are Sumatra plus Borneo), oldest first.
 
-**Safety checks.** A day with no fires at all in the three areas fails (`assertFires`), because the region always has some and zero means FIRMS has no data yet. A day file is never rewritten by the daily run. The script writes every day it can, exits non-zero if any failed, and the workflow commits what was written and then fails the job so the owner sees it. FIRMS's near-real-time product keeps only recent months, so older dates fall back to the standard-processing product and the log says so.
+**Safety checks.** A day with no fires at all in the three areas fails (`assertFires`), because the region always has some and zero means FIRMS has no data yet. A day file is never rewritten by the daily run. The job writes every day it can and lists the days that failed (`failed`), which makes the answer a 500 so the owner sees it. FIRMS's near-real-time product keeps only recent months, so older dates fall back to the standard-processing product and the result's `notes` say so.
 
-**CDN purge.** After the commit the workflow asks jsDelivr to drop its copy of the index and each day built, then checks the CDN's index has the new `updated` value and purges again (up to 8 times) if not.
+**Backfill.** Call the route by hand with `from` and `to` (Singapore dates, `to` must be over; empty `to` means yesterday, empty `from` means the same as `to`), at most 31 days a call:
 
-**Backfill.** Run the workflow by hand with `from` and `to` (Singapore dates, `to` must be over; empty `to` means yesterday, empty `from` means the same as `to`), and optionally `firms_source` to force one FIRMS product. Backfill in chunks of about 2 weeks, one run at a time, and no more than about 3 chunks an hour because of Open-Meteo's limits. Locally: `npx tsx scripts/history.ts --from 2026-08-01 --to 2026-08-14` (needs `FIRMS_MAP_KEY`).
+```sh
+curl -X POST -H "Authorization: Bearer $REFRESH_SECRET" "https://hazelah.app/api/jobs/history?from=2026-08-01&to=2026-08-14"
+```
 
-## Readings archive (`readings.yml`, `scripts/readings.ts`)
+`FIRMS_SOURCE` (a Worker variable) forces one FIRMS product. Backfill in chunks of about 2 weeks, one call at a time, and no more than about 3 chunks an hour because of Open-Meteo's limits.
 
-Daily at 01:45 Singapore time, after the history job. It keeps every air reading the site shows, after the live page has moved on. It does not hold cameras or the model data in `data/history`.
+## Readings archive (`readings`, `src/lib/jobs/readings.ts`)
 
-**Day file** `data/readings/<date>.json` (`ReadingsDay` in `src/lib/readingsArchive.ts`). Hours are the clock hour (0 to 23, Singapore time) of the timestamp each source gives:
+Daily at 01:45 Singapore time, after the history job. It keeps every air reading the site shows, after the live page has moved on. It does not hold cameras or the model data in `history/`.
+
+**Day file** `readings/<date>.json` (`ReadingsDay` in `src/lib/readingsArchive.ts`). Hours are the clock hour (0 to 23, Singapore time) of the timestamp each source gives:
 
 | Field | Meaning |
 |---|---|
@@ -102,24 +99,27 @@ Daily at 01:45 Singapore time, after the history job. It keeps every air reading
 | `openaq` | Community sensors (`sensors`) and per sensor 24 hourly PM2.5 averages, `null` where none |
 | `missing` | Why a source has nothing, or only part, for that day. Never zeros |
 
-**Index** `data/readings/index.json` (`ReadingsIndex`): `updated` and `days` of `{date, sources, missing}`.
+**Index** `readings/index.json` (`ReadingsIndex`): `updated` and `days` of `{date, sources, missing}`.
 
-**Pending files** `data/readings/pending/<date>.json` (`PendingDay`) hold APIMS hours captured by `alerts.yml` that the daily run has not folded in yet. The daily run merges each into its day's file (`foldApims`) and deletes it. A pending file for a day already built is folded in at the end of the run.
+**Pending files** `readings/pending/<date>.json` (`PendingDay`) hold APIMS hours captured by the hourly job that the daily run has not folded in yet. The daily run merges each into its day's file (`foldApims`) and deletes it. A pending file for a day already built is folded in at the end of the run.
 
-**Behaviour.** If NEA fails for a day, that day is not saved and the exit code is non-zero (the workflow still commits what was written, then fails). OpenAQ is read one sensor at a time, 1.1 seconds apart (60 requests a minute is the limit), in 30-day chunks. A day file over 60 KB prints a warning. A day takes about 5 seconds, so a month or two fits one run. Backfill with the same `from` and `to` inputs as the history job; APIMS cannot be backfilled, because it keeps no history. The workflow purges the CDN copy of the index and each day like the history job.
+**Behaviour.** If NEA fails for a day, that day is not saved and is listed in `failed` (the other days are still written, and the answer is a 500). OpenAQ is read one sensor at a time, 1.1 seconds apart (60 requests a minute is the limit), in 30-day chunks. A day file over 60 KB adds a note. A day takes about 5 seconds, so a call takes up to 31 days. Backfill with the same `from` and `to` parameters as the history job; APIMS cannot be backfilled, because it keeps no history.
 
-The site does not read this archive yet. Only the scripts and tests use `src/lib/readingsArchive.ts`.
+The site does not read this archive yet. Only the jobs and tests use `src/lib/readingsArchive.ts`.
 
 ## How the browser loads history
 
-`src/lib/historyClient.ts` serves the globe's timeline (`MapScreen`, `HazeOrigin`) without any server route.
+`src/lib/historyClient.ts` serves the globe's timeline (`MapScreen`, `HazeOrigin`). The bucket is private; the only files the browser can get are the history ones, through `src/app/data/history/[file]/route.ts`, on this site's own origin.
 
-- **Day files** come from jsDelivr (`cdn.jsdelivr.net/gh/...@main/data/history/<date>.json`). They never change once written, so the browser's normal cache applies.
-- **The index** comes from GitHub's raw host, revalidated each time (`cache: "no-cache"`), because jsDelivr can serve an old copy of a branch file for hours even after a purge. If the raw host does not answer (some content blockers stop it), the jsDelivr copy stands in.
+- **Route.** `GET /data/history/index.json` and `GET /data/history/<YYYY-MM-DD>.json` read `history/<file>` from the bucket. Any other name is a 404. The answer is JSON with `X-Robots-Tag: noindex` and no CORS headers, and `/data/` is disallowed in `robots.txt`.
+- **Day files** are sent with `Cache-Control: public, max-age=31536000, immutable`: they never change once written.
+- **The index** is sent with `Cache-Control: public, max-age=300`, because it changes daily.
 - **Errors.** A `404` means a gap day: it is remembered as missing and not asked for again. A network error, a `5xx` or a `429` is not remembered, so the next call tries again. A body that is not that day's file is rejected.
 - **Prefetch.** `prefetchAround` starts loading the next two days so playback does not wait.
-- **Build-time copy.** `src/lib/streak.ts` also imports the committed `data/history/index.json` when the site is built, to compute the current haze spell without a request. It tops up gaps from NEA live.
+- **On the server.** `src/lib/streak.ts` reads `history/index.json` from the bucket to compute the current haze spell. It tops up gaps from NEA live. With no index it starts empty.
 
-Both hosts are allowed in `connect-src` in `next.config.ts`.
+The server reads the other keys itself: `fetchAccuracy` reads `accuracy.json` and the saved forecast comes from `forecast-latest.json`. Both come back empty if the bucket cannot be read, and the pages then hide the accuracy table or show no saved forecast.
 
-Forecast accuracy is read differently: the server fetches `data/accuracy.json` from GitHub's raw host (`fetchAccuracy`, one hour).
+## Moving data in or out
+
+The bucket is private, so copy files with Wrangler's R2 commands (`npx wrangler r2 object put haze-lah-data/<key> --file <path>`) or the Cloudflare dashboard. Keys are the old paths without the `data/` prefix.

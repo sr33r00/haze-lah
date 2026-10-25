@@ -100,7 +100,7 @@ export default function HazeOrigin({
     return () => clearInterval(id);
   }, [playing, steps.length, nowAt]);
 
-  // A past day's PM2.5 is from its history file (CAMS at 3-hour steps, from jsDelivr).
+  // A past day's PM2.5 is from its history file (CAMS at 3-hour steps, from /data/history/).
   useEffect(() => {
     if (date && !(date in history)) loadDay(date).then((d) => setHistory((h) => ({ ...h, [date]: d })));
   }, [date, history]);

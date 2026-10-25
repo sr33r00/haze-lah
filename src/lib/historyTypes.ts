@@ -1,4 +1,4 @@
-// The shape of the air globe's daily history files and what the browser needs of them. The builder is in history.ts (server and script only).
+// The shape of the air globe's daily history files and what the browser needs of them. The builder is in history.ts (server only).
 import type { PollutantId } from "./pollutants";
 
 /**

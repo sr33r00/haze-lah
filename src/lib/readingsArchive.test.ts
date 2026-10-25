@@ -9,7 +9,6 @@ import {
   buildApims,
   buildNea,
   buildOpenAq,
-  flushDue,
   foldApims,
   mergeApims,
   type NeaKey,
@@ -173,20 +172,13 @@ test("the index lists each day's sources and what is missing, sorted, replacing 
   assert.deepEqual(idx.days[0].sources, ["nea", "apims"]);
 });
 
-test("capture: flush waits for 6 hours of new readings, and a finished day is flushed at once", () => {
-  const H = 3600_000;
+test("capture: an hour captured twice is stored once, and new hours are added", () => {
   const at = (h: number) => `2026-10-20T${String(h - 8).padStart(2, "0")}:00:00.000Z`;
   let p = addToPending(undefined, DATE, buildApims([row("A", at(9))])[DATE]);
-  p = { ...p, flushed: p.latest }; // committed
-  assert.equal(flushDue(p, DATE, 6 * H), false);
+  p = addToPending(p, DATE, buildApims([row("A", at(9))])[DATE]);
+  assert.deepEqual(addToPending(p, DATE, buildApims([row("A", at(9))])[DATE]), p);
   p = addToPending(p, DATE, buildApims([row("A", at(14))])[DATE]);
-  assert.equal(flushDue(p, DATE, 6 * H), false); // 5 hours
-  assert.equal(p.flushed, Date.parse(`${DATE}T09:00:00+08:00`)); // addToPending keeps what was committed
   p = addToPending(p, DATE, buildApims([row("A", at(15))])[DATE]);
-  assert.equal(flushDue(p, DATE, 6 * H), true);
-  assert.equal(flushDue(p, "2026-10-21", 6 * H), true);
-  const done = { ...p, flushed: p.latest };
-  assert.equal(flushDue(done, "2026-10-21", 6 * H), false);
   assert.deepEqual(p.apims.hours.A.flatMap((v, h) => (v ? [h] : [])), [9, 14, 15]);
 });
 

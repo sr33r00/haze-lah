@@ -28,7 +28,7 @@ flowchart LR
     API["API routes: /api/haze, smoke,<br/>replay, globe, cameras, webcams"]
   end
 
-  subgraph Repo["Git repository (data/)"]
+  subgraph R2["R2 bucket (private)"]
     ACC["accuracy.json, archive"]
     HIST["history/, readings/"]
   end
@@ -47,10 +47,10 @@ flowchart LR
   PAGES --> UI
   API --> UI
   GIBS -. "tiles and images" .-> UI
-  ACC -- "raw GitHub, 1 h" --> PAGES
-  HIST -- "jsDelivr, raw GitHub" --> UI
+  ACC --> PAGES
+  HIST -- "/data/history/" --> UI
   UI --- LOCAL
-  DATA -. "scripts/archive.ts" .-> ACC
+  DATA -. "hourly job" .-> ACC
   NEA -. "scheduled jobs" .-> HIST
 ```
 
@@ -89,7 +89,7 @@ These sit beside the pages in `src/app/`. Caching values are copied from each fi
 
 | Route | File | Purpose | Caching |
 |---|---|---|---|
-| `/api/haze` | `api/haze/route.ts` | The whole `HazeData` as JSON, open to any origin (`Access-Control-Allow-Origin: *`), with `aqiStations` empty (AQICN's terms). The alert job reads it. | `revalidate = 1800`; `s-maxage=1800, stale-while-revalidate=600` |
+| `/api/haze` | `api/haze/route.ts` | The whole `HazeData` as JSON, open to any origin (`Access-Control-Allow-Origin: *`), with `aqiStations` empty (AQICN's terms). | `revalidate = 1800`; `s-maxage=1800, stale-while-revalidate=600` |
 | `/api/smoke` | `api/smoke/route.ts` | Regional CAMS grid (PM2.5 and gases) and wind, 1° steps, every 3 h for 72 h. | `force-dynamic`; `max-age=300, s-maxage=3600, stale-while-revalidate=10800`. Upstream requests are kept 3 h in the fetch cache. |
 | `/api/replay` | `api/replay/route.ts` | Back-trail of the air, fires, wind outlook, "smoke on the way" (`getReplay` in `src/lib/replayData.ts`). | `force-dynamic`; `max-age=300, s-maxage=1800, stale-while-revalidate=3600` |
 | `/api/globe/[layer]` | `api/globe/[layer]/route.ts` | The server-built satellite smoke picture for one day, as WebP. `?date=` must be one of the last 8 days. | `force-dynamic`, `maxDuration = 60`. Header depends on age: recent day `max-age=3600, s-maxage=21600, stale-while-revalidate=86400`; a day older than 2 days `max-age=86400, s-maxage=604800, stale-while-revalidate=2592000`; an incomplete picture `s-maxage=300`. Shared logic in `api/globe/shared.ts`. |
@@ -97,12 +97,15 @@ These sit beside the pages in `src/app/`. Caching values are copied from each fi
 | `/api/camera/[id]` | `api/camera/[id]/route.ts` | One DataMall camera photo passed through, so the key and the expiring link stay on the server. `id` must be 1 to 6 digits. | `force-dynamic`; `max-age=300, s-maxage=300` |
 | `/api/webcams` | `api/webcams/route.ts` | Windy webcam list. | `force-dynamic`; `s-maxage=300` |
 | `/api/feedback` | `api/feedback/route.ts` | `POST` only. Sends the feedback form privately. | Not cached |
+| `/api/refresh` | `api/refresh/route.ts` | `POST` only, with the bearer `REFRESH_SECRET` (`src/lib/routeAuth.ts`). Revalidates the page data and the pages when NEA has new data. | `force-dynamic`; `no-store` |
+| `/api/jobs/[job]` | `api/jobs/[job]/route.ts` | `POST` only, same bearer. Runs `hourly`, `history` or `readings` (`src/lib/jobs/`) and answers with each step's result. | `force-dynamic`; `no-store` |
+| `/data/history/[file]` | `data/history/[file]/route.ts` | The globe's history files from the private bucket: `index.json` or `<YYYY-MM-DD>.json`, nothing else. Same origin only, `X-Robots-Tag: noindex`. | `force-dynamic`; day files `max-age=31536000, immutable`, index `max-age=300` |
 | `/alert-card` | `alert-card/route.tsx` | The 1200 x 1200 card image posted with Telegram alerts. | `revalidate = 300` (the data under it changes every 30 min) |
 | `/air-journey` | `air-journey/route.tsx` | The shareable "your air's journey" picture. | `force-dynamic`; `s-maxage=1800, stale-while-revalidate=3600` |
 | `/opengraph-image`, `/twitter-image` | `opengraph-image.tsx`, `twitter-image.tsx` | Social preview with the island PSI. The Twitter image re-exports the Open Graph one. | `revalidate = 1800` |
 | `/llms.txt` | `llms.txt/route.ts` | Plain-text summary for language-model crawlers, with current conditions. | `revalidate = 1800` |
 | `/icons/[name]` | `icons/[name]/route.tsx` | App icons drawn from `src/lib/appIcon.tsx`. | `force-static` |
-| `/manifest.webmanifest`, `/robots.txt`, `/sitemap.xml` | `manifest.ts`, `robots.ts`, `sitemap.ts` | Web app manifest, crawler rules (`/api/` is disallowed), page list. | Defaults |
+| `/manifest.webmanifest`, `/robots.txt`, `/sitemap.xml` | `manifest.ts`, `robots.ts`, `sitemap.ts` | Web app manifest, crawler rules (`/api/` and `/data/` are disallowed), page list. | Defaults |
 | `/world.json` | `public/world.json` | Natural Earth outline used under the maps. | `max-age=86400, stale-while-revalidate=604800`, set in `next.config.ts` |
 
 ## What runs in the browser
@@ -129,7 +132,7 @@ Every visitor sees the same readings, so there is no reason to fetch them again 
 | Satellite smoke picture | `unstable_cache` in `src/lib/sources/gibsTexture.ts` | 6 hours for recent days, 7 days for days older than 2; incomplete pictures are not kept |
 | Past NEA days | `fetchPsiDay` | 1 day (today is not kept) |
 | Camera and webcam lists | Server memory and CDN | 60 s in memory for the DataMall list; 5 min at the CDN |
-| Forecast accuracy | `fetchAccuracy` fetch of `data/accuracy.json` | 1 hour |
+| Forecast accuracy | `fetchAccuracy` reads `accuracy.json` from the R2 bucket | with the page it appears on |
 
 Why 30 minutes: NEA publishes hourly, so a shorter time buys nothing. A Cloudflare Worker (`workers/nea-refresh`) checks NEA a few times an hour and, only when NEA has new data, calls `POST /api/refresh` (`REFRESH_SECRET`), which revalidates the `haze-data` tag and the pages. No checking runs on the site itself. The fast sources are not cached one by one (`getJson` in `src/lib/util.ts` defaults to `revalidate: 0`) because they are read only when the 30-minute build runs; caching them too would add storage writes with no gain. The reasoning is in [ADR 0002](decisions/0002-shared-30-minute-cache.md).
 
@@ -141,10 +144,11 @@ The site runs as one Cloudflare Worker (`haze-lah`, config in `wrangler.jsonc`) 
 
 - **Build.** `npm run build` runs `vite build` (`vite.config.ts`): the vinext and Cloudflare plugins write the Worker to `dist/server` and the static files to `dist/client`, which the platform serves as assets. `npm run deploy` builds and deploys; `npm run preview` runs the built Worker locally in workerd.
 - **Cache.** `kvDataAdapter()` in `vite.config.ts` keeps the data cache in the Workers KV namespace bound as `VINEXT_KV_CACHE` (`haze-lah-cache`). That is where the ISR pages, `unstable_cache` entries (such as the `haze-data` tag and the satellite pictures) and `revalidateTag` / `revalidatePath` live, so they persist across Worker invocations.
-- **Secrets** (`FIRMS_MAP_KEY`, `OPENAQ_API_KEY`, `WAQI_TOKEN`, `WINDY_WEBCAMS_KEY`, `REFRESH_SECRET`, `TELEGRAM_BOT_TOKEN`, `FEEDBACK_CHAT_ID`) are Worker secrets, read with `process.env` (the `nodejs_compat` flag fills it from the Worker's secrets).
+- **Secrets** (`FIRMS_MAP_KEY`, `OPENAQ_API_KEY`, `WAQI_TOKEN`, `WINDY_WEBCAMS_KEY`, `REFRESH_SECRET`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `FEEDBACK_CHAT_ID`, and optionally `DATA_GOV_SG_API_KEY`) are Worker secrets, read with `process.env` (the `nodejs_compat` flag fills it from the Worker's secrets).
 - **Analytics.** Cloudflare Web Analytics. The beacon is added to the root layout only when `NEXT_PUBLIC_CF_BEACON` is set at build time.
 - **Images and share pictures.** `next/og` works through `@vercel/og`'s WebAssembly build. PNG decoding and WebP encoding for the satellite picture are WebAssembly too (see below).
-- **NEA refresh Worker.** `workers/nea-refresh` is a separate Worker with its own config; it calls `POST /api/refresh` on the site.
+- **Data.** The R2 bucket `haze-lah-data` (binding `DATA`, private) holds the history, readings, forecast archive, accuracy and alert state. Only `src/lib/dataStore.ts` touches it, and the browser gets just the history files, through `/data/history/<file>.json` on this origin.
+- **NEA refresh Worker.** `workers/nea-refresh` is a separate Worker with its own config. It calls `POST /api/refresh` on the site when NEA has new data, then starts the scheduled jobs with `POST /api/jobs/<job>` (hourly after each refresh and at :40, history and readings once a day). See [data pipelines](data-pipelines.md).
 
 ## Failure handling
 
@@ -160,7 +164,7 @@ The site runs as one Cloudflare Worker (`haze-lah`, config in `wrangler.jsonc`) 
 ## Security
 
 - **Headers** are set for every path in `next.config.ts`: `Content-Security-Policy`, `Strict-Transport-Security`, `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy` (geolocation for this site only; camera, microphone, payment and USB off) and `Cross-Origin-Opener-Policy`.
-- **CSP.** `default-src 'self'`. Images come from this origin, `data:`, `blob:`, OpenStreetMap tiles, NASA GIBS, Windy and data.gov.sg photos. Network calls (`connect-src`) go to this origin, OpenFreeMap, NASA GIBS, jsDelivr, GitHub's raw host and Cloudflare Web Analytics (`cloudflareinsights.com`; its beacon script comes from `static.cloudflareinsights.com`). `frame-ancestors 'none'` stops other sites framing the page. `'unsafe-inline'` is allowed for scripts and styles because Next.js writes inline bootstrap scripts; the pages render no user input. Dev mode also allows `eval`.
+- **CSP.** `default-src 'self'`. Images come from this origin, `data:`, `blob:`, OpenStreetMap tiles, NASA GIBS, Windy and data.gov.sg photos. Network calls (`connect-src`) go to this origin, OpenFreeMap, NASA GIBS and Cloudflare Web Analytics (`cloudflareinsights.com`; its beacon script comes from `static.cloudflareinsights.com`). `frame-ancestors 'none'` stops other sites framing the page. `'unsafe-inline'` is allowed for scripts and styles because Next.js writes inline bootstrap scripts; the pages render no user input. Dev mode also allows `eval`.
 - **Keys stay on the server.** Every key is read with `process.env` in `src/lib/sources/` or `src/app/api/`, never in a client component. The only variable the browser sees is `NEXT_PUBLIC_ALERTS_URL`, which is a public link. DataMall photos pass through `/api/camera/[id]` so the key and the real link are never sent out.
 - **Safe links.** `safeUrl` in `src/lib/sources/news.ts` only passes links on NEA, MSS, CNA and Straits Times hosts, upgraded to https; anything else becomes a fallback link.
 - **Feedback form.** `POST /api/feedback` trims and caps the message (2000 characters) and contact (200), ignores a request whose hidden `website` field is filled (a bot trap), and allows 5 messages per 10 minutes per client address. That limit is kept in memory per server instance, so it stops one person flooding the inbox but is not a hard guarantee. Telegram messages are sent as plain text. With neither Resend nor Telegram configured the route answers `503`.
@@ -195,6 +199,7 @@ NASA GIBS serves each satellite pass only as a coloured picture. `src/lib/source
 | `src/lib/guide.ts` | Questions and answers for `/guide` |
 | `src/lib/cigarettes.ts`, `src/lib/breath.ts` | The "cigarette" and "times normal" comparisons, with sources |
 | `src/lib/alerts.ts` | Which Telegram alerts fire, and their captions |
+| `src/lib/dataStore.ts`, `src/lib/routeAuth.ts`, `src/lib/jobs/` | The only code that touches the R2 bucket; the bearer check shared by `/api/refresh` and `/api/jobs/[job]`; the scheduled jobs (alerts, archive and score, history, readings) |
 | `Hero.tsx`, `Advice.tsx`, `CigaretteCard.tsx`, `RegionChips.tsx` | Now page answer and controls |
 
 ### Wind and replay
@@ -231,8 +236,8 @@ NASA GIBS serves each satellite pass only as a coloured picture. `src/lib/source
 | `src/lib/streak.ts`, `src/lib/psiRecords.ts` | Current haze spell; yearly PSI peaks for context |
 | `src/lib/readings.ts`, `src/lib/pollutants.ts` | Dots on the globe; the seven pollutants, band limits and colour ramps |
 | `src/lib/timeline.ts` | Globe timeline days and steps |
-| `src/lib/history.ts`, `src/lib/historyTypes.ts`, `src/lib/historyClient.ts` | Daily history files: builder (scripts only), formats, browser loader |
-| `src/lib/readingsArchive.ts` | Readings archive formats and builders (scripts only) |
+| `src/lib/history.ts`, `src/lib/historyTypes.ts`, `src/lib/historyClient.ts` | Daily history files: builder (job only), formats, browser loader |
+| `src/lib/readingsArchive.ts` | Readings archive formats and builders (job only) |
 | `src/lib/mock.ts` | Demo data |
 
 ### UI primitives and shared helpers

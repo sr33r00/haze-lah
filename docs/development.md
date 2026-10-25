@@ -31,7 +31,7 @@ From `package.json`:
 | `npm run lint` | ESLint (`next/core-web-vitals` and `next/typescript`) |
 | `npm test` | Runs `tsx --test "src/**/*.test.ts"` |
 
-The scheduled-job scripts in `scripts/` are run with `npx tsx scripts/<name>.ts`; see [data pipelines](data-pipelines.md). They write into `data/`, so run them only when you mean to, and do not commit the result unless you are the one updating that data.
+The scheduled jobs are code in `src/lib/jobs/`, started by `POST /api/jobs/<job>`; see [data pipelines](data-pipelines.md). With `npm run dev` the `DATA` bucket is a local, empty simulation (nothing leaves your machine), so pages that read it show less, and a job writes to that local copy. Call a job with `curl -X POST -H "Authorization: Bearer $REFRESH_SECRET" localhost:3000/api/jobs/hourly` (set `REFRESH_SECRET` in `.env.local`).
 
 ## Tests
 
@@ -93,4 +93,4 @@ Headless Chrome or Playwright against `HAZE_MOCK=1 npm run dev` is enough. Stop 
 - **Health and science claims** cite an official or published source. Advice follows NEA: 1-hour PM2.5 for now, 24-hour PSI for planning ([forecast](forecast.md#the-advice-rule)).
 - **Third-party terms.** Keep the attribution each source requires. Windy images are used exactly as given and link to their webcam page. AQICN data is live only ([data sources](data-sources.md#aqicn-waqiinfo)).
 - **Code style.** Match the code around you: short doc comments on exports, plain names. Plain English and British spelling in text.
-- **Secrets.** Keys live in `.env.local` and in the repository's Actions secrets. Never put one in a tracked file, a commit or an issue.
+- **Secrets.** Keys live in `.env.local` and as Cloudflare Worker secrets. Never put one in a tracked file, a commit or an issue.

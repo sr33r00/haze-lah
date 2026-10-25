@@ -2,7 +2,7 @@
   "name": "haze-lah-nea-refresh",
   "private": true,
   "type": "module",
-  "description": "Cloudflare Worker that watches NEA and refreshes the Haze Lah site only when NEA publishes new data",
+  "description": "Cloudflare Worker that watches NEA, refreshes the Haze Lah site when NEA publishes new data, and starts the site's scheduled jobs",
   "scripts": {
     "types": "cf workers types",
     "check": "tsc --noEmit"
