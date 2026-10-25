@@ -20,3 +20,9 @@ export function signature(items: readonly NeaItem[]): string | null {
   if (!newest) return null;
   return `${newest.timestamp} ${REGIONS.map((r) => newest.readings.pm25_one_hourly[r]).join(",")}`;
 }
+
+/** Whether a stored signature is already this hour's reading, so the check can skip NEA until the next hour. */
+export function hasCurrentHour(sig: string | null, now: Date): boolean {
+  const t = Date.parse(sig?.split(" ")[0] ?? "");
+  return !Number.isNaN(t) && t >= Math.floor(now.getTime() / 3600_000) * 3600_000;
+}

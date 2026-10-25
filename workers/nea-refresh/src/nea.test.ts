@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { sgtDate, signature, type NeaItem } from "./nea.ts";
+import { hasCurrentHour, sgtDate, signature, type NeaItem } from "./nea.ts";
 
 const item = (timestamp: string, v: Record<string, number>): NeaItem => ({ timestamp, readings: { pm25_one_hourly: v } });
 const v = { north: 63, south: 62, east: 63, west: 92, central: 76 };
@@ -25,4 +25,11 @@ test("signature ignores updatedTimestamp but notices a revised value", () => {
   const b = signature([{ ...item("2026-10-25T00:00:00+08:00", v), updatedTimestamp: "y" } as NeaItem]);
   assert.equal(a, b);
   assert.notEqual(a, signature([item("2026-10-25T00:00:00+08:00", { ...v, west: 90 })]));
+});
+
+test("hasCurrentHour is true only once this hour's reading is stored", () => {
+  const sig = "2026-10-25T17:00:00+08:00 63,62,63,92,76";
+  assert.equal(hasCurrentHour(sig, new Date("2026-10-25T09:02:00Z")), true);
+  assert.equal(hasCurrentHour(sig, new Date("2026-10-25T10:02:00Z")), false);
+  assert.equal(hasCurrentHour(null, new Date("2026-10-25T09:02:00Z")), false);
 });
