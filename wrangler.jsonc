@@ -10,6 +10,11 @@
   "compatibility_flags": ["nodejs_compat"],
   "main": "vinext/server/fetch-handler",
   "workers_dev": true,
+  // The main address, and www.hazelah.app, which next.config.ts redirects to it (permanent, path and query kept).
+  "routes": [
+    { "pattern": "hazelah.app", "custom_domain": true },
+    { "pattern": "www.hazelah.app", "custom_domain": true }
+  ],
   "observability": {
     "enabled": true,
     "logs": { "enabled": true },
