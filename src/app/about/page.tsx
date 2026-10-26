@@ -282,8 +282,7 @@ export default async function About() {
             <section id="privacy" className="scroll-mt-20 space-y-3">
               <h2 className={H2}>Privacy</h2>
               <p>
-                No accounts and no cookies. Anonymous page-view counts are collected with Cloudflare Web Analytics. Your region and group
-                choices stay on your device.
+                No accounts and no cookies. Your region and group choices stay on your device.
               </p>
             </section>
 

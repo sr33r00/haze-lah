@@ -1,15 +1,15 @@
 import type { NextConfig } from "next";
 
-// Everything is served from this origin except OpenStreetMap map tiles, OpenFreeMap vector tiles, NASA satellite images, Windy webcam images, data.gov.sg traffic camera photos and Cloudflare Web Analytics.
+// Everything is served from this origin except OpenStreetMap map tiles, OpenFreeMap vector tiles, NASA satellite images, Windy webcam images, data.gov.sg traffic camera photos, Cloudflare Web Analytics and Umami.
 const csp = [
   "default-src 'self'",
   // Next.js inline bootstrap scripts; the page renders no user input. Dev mode also needs eval.
-  `script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com${process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : ""}`,
+  `script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com https://cloud.umami.is${process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : ""}`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https://tile.openstreetmap.org https://gibs.earthdata.nasa.gov https://imgproxy.windy.com https://images.data.gov.sg",
   "font-src 'self'",
   // OpenFreeMap serves the globe's map to MapLibre as data, not images: the style, the tile list, the vector tiles and the font glyphs. MapLibre's worker is a file of this origin.
-  "connect-src 'self' https://tiles.openfreemap.org https://gibs.earthdata.nasa.gov https://cloudflareinsights.com",
+  "connect-src 'self' https://tiles.openfreemap.org https://gibs.earthdata.nasa.gov https://cloudflareinsights.com https://gateway.umami.is",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",

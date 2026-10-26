@@ -1,4 +1,4 @@
-import { useId, useRef, type CSSProperties, type ReactNode } from "react";
+import { useId, useRef, type CSSProperties, type ReactNode, type SVGProps } from "react";
 import { verdictFor, type Step, type Verdict } from "@/lib/bands";
 import { fadeLayers, useLeaving } from "./puffFade";
 import { REST, rigStyle, type PartName, type Pose, type PuffReaction } from "./puffRig";
@@ -21,13 +21,34 @@ export const PUFF_VIEW = { w: 128, h: 112 };
 /** What Puff shows: its mood's face, or for a moment after a tap a reaction face. */
 type PuffFace = PuffMood | PuffReaction;
 
-// Per mood: the clay colours (top and bottom of the base, the core shadow, the deep outline, the bounce light, the top light), the blush, the breath's period and how deep it breathes.
-const LOOK: Record<PuffMood, { top: string; bottom: string; shade: string; line: string; bounce: string; glow: string; blush: number; secs: number; breath: number }> = {
-  happy: { top: "#ffffff", bottom: "#dde8f4", shade: "#7d9ac2", line: "#516f99", bounce: "#f2f8ff", glow: "#8cc4f0", blush: 0.75, secs: 4.4, breath: 0.015 },
-  uneasy: { top: "#fcfbf7", bottom: "#e4dfd2", shade: "#9a927c", line: "#6d6652", bounce: "#faf7ee", glow: "#a6cbe8", blush: 0.35, secs: 5.8, breath: 0.015 },
-  worried: { top: "#f8f2e7", bottom: "#decfb6", shade: "#9a8460", line: "#6c5a38", bounce: "#f6ecd8", glow: "#ffffff", blush: 0.25, secs: 5.4, breath: 0.015 },
-  sad: { top: "#e8ebf2", bottom: "#b6bdce", shade: "#58637d", line: "#38425a", bounce: "#c9d0e0", glow: "#ffffff", blush: 0, secs: 7.7, breath: 0.012 },
-  sleepy: { top: "#ffffff", bottom: "#e0e8f4", shade: "#8296bb", line: "#566d96", bounce: "#f2f7ff", glow: "#8cc4f0", blush: 0.5, secs: 8.5, breath: 0.03 },
+// Puff is drawn in a 200 x 180 frame (design units) and shrunk into the box: scale S, then the offset. The widest thing, the hands
+// at the sides, just fits; the ground shadow sits at the bottom edge.
+const S = 0.66;
+const ORIGIN = { x: -2, y: -6.5 };
+const place = (v: number) => Math.round(v * 100) / 100;
+
+// Cumulus lobes lit from the upper left: the base colours of the radial gradient, from the bright core out to the lighter, cooler rim.
+const LOBE = ["#ffffff", "#f7f9fd", "#dfe6f2", "#c6d1e5", "#dce5f2"];
+const LOBE_AT = [0, 0.48, 0.76, 0.92, 1];
+
+const rgb = (hex: string) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+/** `a` moved `t` of the way to `b`, as a hex colour. */
+function mix(a: string, b: string, t: number) {
+  const [p, q] = [rgb(a), rgb(b)];
+  return `#${p.map((v, i) => Math.round(v + (q[i] - v) * t).toString(16).padStart(2, "0")).join("")}`;
+}
+/** The lobe stops and the sheen with a haze tint baked in (a share `a` of `tint`), so the whole body, hands and feet take it together. */
+const cloud = (tint = "#000000", a = 0) => ({ lobe: LOBE.map((c) => mix(c, tint, a)), sheen: mix("#ffffff", tint, a) });
+
+// Per mood: the lobe colours and sheen (a tint over the white and blue), the cool underside shadow, the faint silhouette edge, the
+// brow colour, the blush strength, the breath's period and how deep it breathes.
+type Look = { lobe: string[]; sheen: string; shade: string; edge: string; brow: string; blush: number; secs: number; breath: number };
+const LOOK: Record<PuffMood, Look> = {
+  happy: { ...cloud(), shade: "#667aa9", edge: "#adbad2", brow: "#a3b0cb", blush: 1, secs: 4.4, breath: 0.015 },
+  uneasy: { ...cloud("#d29a5c", 0.07), shade: "#74799c", edge: "#b9bccf", brow: "#9ea6bc", blush: 0.35, secs: 5.8, breath: 0.015 },
+  worried: { ...cloud("#d29a5c", 0.16), shade: "#7a7396", edge: "#c3b7a8", brow: "#8e9bb8", blush: 0.5, secs: 5.4, breath: 0.015 },
+  sad: { ...cloud("#5b6378", 0.22), shade: "#4f5775", edge: "#9ca4b8", brow: "#7d8aa6", blush: 0, secs: 7.7, breath: 0.012 },
+  sleepy: { ...cloud(), shade: "#6678b0", edge: "#adbad2", brow: "#a3b0cb", blush: 0.8, secs: 8.5, breath: 0.03 },
 };
 
 /** A colour change takes this long: the body's colours tween while the face cross-fades. */
@@ -36,48 +57,71 @@ const tween = (prop: "stopColor" | "stroke" | "fill" | "opacity", value: string 
   [prop]: value,
   transition: `${prop === "stopColor" ? "stop-color" : prop} ${TWEEN}`,
 });
+const url = (uid: string, id: string) => `url(#${uid}-${id})`;
 
-const INK = "#2a2a35";
-const MOUTH = "#7c2d3b";
-const TEAR = "#8fd3ff";
-const TEAR_LINE = "#4fa6dc";
-const EYES = [46, 82] as const;
-// The face sits a little below the coordinates it is drawn in, about 57% of the way down the body.
-const FACE_Y = 2;
-const EYE_Y = 63;
-// One smooth silhouette: three top bumps (small left, big middle, medium right) on a plump rounded base, about 1.4 : 1.
-const BODY =
-  "M39.5 45.3A18 18 0 0 0 7.9 61.6C14.1 80.6 40 98 63 98C86 98 113.9 81.9 120.1 62.9A19 19 0 0 0 87.5 44.7A24 24 0 1 0 39.5 45.3Z";
-const DROP = "M0-4.6C1.8-1.8 3-.2 3 1.6A3 3 0 0 1-3 1.6C-3-.2-1.8-1.8 0-4.6Z";
+const INK = "#202a44";
+const LINE = "#4a2333";
+const TEAR = "#8fd0ff";
+const TEAR_LINE = "#4e9fd6";
+const DROP = "M0-7C2.6-3 4.4-.6 4.4 2A4.4 4.4 0 0 1-4.4 2C-4.4-.6-2.6-3 0-7Z";
 const STAR = "M0-6Q1-1 6 0Q1 1 0 6Q-1 1-6 0Q-1-1 0-6Z";
+const MOUTH = "M90 117Q100 121 110 117Q109 131 100 131Q91 131 90 117Z";
+const MASK = "M79 112Q100 105 121 112L119 129Q100 137 81 129Z";
 
-// The hands and feet are drawn about their pivots at (0,0): the wrist of a left mitt (a right one mirrors it), the heel of a foot.
-// The mitt is a plain round paw with no thumb or finger: any bump that points up reads as a rude gesture when it waves.
-const MITT = "M0-.4C3.3-.4 5.4 1.9 5.4 4.5C5.4 7.3 3 9.1 0 9.1C-3 9.1-5.4 7.3-5.4 4.5C-5.4 1.9-3.3-.4 0-.4Z";
-const FOOT = "M-7 -3.2C-7.4 -6.6-4.8 -8-1 -8C3 -8 7.4 -6.4 7.4 -3C7.4 -.8 5.6 0 3 0L-3.4 0C-5.6 0-6.8-1-7-3.2Z";
-// Where each rig part is anchored. The root pivots about the middle of the character, the body at the bottom of its belly; the others hang off the root.
+// A shape is an ellipse (cx, cy, rx and ry; a circle leaves ry out). The body is five lobes: two cheeks, two top bumps, a big top and a plump base.
+type Blob = readonly [cx: number, cy: number, rx: number, ry?: number];
+const LOBES: readonly Blob[] = [
+  [56, 106, 28],
+  [146, 102, 28],
+  [76, 72, 25],
+  [108, 66, 40],
+  [100, 120, 62, 38],
+];
+// A hand is a cluster of three puffs about its wrist (a left hand's; a right one mirrors the x). A foot is one puff oval about its middle.
+const HAND: readonly Blob[] = [
+  [-3, 10, 8.5],
+  [4, 2, 6.5],
+  [5, 14, 6],
+];
+const FOOT: readonly Blob[] = [[0, -3, 16, 7.5]];
+
+// Where each part pivots, in design units. The root turns about the middle of the character, the body at the bottom of its belly, a
+// hand at its wrist, a foot at its middle; every part but the shadow hangs off the root.
+const PIVOT = { shadow: [100, 172], root: [100, 104], body: [100, 158], handL: [16, 112], handR: [184, 112], footL: [78, 166], footR: [122, 166] } as const;
+type Pt = readonly [number, number];
+const inBox = (p: Pt): Pt => [place(p[0] * S + ORIGIN.x), place(p[1] * S + ORIGIN.y)];
+const offset = (p: Pt, parent: Pt): Pt => [place((p[0] - parent[0]) * S), place((p[1] - parent[1]) * S)];
 const AT = {
-  shadow: [64, 106.5],
-  root: [64, 64],
-  body: [0, 30],
-  handL: [-58, -8],
-  handR: [58, -8],
-  footL: [-15, 41],
-  footR: [15, 41],
-} as const;
-// The body is drawn in its own larger units and shrunk so that hands and feet fit round it inside the box.
-const BODY_SCALE = 0.82;
+  shadow: inBox(PIVOT.shadow),
+  root: inBox(PIVOT.root),
+  body: offset(PIVOT.body, PIVOT.root),
+  handL: offset(PIVOT.handL, PIVOT.root),
+  handR: offset(PIVOT.handR, PIVOT.root),
+  footL: offset(PIVOT.footL, PIVOT.root),
+  footR: offset(PIVOT.footR, PIVOT.root),
+};
 
 type Cadence = CSSProperties & { "--puff-fall"?: string; "--puff-breath"?: string };
 
-/** A small light-blue drop (tear, rain or sweat) that forms, slides down `fall` units and fades; at rest it sits mid-fall. */
-function Drop(props: { x: number; y: number; fall: number; secs: number; delay: number; size?: number }) {
+/** Ellipses from a list of shapes, each grown by `grow` (the silhouette edge is the lobes a unit larger). */
+function Blobs({ list, grow = 0, ...rest }: { list: readonly Blob[]; grow?: number } & SVGProps<SVGEllipseElement>) {
+  return (
+    <>
+      {list.map(([cx, cy, rx, ry = rx]) => (
+        <ellipse key={`${cx}${cy}`} cx={cx} cy={cy} rx={rx + grow} ry={ry + grow} {...rest} />
+      ))}
+    </>
+  );
+}
+
+/** A tear, rain or sweat drop that forms, slides down `fall` units and fades; at rest it sits mid-fall. */
+function Drop(props: { uid: string; x: number; y: number; fall: number; secs: number; delay: number; size?: number }) {
   const style: Cadence = { animationDuration: `${props.secs}s`, animationDelay: `${props.delay}s`, "--puff-fall": `${props.fall}px` };
   return (
     <g transform={`translate(${props.x} ${props.y}) scale(${props.size ?? 1})`}>
       <g className="animate-puff-drip" style={style}>
-        <path d={DROP} fill={TEAR} stroke={TEAR_LINE} strokeWidth=".8" />
-        <circle cx="-1" cy=".9" r=".8" fill="#fff" opacity=".85" />
+        <path d={DROP} fill={url(props.uid, "drop")} stroke={TEAR_LINE} strokeWidth=".7" />
+        <circle cx="-1.5" cy="1.2" r="1" fill="#fff" opacity=".85" />
       </g>
     </g>
   );
@@ -96,147 +140,187 @@ function Sparkle(props: { x: number; y: number; size: number; delay: number }) {
   );
 }
 
-/** Eyes: tall dark ovals with two highlights; sad ones droop at the outer corner (and shine with tears unless `tears` is off). Both blink, the second a beat later. */
-function Eyes({ mood, uid, tears = true }: { mood: PuffMood; uid: string; tears?: boolean }) {
-  const sad = mood === "sad";
-  // Unease glances away now and then, slowly; worry looks around more.
-  const glance = mood === "uneasy" ? { animationDuration: "9s" } : undefined;
-  // Besides the glance, the eyes always drift a pixel or so on a long, uneven loop.
+// The open eye kinds, about the eye's middle: where the iris sits and how big it is, and the catchlights [x, y, rx, ry, opacity].
+// All catchlights sit on the same side (one light source) in both eyes. Sad eyes (a drooping lid, a tear rim) are mirrored on the right.
+type Light = readonly [x: number, y: number, rx: number, ry: number, o: number];
+type EyeKind = "open" | "aside" | "look" | "startled" | "sad";
+const EYES: Record<EyeKind, { iris: readonly [number, number]; ir: number; pr: number; lights: readonly Light[]; scale?: number }> = {
+  open: { iris: [0.6, 2], ir: 8, pr: 4, lights: [[-3.2, -3, 3.2, 2.7, 1], [3.8, 5.2, 1.3, 1.3, 0.85]] },
+  aside: { iris: [-1, 0.9], ir: 8, pr: 4, lights: [[-4.4, -4, 3.1, 2.6, 1], [2.6, 4.3, 1.25, 1.25, 0.85]] },
+  look: { iris: [-2.4, -0.4], ir: 8, pr: 4, lights: [[-5.6, -5, 3, 2.5, 1], [1, 3.4, 1.2, 1.2, 0.85]] },
+  startled: { iris: [0, 0.4], ir: 6, pr: 3, scale: 1.1, lights: [[-2.4, -2.6, 2.8, 2.4, 1], [3, 2.8, 1.1, 1.1, 0.85]] },
+  sad: { iris: [0.3, 3.6], ir: 8, pr: 4, lights: [[-2.6, -0.6, 3, 2.4, 1], [3.8, 6.6, 1.3, 1.3, 0.85]] },
+};
+// The lash line along the top of the eye, and the lid that rides on it (everything above the lash line, so a blink slides it down over the eye).
+const LASH = { open: "M-10.5 0A10.5 12.5 0 0 1 10.5 0", sad: "M-10.4 -1.6Q0 -8.6 10.4 -8.2" };
+const LID = { open: `${LASH.open}H14V-40H-14V0Z`, sad: `${LASH.sad}H14V-40H-14V-1.6Z` };
+
+/**
+ * One Pixar-style eye: a sclera with a lid shadow, a blue iris and pupil with two catchlights, and a lash line. The iris and pupil
+ * look around inside the sclera (the rig directs them, and they drift on their own), and a blink slides a lid in the body's colour
+ * down over the eye with the lash line riding on it. A sad eye has a drooping lid, and a tear rim unless `tears` is off.
+ */
+function Eye({ kind, x, y, mirror, tears, glance, lid, beat, uid }: { kind: EyeKind; x: number; y: number; mirror?: boolean; tears?: boolean; glance?: CSSProperties | true; lid: string; beat: number; uid: string }) {
+  const e = EYES[kind];
+  const sad = kind === "sad";
+  const flip = mirror ? "scale(-1 1)" : undefined;
+  const blink = { animationDelay: `${beat * 0.04}s` };
   return (
-    <g className="animate-puff-gaze">
-    <g className={mood === "worried" || mood === "uneasy" ? "animate-puff-glance" : undefined} style={glance}>
-      {EYES.map((cx, i) => {
-        // Lid heights at the left and right edge: the outer corner droops.
-        const [yl, yr] = i === 0 ? [-3, -8] : [-8, -3];
-        const clip = sad ? `url(#${uid}-lid${i})` : undefined;
-        return (
-          <g key={cx} className="animate-puff-blink" style={{ animationDelay: `${i * 0.04}s` }}>
-            {clip && (
-              <clipPath id={`${uid}-lid${i}`}>
-                <polygon points={`${cx - 9},${EYE_Y + yl} ${cx + 9},${EYE_Y + yr} ${cx + 9},${EYE_Y + 11} ${cx - 9},${EYE_Y + 11}`} />
-              </clipPath>
-            )}
-            <g clipPath={clip}>
-              <ellipse cx={cx} cy={EYE_Y} rx="6.2" ry="8.2" fill={INK} />
-              <circle cx={cx - 2} cy={EYE_Y - (sad ? 1.4 : 3.4)} r={sad ? 3.2 : 2.5} fill="#fff" />
-              <circle cx={cx + 2.3} cy={EYE_Y + 3.4} r={sad ? 1.6 : 1.2} fill="#fff" />
-              {sad && tears && <ellipse cx={cx} cy={EYE_Y + 5.8} rx="4.4" ry="1.2" fill={TEAR} opacity=".6" />}
+    <g transform={`translate(${x} ${y})${e.scale ? ` scale(${e.scale})` : ""}`}>
+      <ellipse rx="10.5" ry="12.5" fill={url(uid, "sclera")} stroke="#8796b8" strokeOpacity=".35" strokeWidth=".8" />
+      <g clipPath={url(uid, "scl")}>
+        <g data-rig="eyes" style={rigStyle()}>
+          <g className="animate-puff-gaze">
+            <g className={glance ? "animate-puff-glance" : undefined} style={glance === true ? undefined : glance}>
+              <g transform={flip}>
+                <circle cx={e.iris[0]} cy={e.iris[1]} r={e.ir} fill={url(uid, "iris")} />
+                <circle cx={e.iris[0]} cy={e.iris[1]} r={e.pr} fill="#0a1120" />
+                {sad && tears && <ellipse cy="11.6" rx="9.5" ry="3.2" fill={TEAR} opacity=".75" />}
+                {e.lights.map(([lx, ly, rx, ry, o]) => (
+                  <ellipse key={`${lx}${ly}`} cx={lx} cy={ly} rx={rx} ry={ry} fill="#fff" opacity={o} />
+                ))}
+                {sad && tears && <circle cx="1.5" cy="10.8" r=".9" fill="#fff" opacity=".9" />}
+              </g>
             </g>
           </g>
-        );
-      })}
-    </g>
+        </g>
+        <ellipse cy="-11" rx="13" ry="6.5" fill="#33426b" opacity=".22" />
+        {sad && (
+          <g transform={flip} fill="#edf1f8">
+            <path d="M-13 -14L13 -14L13 -8.5Q0 -8 -13 -1Z" />
+            <path d="M-13 -1Q0 -8 13 -8.5" fill="none" stroke="#33426b" strokeOpacity=".22" strokeWidth="3" />
+          </g>
+        )}
+        <g className="animate-puff-blink" style={blink}>
+          <path d={sad ? LID.sad : LID.open} transform={flip} style={tween("fill", lid)} />
+        </g>
+      </g>
+      <g clipPath={url(uid, "scl2")}>
+        <g className="animate-puff-blink" style={blink}>
+          <path d={sad ? LASH.sad : LASH.open} transform={flip} fill="none" stroke={INK} strokeWidth="1.8" strokeLinecap="round" />
+        </g>
+      </g>
     </g>
   );
 }
 
-// Brows over the left eye (the right one mirrors it): short soft arcs, the inner end raised more as the mood gets heavier.
+/** Closed eyes: sleepy ones curve down with lashes (the right one mirrored); giggling ones are a happy ^ ^ with lashes. */
+function ClosedEyes({ up }: { up: boolean }) {
+  const line = { fill: "none", stroke: INK, strokeLinecap: "round" } as const;
+  return (
+    <>
+      {[84, 116].map((x, i) =>
+        up ? (
+          <g key={x} transform={`translate(${x} 104)`} {...line}>
+            <path d="M-10 3Q0 -9 10 3" strokeWidth="2.2" />
+            <path d={i ? "M9.4 2.4L12.2 4.8" : "M-9.4 2.4L-12.2 4.8"} strokeWidth="1.4" />
+          </g>
+        ) : (
+          <g key={x} transform={`translate(${x} 106)${i ? " scale(-1 1)" : ""}`} {...line}>
+            <path d="M-9 -5Q0 1 9 -5" stroke="#9aa7c4" strokeOpacity=".6" strokeWidth="1.2" />
+            <path d="M-10 -1Q0 7.5 10 -1" strokeWidth="2" />
+            <path d="M-9.6 -.4L-12.6 -2.8M-7.6 2.2L-10 5" strokeWidth="1.4" />
+          </g>
+        ),
+      )}
+    </>
+  );
+}
+
+// Brows (left and right as one path): fluffy and arched when happy, level and faint when uneasy, the inner ends raised more as the mood gets heavier.
 const BROWS = {
-  uneasy: { d: "M41.5 49.5Q46 47.6 50.5 47", w: 1.6, o: 0.5 },
-  worried: { d: "M41 50Q46 46.5 50.5 44.8", w: 2.2, o: 0.7 },
-  sad: { d: "M41 51.5Q46 46.5 51 42", w: 2.2, o: 0.7 },
+  happy: { d: "M76 86Q84 81 92 84M108 84Q116 81 124 86", w: 3, o: 1 },
+  uneasy: { d: "M76 85.5Q84 83 92 84M108 84Q116 83 124 85.5", w: 2.6, o: 0.6 },
+  worried: { d: "M74 88Q82 84 91 80M126 88Q118 84 109 80", w: 3.2, o: 1 },
+  sad: { d: "M74 90Q82 84 90 78M126 90Q118 84 110 78", w: 3.2, o: 1 },
+  brave: { d: "M75 88.5Q83 85 91 83M125 88.5Q117 85 109 83", w: 3, o: 1 },
+  startled: { d: "M77 83Q84 78 91 80M109 80Q116 78 123 83", w: 3, o: 1 },
 } as const;
 
-/** Eyebrows tilted up in the middle. */
-function Brows({ mood }: { mood: keyof typeof BROWS }) {
-  const b = BROWS[mood];
-  return (
-    <g fill="none" stroke={INK} strokeOpacity={b.o} strokeWidth={b.w} strokeLinecap="round">
-      <path d={b.d} />
-      <path d={b.d} transform="translate(128 0) scale(-1 1)" />
-    </g>
-  );
-}
+/** The eyes (and what they show), brows and mouth of each face. */
+const FACE: Record<PuffFace, { eyes: EyeKind | "shut" | "joy"; brows?: keyof typeof BROWS }> = {
+  happy: { eyes: "open", brows: "happy" },
+  giggle: { eyes: "joy", brows: "happy" },
+  uneasy: { eyes: "aside", brows: "uneasy" },
+  worried: { eyes: "look", brows: "worried" },
+  sad: { eyes: "sad", brows: "sad" },
+  brave: { eyes: "sad", brows: "brave" },
+  startled: { eyes: "startled", brows: "startled" },
+  sleepy: { eyes: "shut" },
+};
 
-/** The mouth for a face; the happy one is an open D with a tiny tongue, the sad one trembles, a startled one is a round o. */
+/** The mouth for a face; the happy one is an open smile with a tongue, the sad one trembles, a startled one is a round o. */
 function Mouth({ face, uid }: { face: PuffFace; uid: string }) {
-  const line = { fill: "none", stroke: INK, strokeWidth: 2.2, strokeLinecap: "round", strokeLinejoin: "round" } as const;
+  const line = { fill: "none", stroke: LINE, strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round" } as const;
   if (face === "happy" || face === "giggle") {
-    const d = "M53.5 74.5Q64 77 74.5 74.5Q74 89 64 89Q54 89 53.5 74.5Z";
     return (
       <g>
-        <clipPath id={`${uid}-mouth`}>
-          <path d={d} />
-        </clipPath>
-        <path d={d} fill={MOUTH} />
-        <ellipse cx="64" cy="87.5" rx="5.2" ry="3.6" fill="#ff8fa3" clipPath={`url(#${uid}-mouth)`} />
+        <path d={MOUTH} fill={url(uid, "mouth")} />
+        <ellipse cx="100" cy="129" rx="6" ry="3.6" fill="#ec7b91" clipPath={url(uid, "mclip")} />
+        <path d="M89 116.5Q100 121 111 116.5" fill="none" stroke="#8d6a7c" strokeOpacity=".5" strokeWidth="1.1" strokeLinecap="round" />
       </g>
     );
   }
-  if (face === "uneasy") return <path d="M59 81.6Q62 79.6 64.5 81.4T70 80.8" {...line} strokeWidth={2} />;
-  if (face === "worried") return <path d="M58 82q2-3 4 0t4 0t4 0" {...line} strokeWidth={2} />;
-  if (face === "sad") return <path d="M57 85Q64 78.5 71 85" {...line} className="animate-puff-tremble" />;
-  if (face === "brave") return <path d="M58.5 82.5Q64 86.5 69.5 82.5" {...line} strokeWidth={2} />;
-  if (face === "startled") return <ellipse cx="64" cy="82" rx="3.2" ry="3.9" fill={MOUTH} />;
-  return <ellipse cx="64" cy="81" rx="2.1" ry="2.5" fill={MOUTH} />;
+  if (face === "uneasy") return <path d="M93 125Q97 122.6 100.5 124.4T108 123.2" {...line} />;
+  if (face === "worried") return <path d="M91 124q2.25-2.6 4.5 0t4.5 0t4.5 0t4.5 0" {...line} />;
+  if (face === "sad") return <path d="M91 130Q100 120.5 109 130" {...line} className="animate-puff-tremble" />;
+  if (face === "brave") return <path d="M94 124Q100 128.5 106 124" {...line} />;
+  if (face === "startled") return <ellipse cx="100" cy="125" rx="4" ry="4.8" fill={url(uid, "mouth")} />;
+  return <ellipse cx="100" cy="124" rx="2.6" ry="3" fill="#6a2434" />;
 }
 
-/** A light-blue surgical mask over the mouth: pleats, a soft shadow, and ear loops that stay inside the body. */
-function Mask() {
-  const mask = "M50 73Q64 70 78 73L76.5 85Q64 90 51.5 85Z";
+/** A pleated light-blue surgical mask over the mouth: a soft shadow, a nose wire, and ear loops that stay inside the body. */
+function Mask({ uid }: { uid: string }) {
   return (
     <g strokeLinecap="round">
-      <g fill="none" stroke="#8fb7cf" strokeWidth="1.3">
-        <path d="M50 77Q41 73.5 31 78" />
-        <path d="M51 84Q42 86.5 33 83.5" />
-        <path d="M78 77Q87 73.5 97 78" />
-        <path d="M77 84Q86 86.5 95 83.5" />
-      </g>
-      <path d={mask} transform="translate(0 1.3)" fill="#13232e" opacity=".16" />
-      <path d={mask} fill="#bfe3f5" stroke="#7fb4d4" strokeWidth="1" strokeLinejoin="round" />
-      <g fill="none" stroke="#8ec1de" strokeWidth="1">
-        <path d="M52.5 77.5Q64 75.5 75.5 77.5" />
-        <path d="M52 81Q64 79 76 81" />
-        <path d="M52.5 84.2Q64 82.2 75.5 84.2" />
-      </g>
-    </g>
-  );
-}
-
-/** Closed eyes: sleepy ones curve down, giggling ones are a happy ^ ^. */
-function ClosedEyes({ up }: { up: boolean }) {
-  return (
-    <g fill="none" stroke={INK} strokeWidth="2.4" strokeLinecap="round">
-      {EYES.map((cx) => (
-        <path key={cx} d={up ? `M${cx - 6} ${EYE_Y + 3}Q${cx} ${EYE_Y - 6} ${cx + 6} ${EYE_Y + 3}` : `M${cx - 6} ${EYE_Y + 1}Q${cx} ${EYE_Y + 7} ${cx + 6} ${EYE_Y + 1}`} />
-      ))}
+      <path d="M80 113Q68 110 58 115M80 128Q68 131 60 126M120 113Q132 110 142 115M120 128Q132 131 140 126" fill="none" stroke="#9cc3da" strokeWidth="1.3" />
+      <path d={MASK} transform="translate(0 2)" fill="#24324a" opacity=".14" />
+      <path d={MASK} fill={url(uid, "mask")} stroke="#86b3cf" strokeWidth=".8" strokeLinejoin="round" />
+      <path d="M81 117Q100 112 119 117M81.5 121.5Q100 116.5 118.5 121.5M82 126Q100 121 118 126" fill="none" stroke="#8fbcd8" strokeWidth=".9" />
+      <path d="M90 109.5Q100 107 110 109.5" fill="none" stroke="#c9dde9" strokeWidth="1.4" />
     </g>
   );
 }
 
 /**
- * The face: eyes, brows and mouth, in a wrapper the rig moves to direct the gaze. Sleepy and giggling faces have closed eyes; the
- * rest look out and drift. A brave face is the sad eyes without tears and a small smile; a startled one has wide eyes and an o.
+ * The face: eyes, brows and mouth. Sleepy and giggling faces have closed eyes; the rest look out and drift (and blink). A brave face
+ * is the sad eyes without tears and a small smile; a startled one has wide eyes with a small centred iris and an o.
  */
-function Face({ face, uid }: { face: PuffFace; uid: string }) {
-  const open: PuffMood = face === "brave" ? "sad" : face === "startled" || face === "giggle" ? "happy" : face;
-  const brows = face === "brave" ? "uneasy" : face === "uneasy" || face === "worried" || face === "sad" ? face : null;
+function Face({ face, uid, look }: { face: PuffFace; uid: string; look: Look }) {
+  const { eyes, brows } = FACE[face];
+  const b = brows && BROWS[brows];
+  // Unease glances away now and then, slowly; worry looks around more.
+  const glance = face === "worried" ? true : face === "uneasy" ? { animationDuration: "9s" } : undefined;
   return (
     <>
-      <g data-rig="eyes" style={rigStyle()}>
-        {face === "sleepy" || face === "giggle" ? <ClosedEyes up={face === "giggle"} /> : <Eyes mood={open} uid={uid} tears={face !== "brave"} />}
-      </g>
-      {brows && <Brows mood={brows} />}
+      {b && <path d={b.d} fill="none" strokeLinecap="round" strokeWidth={b.w} strokeOpacity={b.o} style={tween("stroke", look.brow)} />}
+      {eyes === "shut" || eyes === "joy" ? (
+        <ClosedEyes up={eyes === "joy"} />
+      ) : (
+        [84, 116].map((x, i) => (
+          <Eye key={x} kind={eyes} x={x} y={104} mirror={eyes === "sad" && i === 1} tears={face !== "brave"} glance={glance} lid={look.lobe[1]} beat={i} uid={uid} />
+        ))
+      )}
       <Mouth face={face} uid={uid} />
     </>
   );
 }
 
 /** What a mood adds in front of the body: the sad cheeks' tear streaks and drops, the worried sweat drop. */
-function Extras({ mood }: { mood: PuffMood }) {
+function Extras({ mood, uid }: { mood: PuffMood; uid: string }) {
   if (mood === "sad") {
     return (
       <>
-        <g fill="none" stroke={TEAR} strokeWidth="2.4" strokeLinecap="round" opacity=".45">
-          <path d="M40.5 73Q38 80 39 88" />
-          <path d="M87.5 73Q90 80 89 88" />
+        <g fill="none" stroke={TEAR} strokeWidth="3" strokeLinecap="round" opacity=".4">
+          <path d="M75 118Q71 126 72 134" />
+          <path d="M125 118Q129 126 128 134" />
         </g>
-        <Drop x={39} y={82} fall={10} secs={2.6} delay={0} />
-        <Drop x={89} y={82} fall={10} secs={2.6} delay={0.9} />
+        <Drop uid={uid} x={73} y={122} fall={10} secs={2.6} delay={0} size={0.75} />
+        <Drop uid={uid} x={127} y={122} fall={10} secs={2.6} delay={0.9} size={0.75} />
       </>
     );
   }
-  return mood === "worried" ? <Drop x={106} y={50} fall={10} secs={3} delay={0} /> : null;
+  return mood === "worried" ? <Drop uid={uid} x={143} y={82} fall={12} secs={3} delay={0} size={1.1} /> : null;
 }
 
 /** Little extras that do not move with the body: a happy sparkle or two, the sleepy z's. */
@@ -244,7 +328,7 @@ function Backdrop({ mood }: { mood: PuffMood }) {
   if (mood === "happy") {
     return (
       <>
-        <Sparkle x={118} y={44} size={0.8} delay={0} />
+        <Sparkle x={113} y={26} size={0.8} delay={0} />
         <Sparkle x={14} y={30} size={0.75} delay={0.9} />
       </>
     );
@@ -253,9 +337,9 @@ function Backdrop({ mood }: { mood: PuffMood }) {
   return (
     <>
       {[
-        { x: 98, y: 29, size: 9, delay: 0 },
-        { x: 106, y: 19, size: 11, delay: 1.2 },
-        { x: 114, y: 9, size: 13, delay: 2.4 },
+        { x: 100, y: 32, size: 9, delay: 0 },
+        { x: 108, y: 21, size: 11, delay: 1.2 },
+        { x: 116, y: 10, size: 13, delay: 2.4 },
       ].map((z) => (
         <text key={z.delay} x={z.x} y={z.y} fontSize={z.size} fontWeight="800" textAnchor="middle" fill="currentColor" opacity=".6" className="animate-puff-z" style={{ animationDelay: `${z.delay}s` }}>
           z
@@ -266,7 +350,7 @@ function Backdrop({ mood }: { mood: PuffMood }) {
 }
 
 /** A rig part: a static anchor (relative to its parent part), then the group the rig animates, starting at its rest pose. */
-function Part({ name, at, rest = {}, children }: { name: PartName | "shadow"; at: readonly [number, number]; rest?: Pose; children: ReactNode }) {
+function Part({ name, at, rest = {}, children }: { name: PartName | "shadow"; at: Pt; rest?: Pose; children: ReactNode }) {
   return (
     <g transform={`translate(${at[0]} ${at[1]})`}>
       <g data-rig={name} style={rigStyle(rest)}>
@@ -276,33 +360,32 @@ function Part({ name, at, rest = {}, children }: { name: PartName | "shadow"; at
   );
 }
 
-/** A round mitt with a hint of core shadow; `right` mirrors the left one. */
-function Mitt({ uid, line, right }: { uid: string; line: string; right?: boolean }) {
+/** A cloud puff cluster (a hand or a foot, drawn about its pivot): the edge first, then the lobe gradient. `right` mirrors the shapes, not the light. */
+function Puffs({ uid, list, edge, right, children }: { uid: string; list: readonly Blob[]; edge: string; right?: boolean; children?: ReactNode }) {
+  const shapes = right ? list.map(([cx, cy, rx, ry]) => [-cx, cy, rx, ry] as const) : list;
   return (
-    <g transform={right ? "scale(-1 1)" : undefined}>
-      <path d={MITT} fill={`url(#${uid}-body)`} />
-      <ellipse cx="1" cy="9.5" rx="7.5" ry="5" fill={`url(#${uid}-shade)`} clipPath={`url(#${uid}-mitt)`} />
-      <path d={MITT} fill="none" strokeWidth="2" strokeLinejoin="round" style={tween("stroke", line)} />
-      <circle cx="-2.2" cy="2.8" r="1.1" fill="#fff" opacity=".85" />
+    <g transform={`scale(${S})`}>
+      <Blobs list={shapes} grow={1} style={tween("fill", edge)} />
+      <Blobs list={shapes} fill={url(uid, "lobe")} />
+      {children}
     </g>
   );
 }
 
-/** A bean foot with a darker sole. */
-function Foot({ uid, look }: { uid: string; look: (typeof LOOK)[PuffMood] }) {
+/** A puff oval foot with a shaded underside. */
+function Foot({ uid, look }: { uid: string; look: Look }) {
   return (
-    <g>
-      <path d={FOOT} fill={`url(#${uid}-body)`} />
-      <rect x="-9" y="-2.8" width="18" height="3.4" fillOpacity=".45" clipPath={`url(#${uid}-foot)`} style={tween("fill", look.shade)} />
-      <path d={FOOT} fill="none" strokeWidth="2" strokeLinejoin="round" style={tween("stroke", look.line)} />
-      <ellipse cx="-2.4" cy="-5.4" rx="2.4" ry="1" fill="#fff" opacity=".7" />
-    </g>
+    <Puffs uid={uid} list={FOOT} edge={look.edge}>
+      <ellipse cy="0.5" rx="13" ry="3.2" opacity=".35" style={tween("fill", look.shade)} />
+    </Puffs>
   );
 }
 
 /**
- * Puff, the cloud mascot: a soft clay character with floating mitts and feet (no arms or legs), as an inline SVG that feels the air
- * (see `puffMood`). It is a button ("Say hi to Puff"): a tap squishes, jumps and waves to suit the mood, and three quick taps spin it.
+ * Puff, the cloud mascot: a soft volumetric cumulus character with floating puff hands and feet (no arms or legs, and no fingers),
+ * as an inline SVG that feels the air (see `puffMood`). The body is overlapping lobes lit from the upper left with a cool underside
+ * and a bounce light, and no outline, only a faint edge; `bounce` is the panel colour, which tints the underside. It is a button
+ * ("Say hi to Puff"): a tap squishes, jumps and waves to suit the mood, and three quick taps spin it.
  * The SVG itself is decorative, so hidden from assistive tech; the verdict text already says what Puff shows. Size it with `className`
  * (the width; the height follows `PUFF_VIEW`); it may jump above the box, so put it where the parent clips overflow.
  * Motion is acted, not looped (see `puffRig`, `usePuffRig`): each mood has its own routines (hops and waves, weight shifts, fidgets,
@@ -310,7 +393,7 @@ function Foot({ uid, look }: { uid: string; look: (typeof LOOK)[PuffMood] }) {
  * pose. With reduced motion it keeps a still pose. When the mood changes the body colours tween and the old face fades out as the
  * new one fades in; nothing remounts, so nothing shifts.
  */
-export default function Puff({ step, className = "" }: { step: Step | null; className?: string }) {
+export default function Puff({ step, bounce, className = "" }: { step: Step | null; bounce?: string; className?: string }) {
   const uid = useId().replace(/[^a-zA-Z0-9_-]/g, "");
   const svg = useRef<SVGSVGElement>(null);
   const { mood, mask } = puffMood(step);
@@ -324,6 +407,11 @@ export default function Puff({ step, className = "" }: { step: Step | null; clas
   const breathe: Cadence = { animationDuration: `${look.secs}s`, "--puff-breath": `${look.breath}` };
   const stops = (id: string, ...ops: Array<[number, string, number]>) =>
     ops.map(([offset, color, opacity]) => <stop key={`${id}${offset}`} offset={offset} style={tween("stopColor", color)} stopOpacity={opacity} />);
+  const lit = (id: string, ...ops: Array<[number, string, number]>) => (
+    <linearGradient id={`${uid}-${id}`} x1="0" y1="0" x2="0" y2="1">
+      {stops(id, ...ops)}
+    </linearGradient>
+  );
 
   return (
     <button
@@ -340,38 +428,59 @@ export default function Puff({ step, className = "" }: { step: Step | null; clas
         style={{ aspectRatio: `${PUFF_VIEW.w} / ${PUFF_VIEW.h}` }}
       >
         <defs>
-          <linearGradient id={`${uid}-body`} x1="0" y1="0" x2="0" y2="1">
-            {stops("b", [0, look.top, 1], [1, look.bottom, 1])}
-          </linearGradient>
-          <radialGradient id={`${uid}-shade`}>{stops("s", [0, look.shade, 0.5], [0.55, look.shade, 0.26], [1, look.shade, 0])}</radialGradient>
-          <linearGradient id={`${uid}-bounce`} x1="0" y1="0" x2="0" y2="1">
-            {stops("r", [0.78, look.bounce, 0], [1, look.bounce, 0.85])}
-          </linearGradient>
-          <linearGradient id={`${uid}-top`} x1="0" y1="0" x2="0" y2="1">
-            {stops("t", [0, look.glow, 0.5], [0.22, look.glow, 0])}
-          </linearGradient>
-          <radialGradient id={`${uid}-spec`}>
-            <stop offset="0" stopColor="#fff" stopOpacity=".8" />
-            <stop offset="1" stopColor="#fff" stopOpacity="0" />
+          <radialGradient id={`${uid}-lobe`} cx=".42" cy=".34" r=".68" fx=".38" fy=".26">
+            {stops("l", ...look.lobe.map((c, i): [number, string, number] => [LOBE_AT[i], c, 1]))}
           </radialGradient>
+          {lit("under", [0, look.shade, 0], [0.55, look.shade, 0.16], [1, look.shade, 0.46])}
+          {bounce && lit("panel", [0, bounce, 0], [1, bounce, 0.16])}
+          <radialGradient id={`${uid}-sheen`}>{stops("s", [0, look.sheen, 0.95], [1, look.sheen, 0])}</radialGradient>
           <radialGradient id={`${uid}-ground`}>
-            <stop offset="0" stopColor="#1a1a22" stopOpacity=".5" />
-            <stop offset=".6" stopColor="#1a1a22" stopOpacity=".26" />
-            <stop offset="1" stopColor="#1a1a22" stopOpacity="0" />
+            <stop offset="0" stopColor="#0d1a14" stopOpacity=".38" />
+            <stop offset="1" stopColor="#0d1a14" stopOpacity="0" />
           </radialGradient>
+          <radialGradient id={`${uid}-blush`}>
+            <stop offset="0" stopColor="#ff8fa6" stopOpacity=".6" />
+            <stop offset="1" stopColor="#ff8fa6" stopOpacity="0" />
+          </radialGradient>
+          <linearGradient id={`${uid}-sclera`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stopColor="#cfd7e8" />
+            <stop offset=".32" stopColor="#fbfcff" />
+            <stop offset="1" stopColor="#ffffff" />
+          </linearGradient>
+          <radialGradient id={`${uid}-iris`} cx=".5" cy=".66" r=".62">
+            <stop offset="0" stopColor="#a8cdf5" />
+            <stop offset=".42" stopColor="#5a88cc" />
+            <stop offset=".8" stopColor="#2c4a80" />
+            <stop offset="1" stopColor="#172746" />
+          </radialGradient>
+          <linearGradient id={`${uid}-mouth`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stopColor="#3d0f1d" />
+            <stop offset="1" stopColor="#7a2236" />
+          </linearGradient>
+          <linearGradient id={`${uid}-drop`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stopColor="#f2fbff" />
+            <stop offset="1" stopColor="#74bdf0" />
+          </linearGradient>
+          <linearGradient id={`${uid}-mask`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stopColor="#e8f6fd" />
+            <stop offset="1" stopColor="#a6cde5" />
+          </linearGradient>
           <clipPath id={`${uid}-clip`}>
-            <path d={BODY} />
+            <Blobs list={LOBES} />
           </clipPath>
-          <clipPath id={`${uid}-mitt`}>
-            <path d={MITT} />
+          <clipPath id={`${uid}-mclip`}>
+            <path d={MOUTH} />
           </clipPath>
-          <clipPath id={`${uid}-foot`}>
-            <path d={FOOT} />
+          <clipPath id={`${uid}-scl`}>
+            <ellipse rx="10.5" ry="12.5" />
+          </clipPath>
+          <clipPath id={`${uid}-scl2`}>
+            <ellipse rx="12.5" ry="14.5" />
           </clipPath>
         </defs>
 
         <Part name="shadow" at={AT.shadow}>
-          <ellipse rx="36" ry="4.4" fill={`url(#${uid}-ground)`} />
+          <ellipse rx={66 * S} ry={7 * S} fill={url(uid, "ground")} />
         </Part>
         {fadeLayers(mood, goneMood, (m) => (
           <Backdrop mood={m} />
@@ -379,30 +488,31 @@ export default function Puff({ step, className = "" }: { step: Step | null; clas
 
         <Part name="root" at={AT.root} rest={rest.root}>
           <Part name="body" at={AT.body} rest={rest.body}>
-            <g transform={`scale(${BODY_SCALE}) translate(-64 -98)`}>
+            <g transform={`scale(${S}) translate(${-PIVOT.body[0]} ${-PIVOT.body[1]})`}>
               <g className="animate-puff-breathe origin-bottom" style={breathe}>
-                {fadeLayers(mood, goneMood, (m) => (m === "sad" ? [40, 88].map((x, i) => <Drop key={x} x={x} y={96} fall={8} secs={2.4} delay={i * 1.1} size={0.85} />) : null))}
-                <path d={BODY} fill={`url(#${uid}-body)`} />
-                <ellipse cx="63" cy="94" rx="70" ry="34" fill={`url(#${uid}-shade)`} clipPath={`url(#${uid}-clip)`} />
-                <path d={BODY} fill="none" stroke={`url(#${uid}-bounce)`} strokeWidth="7" clipPath={`url(#${uid}-clip)`} />
-                <path d={BODY} fill="none" stroke={`url(#${uid}-top)`} strokeWidth="5" clipPath={`url(#${uid}-clip)`} />
-                <ellipse cx="48" cy="33" rx="19" ry="11" transform="rotate(-32 48 33)" fill={`url(#${uid}-spec)`} clipPath={`url(#${uid}-clip)`} />
-                <path d={BODY} fill="none" strokeWidth="2.9" strokeLinejoin="round" style={tween("stroke", look.line)} />
-                <ellipse cx="51" cy="30" rx="8.5" ry="4.5" transform="rotate(-32 51 30)" fill="#fff" opacity=".85" />
-                <circle cx="42.5" cy="38.5" r="2" fill="#fff" opacity=".7" />
+                {fadeLayers(mood, goneMood, (m) =>
+                  m === "sad"
+                    ? [40, 160].map((x, i) => <Drop key={x} uid={uid} x={x} y={134} fall={10} secs={2.4} delay={i * 1.1} size={0.85} />)
+                    : null,
+                )}
+                <Blobs list={LOBES} grow={1} style={tween("fill", look.edge)} />
+                <Blobs list={LOBES} fill={url(uid, "lobe")} />
+                <rect x="0" y="92" width="200" height="70" fill={url(uid, "under")} clipPath={url(uid, "clip")} />
+                {bounce && <rect x="0" y="126" width="200" height="42" fill={url(uid, "panel")} clipPath={url(uid, "clip")} />}
+                <ellipse cx="100" cy="160" rx="50" ry="6" opacity=".55" clipPath={url(uid, "clip")} style={tween("fill", look.lobe[1])} />
+                <ellipse cx="96" cy="42" rx="20" ry="10" transform="rotate(-18 96 42)" fill={url(uid, "sheen")} opacity=".9" />
+                <ellipse cx="66" cy="60" rx="9" ry="5" transform="rotate(-30 66 60)" fill={url(uid, "sheen")} opacity=".7" />
 
-                <g transform={`translate(0 ${FACE_Y})`}>
-                  <g fill="#ff9aa8" style={tween("opacity", look.blush)}>
-                    <ellipse cx="38" cy="76" rx="6.5" ry="3.8" />
-                    <ellipse cx="90" cy="76" rx="6.5" ry="3.8" />
-                  </g>
-                  {fadeLayers(face, goneFace, (f) => (
-                    <Face face={f} uid={`${uid}-${f}`} />
-                  ))}
-                  {fadeLayers(mask ? "mask" : null, goneMask && { v: goneMask.v ? "mask" : null }, (m) => (m ? <Mask /> : null))}
+                <g fill={url(uid, "blush")} style={tween("opacity", look.blush)}>
+                  <ellipse cx="68" cy="122" rx="10" ry="6" />
+                  <ellipse cx="132" cy="122" rx="10" ry="6" />
                 </g>
+                {fadeLayers(face, goneFace, (f) => (
+                  <Face face={f} uid={uid} look={look} />
+                ))}
+                {fadeLayers(mask ? "mask" : null, goneMask && { v: goneMask.v ? "mask" : null }, (m) => (m ? <Mask uid={uid} /> : null))}
                 {fadeLayers(mood, goneMood, (m) => (
-                  <Extras mood={m} />
+                  <Extras mood={m} uid={uid} />
                 ))}
               </g>
             </g>
@@ -414,13 +524,14 @@ export default function Puff({ step, className = "" }: { step: Step | null; clas
             <Foot uid={uid} look={look} />
           </Part>
           <Part name="handL" at={AT.handL} rest={rest.handL}>
-            <Mitt uid={uid} line={look.line} />
+            <Puffs uid={uid} list={HAND} edge={look.edge} />
           </Part>
           <Part name="handR" at={AT.handR} rest={rest.handR}>
-            <Mitt uid={uid} line={look.line} right />
+            <Puffs uid={uid} list={HAND} edge={look.edge} right />
           </Part>
         </Part>
       </svg>
     </button>
   );
 }
+

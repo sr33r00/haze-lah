@@ -6,6 +6,13 @@ The in-app "What's new" sheet shows the highlights of the current release. Data-
 
 ## [Unreleased]
 
+## [1.11.0] - 2026-10-26
+
+### Changed
+
+- Puff is redrawn as a soft, volumetric cumulus cloud: shaded cloud lobes with no outline, Pixar-style eyes that blink with real eyelids, cloud-puff hands, and a body that turns warmer or greyer as the haze gets worse and picks up the panel's colour underneath.
+- Visitor counts also go to Umami (cookieless), next to Cloudflare Web Analytics.
+
 ## [1.10.0] - 2026-10-26
 
 ### Changed
@@ -201,7 +208,8 @@ The in-app "What's new" sheet shows the highlights of the current release. Data-
 - Forecast smoke map, fire counts and a wind dial, "Plan your day", NEA news timeline and 7-day PSI history.
 - Feedback issue form.
 
-[Unreleased]: https://github.com/sr33r00/haze-lah/compare/v1.10.0...HEAD
+[Unreleased]: https://github.com/sr33r00/haze-lah/compare/v1.11.0...HEAD
+[1.11.0]: https://github.com/sr33r00/haze-lah/compare/v1.10.0...v1.11.0
 [1.10.0]: https://github.com/sr33r00/haze-lah/compare/v1.9.0...v1.10.0
 [1.9.0]: https://github.com/sr33r00/haze-lah/compare/v1.8.0...v1.9.0
 [1.8.0]: https://github.com/sr33r00/haze-lah/compare/v1.7.0...v1.8.0

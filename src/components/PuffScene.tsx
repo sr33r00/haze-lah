@@ -1,5 +1,5 @@
 import { useId, type CSSProperties } from "react";
-import type { Step } from "@/lib/bands";
+import { heroPaint, type Step } from "@/lib/bands";
 import Puff, { PUFF_VIEW, puffMood, type PuffMood } from "./Puff";
 import { fadeLayers, useLeaving } from "./puffFade";
 
@@ -173,7 +173,7 @@ export function PuffScene({ step }: { step: Step | null }) {
 }
 
 /**
- * Puff on her haze scene, in a fixed box that sits to the right of the headline. Puff is a button (tap to say hi). `className` sets
+ * Puff on her haze scene, in a fixed box that sits to the right of the headline. Puff is a button (tap to say hi) and picks up the verdict colour on her underside. `className` sets
  * the width (default: 108 px on the smallest phones, 120 px on phones, 220 px from `lg`). The scene reaches beyond the box and Puff
  * jumps above it, so put it where the parent clips overflow.
  */
@@ -181,7 +181,7 @@ export function PuffStage({ step, className = "w-[108px] min-[390px]:w-[120px] l
   return (
     <div className={`relative shrink-0 self-center ${className}`}>
       <PuffScene step={step} />
-      <Puff step={step} className="relative w-full" />
+      <Puff step={step} bounce={heroPaint(step).tone?.bg} className="relative w-full" />
     </div>
   );
 }

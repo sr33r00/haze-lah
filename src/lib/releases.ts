@@ -6,12 +6,12 @@ export type ReleaseItem = { title: string; text: string; href: string; icon: Luc
 
 /** The current release, shown once to each visitor in the "What's new" sheet and listed on the About page. Keep `version` in step with package.json. */
 export const RELEASE: { version: string; date: string; items: ReleaseItem[] } = {
-  version: "1.10.0",
+  version: "1.11.0",
   date: "2026-10-26",
   items: [
     {
       title: "Puff comes alive",
-      text: "Puff has hands and feet now and acts out the air: it hops when the air is clear and wipes its brow when it gets hazy. Tap Puff to say hi.",
+      text: "Puff is a real, fluffy cloud now, with hands and feet, and acts out the air: it hops when the air is clear and wipes its brow when it gets hazy. Tap Puff to say hi.",
       href: "/#now",
       icon: Cloud,
     },

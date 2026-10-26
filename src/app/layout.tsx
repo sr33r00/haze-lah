@@ -71,6 +71,8 @@ const THEME_SCRIPT = `try{var t=localStorage.getItem("theme");if(t==="light"||t=
 
 // Cloudflare Web Analytics token, read at build time; no beacon without it (local development, forks).
 const CF_BEACON = process.env.NEXT_PUBLIC_CF_BEACON;
+// Umami Cloud site id (public); loaded only in production builds so local runs are not counted.
+const UMAMI_ID = "8a3a1355-4b6c-4a65-b8ec-aad931f2d46a";
 
 const INSTALL_SCRIPT = `addEventListener("beforeinstallprompt",function(e){e.preventDefault();window.__installEvent=e;window.dispatchEvent(new Event("installready"))})`;
 
@@ -87,8 +89,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           <JsonLd key={d["@type"]} data={d} />
         ))}
         {children}
-        {/* Cookieless page-view counts. */}
+        {/* Cookieless page-view counts; Umami also shows who is on the site right now. */}
         {CF_BEACON && <script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon={JSON.stringify({ token: CF_BEACON })} />}
+        {process.env.NODE_ENV === "production" && <script defer src="https://cloud.umami.is/script.js" data-website-id={UMAMI_ID} />}
       </body>
     </html>
   );

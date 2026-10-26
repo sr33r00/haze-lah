@@ -173,35 +173,37 @@
       transform: scale(calc(1 + var(--puff-breath, 0.015)));
     }
   }
+  /* The irises look around inside the eyes (units are Puff's drawing units). */
   @keyframes puff-gaze {
     18% {
-      transform: translate(1px, 0.4px);
+      transform: translate(1.6px, 0.6px);
     }
     36% {
-      transform: translate(0.6px, -0.5px);
+      transform: translate(1px, -0.8px);
     }
     55% {
-      transform: translate(-1px, 0.2px);
+      transform: translate(-1.6px, 0.3px);
     }
     78% {
-      transform: translate(-0.4px, 0.7px);
+      transform: translate(-0.6px, 1.1px);
     }
   }
+  /* A blink: the lid (and the lash line on it) slides down over the eye and back up. At rest it is above the eye. */
   @keyframes puff-blink {
     95%,
     98% {
-      transform: scaleY(1);
+      transform: translateY(0);
     }
     96.5% {
-      transform: scaleY(0.1);
+      transform: translateY(26px);
     }
   }
   @keyframes puff-glance {
     25% {
-      transform: translateX(-1.5px);
+      transform: translateX(-2.4px);
     }
     75% {
-      transform: translateX(1.5px);
+      transform: translateX(2.4px);
     }
   }
   @keyframes puff-drip {
