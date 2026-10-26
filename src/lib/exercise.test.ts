@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { PLAN_HOURS, bestSlots, planStrip, rate, ratingLegend } from "@/lib/exercise";
-import type { ForecastPoint } from "@/lib/types";
+import { PLAN_HOURS, RAIN_TEXT, bestSlots, planStrip, rate, ratingLegend, slotReason, weatherRatings } from "@/lib/exercise";
+import type { ForecastPoint, WeatherHour } from "@/lib/types";
 
 const START = Date.parse("2026-10-23T22:00:00Z"); // 6am SGT, Sat 24 Oct
 const NOW = START;
@@ -75,18 +75,94 @@ test("the legend lists the distinct answers of the activity, mildest first", () 
     { text: "Good to go", tones: ["go"] },
     { text: "Keep it short and easy", tones: ["easy"] },
     { text: "Better indoors", tones: ["stay"] },
+    { text: "Rain likely", tones: ["limit"] },
+    { text: "Very high UV", tones: ["limit"] },
   ]);
   // Kids play says the same words in band II and from band III, so both colours share one entry.
   assert.deepEqual(ratingLegend("play", "healthy"), [
     { text: "Good for outdoor play", tones: ["go"] },
     { text: "Play indoors instead", tones: ["limit", "stay"] },
+    { text: "Rain likely", tones: ["limit"] },
+    { text: "Very high UV", tones: ["limit"] },
   ]);
   assert.deepEqual(
     ratingLegend("out", "healthy").map((r) => r.text),
-    ["Go ahead", "Cut back outdoors", "Keep outings short", "Stay in if you can"],
+    ["Go ahead", "Cut back outdoors", "Keep outings short", "Stay in if you can", "Rain likely", "Very high UV, find shade"],
   );
   assert.deepEqual(
     ratingLegend("out", "sensitive").map((r) => r.text),
-    ["Go ahead", "Keep outings short", "Stay indoors"],
+    ["Go ahead", "Keep outings short", "Stay indoors", "Rain likely", "Very high UV, find shade"],
   );
+});
+
+/** Weather for `n` hours from 6am SGT, by hour index. */
+const wx = (rain: (i: number) => number | null, uv: (i: number) => number | null = () => 0, feels: (i: number) => number | null = () => 28, n = 48): WeatherHour[] =>
+  Array.from({ length: n }, (_, i) => ({ time: new Date(START + i * 3600_000).toISOString(), windDir: 200, windSpeed: 10, rainProb: rain(i), rain: 0, gust: 10, uv: uv(i), feelsLike: feels(i) }));
+
+test("without weather the answers are the air-only ones", () => {
+  const h = hourly((i) => (i === 1 || i === 2 ? 20 : i === 4 || i === 5 ? 25 : 60), (i) => (i === 2 ? 120 : i === 4 || i === 5 ? 35 : 90));
+  const plain = bestSlots(h, "cycle", "healthy", NOW);
+  assert.deepEqual(bestSlots(h, "cycle", "healthy", NOW, undefined, []), plain);
+  assert.deepEqual(bestSlots(h, "cycle", "healthy", NOW, undefined, wx(() => 0)).map((s) => [s.startIndex, s.rating]), plain.map((s) => [s.startIndex, s.rating]));
+  assert.equal(plain[0].rainProb, null);
+  assert.equal(plain[0].feelsLike, null);
+});
+
+test("a rainy hour is avoided when a dry session is as clean", () => {
+  const h = hourly(() => 20);
+  const rainy = wx((i) => (i < 4 ? 80 : 10)); // 6-10am wet
+  const [today] = bestSlots(h, "run", "healthy", NOW, 1, rainy);
+  assert.equal(today.startIndex, 4);
+  assert.deepEqual(today.rating, { tone: "go", text: "Good to go" });
+  assert.equal(today.rainProb, 10);
+  // Every hour wet: the answer is the rain, for any activity.
+  const wet = bestSlots(h, "out", "healthy", NOW, 1, wx(() => 60))[0];
+  assert.deepEqual(wet.rating, { tone: "limit", text: RAIN_TEXT });
+});
+
+test("very high UV is avoided; going out only nudges toward shade", () => {
+  const h = hourly(() => 20);
+  const sun = wx(() => 0, (i) => (i <= 2 ? 9 : 2)); // 6 to 9am
+  assert.equal(bestSlots(h, "run", "healthy", NOW, 1, sun)[0].startIndex, 3); // 9am, the first hour under 8
+  const all = wx(() => 0, () => 9);
+  assert.deepEqual(bestSlots(h, "run", "healthy", NOW, 1, all)[0].rating, { tone: "limit", text: "Very high UV" });
+  assert.deepEqual(bestSlots(h, "play", "healthy", NOW, 1, all)[0].rating, { tone: "limit", text: "Very high UV" });
+  assert.deepEqual(bestSlots(h, "out", "healthy", NOW, 1, all)[0].rating, { tone: "easy", text: "Very high UV, find shade" });
+  assert.deepEqual(weatherRatings({ rainProb: 49, uv: 7.9 }, "run"), []);
+  assert.deepEqual(weatherRatings({ rainProb: 50, uv: 8 }, "run").map((r) => r.text), [RAIN_TEXT, "Very high UV"]);
+});
+
+test("haze still dominates, and the air's words win a tie", () => {
+  const rainy = wx(() => 90, () => 9);
+  // PM2.5 200 is band III: "stay" beats the weather's "limit", and keeps its words.
+  assert.deepEqual(bestSlots(hourly(() => 200), "run", "healthy", NOW, 1, rainy)[0].rating, { tone: "stay", text: "Better indoors" });
+  // Band II kids' play is "limit" like the rain: the air's words stay.
+  assert.deepEqual(bestSlots(hourly(() => 100), "play", "healthy", NOW, 1, rainy)[0].rating, { tone: "limit", text: "Play indoors instead" });
+  // Rain lifts band I's "go" to "limit" only because rain is worse than good air.
+  assert.equal(bestSlots(hourly(() => 20), "play", "healthy", NOW, 1, rainy)[0].rating.text, RAIN_TEXT);
+});
+
+test("with the same rating and air, the cooler feels-like wins", () => {
+  const h = hourly(() => 20);
+  const [today] = bestSlots(h, "run", "healthy", NOW, 1, wx(() => 0, () => 0, (i) => (i === 3 ? 27 : 32)));
+  assert.equal(today.startIndex, 3);
+  assert.equal(today.feelsLike, 27);
+});
+
+test("the strip colours each hour by the combined rating and marks the rainy hours", () => {
+  const h = hourly(() => 20);
+  const strip = planStrip(h, "run", "healthy", NOW, wx((i) => (i === 2 ? 70 : 10)));
+  assert.equal(strip[2].rainy, true);
+  assert.equal(strip[2].rating.text, RAIN_TEXT);
+  assert.equal(strip[3].rainy, false);
+  assert.equal(strip[3].rating.tone, "go");
+  assert.equal(planStrip(h, "run", "healthy", NOW)[2].rainProb, null);
+});
+
+test("the reason line gives rain, UV and air", () => {
+  const [dry] = bestSlots(hourly(() => 20), "run", "healthy", NOW, 1, wx(() => 5, () => 3));
+  assert.equal(slotReason(dry), "Dry · UV 3 · Air normal");
+  const [wet] = bestSlots(hourly(() => 20), "run", "healthy", NOW, 1, wx(() => 60, () => 3));
+  assert.equal(slotReason(wet), "Rain likely · UV 3 · Air normal");
+  assert.equal(slotReason(bestSlots(hourly(() => 80), "run", "healthy", NOW)[0]), "Air elevated");
 });

@@ -2,7 +2,7 @@
 import { REGIONS, pm25ToUsAqi, type Region } from "./bands";
 import type { Inputs } from "./data";
 import { buildReplay } from "./replay";
-import type { DayPsi, Fire, HourPoint, NewsItem, Replay, SmokeGrid, Station, WeatherHour } from "./types";
+import type { DayPsi, Fire, HourPoint, NewsItem, OutdoorFeeds, Replay, SmokeGrid, Station, WeatherHour } from "./types";
 import { hourKey, sgDate, sgHour } from "./util";
 import type { WindFrame } from "./wind";
 
@@ -38,9 +38,11 @@ export function mockInputs(): Inputs {
       time: new Date(now + h * H).toISOString(),
       windDir: h < 50 ? 225 : 160,
       windSpeed: 18,
-      rainProb: h > 60 ? 70 : 20,
+      rainProb: h > 60 || (h >= 6 && h <= 8) ? 70 : 20,
       rain: h > 60 ? 2 : 0,
       gust: h > 60 ? 45 : 20,
+      uv: Math.max(0, Math.round(10 * Math.sin((Math.PI * (sgHour(now + h * H) - 7)) / 12))), // 0 outside 7am to 7pm, 10 at 1pm
+      feelsLike: 27 + Math.round(6 * Math.max(0, Math.sin((Math.PI * (sgHour(now + h * H) - 7)) / 12))),
     });
   }
   const st = (id: string, name: string, state: string, lat: number, lon: number, api: number, pm25: number, d: number): Station => ({
@@ -212,4 +214,50 @@ export function mockReplay(now = Date.now()): Replay {
     return { lat: lat + ((i * 7) % 11) / 20 - 0.25, lon: lon + ((i * 5) % 13) / 20 - 0.3, frp: 10 + (i % 9) * 8, time: new Date(now - i * H).toISOString(), confidence: "n", where: "sumatra" };
   });
   return buildReplay(frames, fires, now);
+}
+
+/** Synthetic NEA weather feeds: thundery showers, moderate heat stress, daytime UV, and two lightning strikes near the centre of the island. */
+export function mockOutdoor(now = Date.now()): OutdoorFeeds {
+  const H = 3600_000;
+  const iso = (t: number) => new Date(t).toISOString();
+  const hour = Math.floor(now / H) * H;
+  // The newest UV hours (SGT 7am to 7pm), newest first: 0 at the ends, 10 at 1pm.
+  const uv = Array.from({ length: 24 }, (_, k) => hour - k * H)
+    .filter((t) => sgHour(t) >= 7 && sgHour(t) <= 19)
+    .slice(0, 13)
+    .map((t) => ({ hour: iso(t), value: Math.max(0, Math.round(10 * Math.sin((Math.PI * (sgHour(t) - 7)) / 12))) }));
+  const area = (name: string, lat: number, lon: number, forecast: string) => ({ name, lat, lon, forecast });
+  const station = (id: string, town: string, lat: number, lon: number, wbgt: number, stress: string) => ({ id, town, lat, lon, wbgt, stress });
+  return {
+    rain: {
+      start: iso(hour),
+      end: iso(hour + 2 * H),
+      areas: [
+        area("Woodlands", 1.437, 103.786, "Cloudy"),
+        area("Central Water Catchment", 1.38, 103.805, "Light Rain"),
+        area("Bedok", 1.321, 103.924, "Thundery Showers"),
+        area("Jurong West", 1.34, 103.705, "Thundery Showers"),
+        area("City", 1.292, 103.844, "Thundery Showers"),
+        area("Bukit Timah", 1.325, 103.791, "Cloudy"),
+      ],
+    },
+    heat: {
+      time: iso(now - 6 * 60_000),
+      stations: [
+        station("S125", "Woodlands Stadium", 1.4338, 103.7807, 31.4, "Moderate"),
+        station("S128", "Bishan Stadium", 1.3548, 103.8522, 32.1, "Moderate"),
+        station("S129", "Bedok Stadium", 1.3257, 103.9397, 33.2, "High"),
+        station("S132", "Jurong West Stadium", 1.3379, 103.6954, 30.8, "Moderate"),
+        station("S127", "Kallang Practice Track", 1.3057, 103.8782, 31.9, "Moderate"),
+      ],
+    },
+    uv: { readings: uv },
+    lightning: {
+      time: iso(now - 2 * 60_000),
+      strikes: [
+        { t: now - 5 * 60_000, lat: 1.3612, lon: 103.8211 },
+        { t: now - 12 * 60_000, lat: 1.3745, lon: 103.8403 },
+      ],
+    },
+  };
 }

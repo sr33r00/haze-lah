@@ -23,6 +23,12 @@ export const NEA_PSI_URL = "https://www.haze.gov.sg/docs/default-source/faq/comp
 /** NASA Earth Observatory, "Aerosols: Small Particles with Big Impacts": what aerosol optical depth is. */
 export const NASA_AOD_URL = "https://earthobservatory.nasa.gov/features/Aerosols";
 
+/** NEA / Meteorological Service Singapore, Heat Stress: what WBGT is and NEA's heat stress bands. */
+export const HEAT_STRESS_URL = "https://www.weather.gov.sg/heat-stress/";
+
+/** WHO, Global Solar UV Index: A Practical Guide (the UV categories). */
+export const WHO_UV_URL = "https://www.who.int/publications/i/item/9241590076";
+
 /** AQICN, the World Air Quality Index Project: the station data on the Now map's US AQI view needs this credit. */
 export const WAQI_URL = "https://waqi.info";
 export const WAQI_NAME = "World Air Quality Index Project";
@@ -32,3 +38,7 @@ export const GUIDE_AQICN_URL = "/guide#other-apps";
 
 /** Said under the US AQI view of the Now map. */
 export const US_AQI_NOTE = "US AQI reads higher than Singapore's PSI for the same air. NEA's PSI is the official measure.";
+
+/** URA Master Plan 2019 Region Boundary (No Sea) on data.gov.sg: the source of Singapore's outline on the maps. */
+export const SG_OUTLINE_URL = "https://data.gov.sg/datasets/d_bf4d24df9129d5a8ff8cf82e20959ee0/view";
+export const SG_OUTLINE_NAME = "URA Master Plan 2019";

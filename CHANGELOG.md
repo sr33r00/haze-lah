@@ -6,6 +6,19 @@ The in-app "What's new" sheet shows the highlights of the current release. Data-
 
 ## [Unreleased]
 
+## [1.12.0] - 2026-10-27
+
+### Added
+
+- Outdoor conditions under the haze answer: NEA's 2-hour rain forecast for the nearest town, measured heat stress (WBGT), the last UV reading and lightning strikes within 15 km in the last 30 minutes. It refreshes every 5 minutes on its own, apart from the haze data.
+- Singapore is outlined in red on both maps (URA Master Plan 2019 via data.gov.sg), and the smoke map points it out with a label.
+
+### Changed
+
+- Plan your day weighs rain (Open-Meteo chance of rain) and UV (WHO categories) as well as the air: the best time skips hours with rain likely or very high UV, and shows the rain chance and feels-like temperature.
+- On laptops and big screens the Now page uses the whole width: the sections in one column on the left, and one tall map on the right that switches between the readings now and where the air came from. The smoke and wind fill the map edge to edge. Phones are unchanged.
+- NEA data is fetched with a data.gov.sg API key, including by the refresh Worker.
+
 ## [1.11.1] - 2026-10-26
 
 ### Fixed

@@ -15,10 +15,11 @@ function log(event: string, extra: Record<string, unknown> = {}): void {
 }
 
 /** Today's NEA PM2.5 items, or null when the request or its JSON fails. */
-async function fetchItems(): Promise<NeaItem[] | null> {
-  // At most 4 calls an hour, usually 1 (see the schedule): well inside data.gov.sg's anonymous limit, so no API key.
+async function fetchItems(env: Env): Promise<NeaItem[] | null> {
+  // At most 4 calls an hour, usually 1 (see the schedule). The key (same as the site's) keeps them off the anonymous limit, which Workers share by IP.
   try {
-    const res = await fetch(`${NEA_PM25}?date=${sgtDate(new Date())}`, { headers: { "User-Agent": USER_AGENT }, signal: AbortSignal.timeout(10_000) });
+    const headers = { "User-Agent": USER_AGENT, "x-api-key": env.DATA_GOV_SG_API_KEY };
+    const res = await fetch(`${NEA_PM25}?date=${sgtDate(new Date())}`, { headers, signal: AbortSignal.timeout(10_000) });
     if (!res.ok) {
       log("nea-error", { status: res.status });
       return null;
@@ -62,7 +63,7 @@ async function startJob(env: Env, job: JobName): Promise<void> {
 async function run(env: Env): Promise<void> {
   const seen = await env.STATE.get("nea");
   if (hasCurrentHour(seen, new Date())) return log("have-hour");
-  const items = await fetchItems();
+  const items = await fetchItems(env);
   if (!items) return;
   const sig = signature(items);
   if (!sig) return log("no-data");

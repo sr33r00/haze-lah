@@ -1,10 +1,10 @@
 export { cap } from "@/lib/format";
 
-/** A page section: plain heading on the page background, no card chrome. */
-export function Section(props: { title: string; aside?: React.ReactNode; children: React.ReactNode; className?: string; id?: string }) {
+/** A page section: plain heading on the page background, no card chrome. `headClass` styles the heading row (for example `lg:sr-only` where another label already names the section). */
+export function Section(props: { title: string; aside?: React.ReactNode; children: React.ReactNode; className?: string; headClass?: string; id?: string }) {
   return (
     <section id={props.id} className={`mt-10 scroll-mt-20 ${props.className ?? ""}`}>
-      <div className="mb-3 flex items-baseline justify-between gap-3 px-4">
+      <div className={`mb-3 flex items-baseline justify-between gap-3 px-4 ${props.headClass ?? ""}`}>
         <h2 className="text-balance text-[22px] font-bold tracking-tight">{props.title}</h2>
         {props.aside && <div className="text-label text-muted">{props.aside}</div>}
       </div>

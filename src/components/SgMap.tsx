@@ -11,7 +11,9 @@ import { US_AQI_NOTE, WAQI_NAME, WAQI_URL } from "@/lib/links";
 import type { AqiStation, Camera, NeaNow, NeaPm25History, Sensor, Station } from "@/lib/types";
 import { MAX_SENSOR_AGE_MS, haversineKm } from "@/lib/util";
 import RampBar from "./RampBar";
+import SgOutline from "./SgOutline";
 import { Segmented } from "./ui";
+import { useMapResize } from "./useMapResize";
 import { locateMe, useMyPosition } from "./useMyPosition";
 import { useStored } from "./usePrefs";
 
@@ -116,6 +118,14 @@ function SpotControl({ spot, onSpot }: { spot: Spot | null; onSpot: (s: Spot) =>
   return null;
 }
 
+/** Fills the map's container as it changes size; a map made while hidden (the other view of the Now page's map panel) is fitted to Singapore when first shown. */
+function Resize() {
+  useMapResize((map, blind) => {
+    if (blind) map.fitBounds(BOUNDS, { animate: false });
+  });
+  return null;
+}
+
 /** Singapore at a glance: NEA regional PM2.5, community sensors and nearby Malaysian stations; in the US AQI view the same on that scale, with AQICN's stations. Tap anywhere for that spot's readings. */
 export default function SgMap(props: {
   history: NeaPm25History | null;
@@ -158,10 +168,11 @@ export default function SgMap(props: {
   };
   const tone = (n: number) => (aqi ? usAqiColor(n) : pm25Color(n));
 
+  // From lg up the map is a fixed, tall share of the screen (the page's header, the map tabs and this tray stay above its bottom edge) and the legend below it scrolls inside the panel.
   return (
-    <div className="px-4">
+    <div className="px-4 lg:flex lg:min-h-0 lg:flex-1 lg:flex-col lg:overflow-y-auto">
       <Segmented label="Map shows" options={UNIT_OPTIONS} on={(id) => id === unit} onSelect={setUnit} className="mb-3" />
-      <div className="relative isolate h-[300px] overflow-hidden rounded-3xl">
+      <div className="relative isolate h-[300px] overflow-hidden rounded-3xl lg:h-[calc(100dvh-12rem)] lg:min-h-[420px] lg:flex-none">
         <button
           onClick={locate}
           className="absolute right-3 top-3 z-[500] flex min-h-[40px] items-center gap-1.5 rounded-full bg-surface px-3 text-label font-semibold shadow"
@@ -169,7 +180,9 @@ export default function SgMap(props: {
           <LocateFixed size={16} aria-hidden />
           My location
         </button>
-        <MapContainer bounds={BOUNDS} minZoom={10} maxZoom={14} scrollWheelZoom={false} dragging={!touch} className="h-full w-full">
+        <MapContainer bounds={BOUNDS} minZoom={10} maxZoom={14} scrollWheelZoom={false} dragging={!touch} className="h-full w-full lg:absolute lg:inset-0">
+          <Resize />
+          <SgOutline />
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"

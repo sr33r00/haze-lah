@@ -76,7 +76,29 @@ export type WeatherHour = {
   rainProb: number | null;
   rain: number | null; // mm
   gust: number | null; // km/h, strongest gust at 10 m in that hour
+  uv: number | null; // UV index (WHO scale) forecast for that hour
+  feelsLike: number | null; // apparent temperature, °C
 };
+
+// NEA real-time weather feeds (data.gov.sg), trimmed to the fields the Outdoor conditions card uses.
+/** One town of NEA's 2-hour forecast. */
+export type RainArea = { name: string; lat: number; lon: number; forecast: string };
+/** NEA's 2-hour weather forecast: the period it covers and a forecast per town. */
+export type RainFeed = { start: string; end: string; areas: RainArea[] };
+/** One NEA WBGT station: `town` is the place it stands in, `stress` NEA's heat stress band. */
+export type HeatStation = { id: string; town: string; lat: number; lon: number; wbgt: number; stress: string };
+/** NEA's measured WBGT (°C) and heat stress band at its stations, at `time`. */
+export type HeatFeed = { time: string; stations: HeatStation[] };
+/** One hour of NEA's UV index. */
+export type UvReading = { hour: string; value: number };
+/** NEA's UV index readings, newest first (empty before the first reading of a day). */
+export type UvFeed = { readings: UvReading[] };
+/** One lightning strike NEA detected: `t` in ms. */
+export type Strike = { t: number; lat: number; lon: number };
+/** NEA's lightning observations: `time` is the newest record's time (a record is two minutes), `strikes` the strikes in them. */
+export type LightningFeed = { time: string; strikes: Strike[] };
+/** What `/api/outdoor` serves: each feed is null when its source failed. */
+export type OutdoorFeeds = { rain: RainFeed | null; heat: HeatFeed | null; uv: UvFeed | null; lightning: LightningFeed | null };
 
 /** The last live forecast, written hourly to `forecast-latest.json` in the data bucket and read back when CAMS is down. */
 export type SavedForecast = { issued: string; hourly: ForecastPoint[]; biasFactor: number | null; sigma: number | null };

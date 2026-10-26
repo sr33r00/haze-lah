@@ -215,6 +215,7 @@ export function windParticles(view: WindView, ink?: string): WindParticles {
   const share = () => {
     const [s, w, nn, e] = area();
     const { w: sw, h: sh } = view.size();
+    if (!sw || !sh) return 1; // a hidden map has no size yet
     const pts = [view.project(s, w), view.project(s, e), view.project(nn, w), view.project(nn, e)];
     if (pts.some((pt) => !pt)) return 1;
     const xs = pts.map((pt) => pt!.x);

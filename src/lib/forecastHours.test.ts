@@ -12,7 +12,7 @@ const observed = (n: number): HourPoint[] => Array.from({ length: n }, (_, i) =>
 const forecast = (n: number, pm25 = (h: number) => 40 + h): ForecastPoint[] =>
   Array.from({ length: n }, (_, i) => ({ time: iso(i + 1), pm25: pm25(i + 1), low: 20, high: 90, raw: 25, pHigh: 0.3 }));
 const weather = (from: number, to: number): WeatherHour[] =>
-  Array.from({ length: to - from + 1 }, (_, i) => ({ time: iso(from + i), windDir: 200, windSpeed: 10, rainProb: 20, rain: 0, gust: 15 }));
+  Array.from({ length: to - from + 1 }, (_, i) => ({ time: iso(from + i), windDir: 200, windSpeed: 10, rainProb: 20, rain: 0, gust: 15, uv: 0, feelsLike: 28 }));
 const step = (h: number): OutlookStep => ({ t: iso(h), from: "SW", deg: 225, kmh: 12, near: 3, area: "Riau" });
 const outlook = Array.from({ length: 16 }, (_, i) => step(1 + i * 3));
 

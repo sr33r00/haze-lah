@@ -2,6 +2,7 @@ import type { HourPoint, SmokeGrid, Station, WeatherHour } from "../types";
 import { SG, getJson, haversineKm, sgtTime } from "../util";
 import type { WindFrame } from "../wind";
 import { POLLUTANTS, type PollutantId } from "../pollutants";
+import { GRID } from "../modelGrid";
 
 // Open-Meteo: ECMWF weather and Copernicus CAMS air-quality forecasts (CC BY 4.0).
 
@@ -17,6 +18,8 @@ type WX = {
     precipitation_probability: (number | null)[];
     precipitation: (number | null)[];
     wind_gusts_10m: (number | null)[];
+    uv_index: (number | null)[];
+    apparent_temperature: (number | null)[];
   };
 };
 
@@ -35,7 +38,7 @@ export async function fetchCamsSingapore(): Promise<HourPoint[]> {
 
 export async function fetchWeather(): Promise<WeatherHour[]> {
   const j = await getJson<WX>(
-    `https://api.open-meteo.com/v1/forecast?latitude=${SG.lat}&longitude=${SG.lon}&hourly=wind_direction_850hPa,wind_speed_850hPa,precipitation_probability,precipitation,wind_gusts_10m&timezone=GMT&past_days=1&forecast_days=5`,
+    `https://api.open-meteo.com/v1/forecast?latitude=${SG.lat}&longitude=${SG.lon}&hourly=wind_direction_850hPa,wind_speed_850hPa,precipitation_probability,precipitation,wind_gusts_10m,uv_index,apparent_temperature&timezone=GMT&past_days=1&forecast_days=5`,
     { revalidate: 1800 },
   );
   const h = j.hourly;
@@ -46,6 +49,8 @@ export async function fetchWeather(): Promise<WeatherHour[]> {
     rainProb: h.precipitation_probability[i],
     rain: h.precipitation[i],
     gust: h.wind_gusts_10m[i] ?? null,
+    uv: h.uv_index?.[i] ?? null,
+    feelsLike: h.apparent_temperature?.[i] ?? null,
   }));
 }
 
@@ -89,8 +94,6 @@ export async function fetchUpwindModel(): Promise<Station[]> {
     };
   });
 }
-
-const GRID = { lat: [-6, 7], lon: [95, 120], step: 1 };
 
 /** Runs `go`; after each failure waits the next of `waits` (ms) and tries again, so it is tried `waits.length + 1` times in all. */
 async function withRetry<T>(go: () => Promise<T>, waits: number[]): Promise<T> {

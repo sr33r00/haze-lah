@@ -4,9 +4,10 @@ import { ChevronDown, TriangleAlert } from "lucide-react";
 import { PM25_BANDS, TONE_COLOR, type Group } from "@/lib/bands";
 import { BREATH_SOURCES, fmtDust } from "@/lib/breath";
 import { CIGARETTE_SOURCES } from "@/lib/cigarettes";
-import { ACTIVITIES, ACTIVITY, DURATIONS, PLAN_NOTES, bestSlots, isOk, planStrip, ratingLegend, type Activity, type Slot } from "@/lib/exercise";
+import { ACTIVITIES, ACTIVITY, DURATIONS, PLAN_NOTES, RAIN_TEXT, bestSlots, isOk, planStrip, ratingLegend, slotReason, type Activity, type Slot } from "@/lib/exercise";
 import { cap, fmtHour, fmtHourRange, fmtTimeRange } from "@/lib/format";
-import type { ForecastPoint } from "@/lib/types";
+import { UV_SOURCES } from "@/lib/outdoor";
+import type { ForecastPoint, WeatherHour } from "@/lib/types";
 import { sgHour } from "@/lib/util";
 import InfoNote from "./InfoNote";
 import { useStored } from "./usePrefs";
@@ -45,7 +46,7 @@ function Answer({ slot }: { slot: Slot }) {
   return (
     <>
       <p className="text-label font-semibold uppercase tracking-wide text-muted">
-        {cap(slot.day)} · {isOk(slot.rating) ? "Best time" : "Least hazy time"}
+        {cap(slot.day)} · {isOk(slot.rating) ? "Best time" : "Mildest time"}
       </p>
       <div className="mt-1 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <p className="tabular text-[28px] font-bold leading-tight">{fmtSlot(slot)}</p>
@@ -54,20 +55,26 @@ function Answer({ slot }: { slot: Slot }) {
           {slot.rating.text}
         </p>
       </div>
+      <p className="mt-1 text-label text-muted">{slotReason(slot)}</p>
     </>
   );
 }
 
-/** The four numbers behind the answer. */
+/** A forecast figure as text, or "Unavailable" when the weather forecast has none. */
+const unless = (n: number | null, text: (n: number) => string) => (n == null ? "Unavailable" : text(n));
+
+/** The numbers behind the answer. */
 function Stats({ slot }: { slot: Slot }) {
   const stats = [
     ["PM2.5", `about ${Math.round(slot.pm25)}`],
     ["Dust breathed", fmtDust(slot.dustUg)],
     ["Like smoking", cigText(slot.cigarettes)],
     ["Vs a normal day", `${slot.timesNormal.toFixed(1)}×`],
+    ["Rain chance", unless(slot.rainProb, (n) => `${Math.round(n)}%`)],
+    ["Feels like", unless(slot.feelsLike, (n) => `${Math.round(n)}°`)],
   ];
   return (
-    <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-4">
+    <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3">
       {stats.map(([name, value]) => (
         <div key={name}>
           <dt className="text-label text-muted">{name}</dt>
@@ -85,17 +92,17 @@ const MIN_TOP = 60;
  * Pick what you want to do and for how long, in one card: the next cleanest time (today, or tomorrow once today is over),
  * the coming hours as a strip with it outlined, the numbers behind it and a forecast caveat. `now` (see `useNow`) is the time to plan from.
  */
-export default function PlanDay({ hourly, group, now }: { hourly: ForecastPoint[]; group: Group; now: number }) {
+export default function PlanDay({ hourly, weather, group, now }: { hourly: ForecastPoint[]; weather: WeatherHour[]; group: Group; now: number }) {
   const [activity, choose] = useStored<Activity>("activity", ACTIVITIES, "out");
   const usual = ACTIVITY[activity].hours;
   const [chosen, chooseLength] = useStored(`duration-${activity}`, DURATION_KEYS, String(usual));
   const len = Number(chosen);
 
   if (!hourly.length) return <p className="px-4 text-label text-muted">Forecast unavailable.</p>;
-  const hours = planStrip(hourly, activity, group, now);
+  const hours = planStrip(hourly, activity, group, now, weather);
   // Only the next window, and only inside the strip's hours: further ahead the forecast is less sure.
   const until = hours.length ? Date.parse(hours[0].time) + hours.length * 3600_000 : 0;
-  const slot = bestSlots(hourly.filter((p) => Date.parse(p.time) < until), activity, group, now, len)[0];
+  const slot = bestSlots(hourly.filter((p) => Date.parse(p.time) < until), activity, group, now, len, weather)[0];
   const n = hours.length;
   const pct = (i: number) => `${(i / n) * 100}%`;
   // Bar height is PM2.5, on a scale that fits the tallest bar (never below MIN_TOP); NEA band I's top is marked when in range.
@@ -137,7 +144,7 @@ export default function PlanDay({ hourly, group, now }: { hourly: ForecastPoint[
           </div>
           <div className="relative">
             <ol
-              aria-label={`Next ${n} hours to ${ACTIVITY[activity].phrase}${activity === "play" ? "" : `, for ${group === "healthy" ? "healthy adults" : "your group"}`}: ${hours.map((h) => `${fmtHour(h.time)} ${h.rating.text}`).join(", ")}`}
+              aria-label={`Next ${n} hours to ${ACTIVITY[activity].phrase}${activity === "play" ? "" : `, for ${group === "healthy" ? "healthy adults" : "your group"}`}: ${hours.map((h) => `${fmtHour(h.time)} ${h.rating.text}${h.rainy && h.rating.text !== RAIN_TEXT ? ", rain likely" : ""}`).join(", ")}`}
               className="flex h-16 items-end gap-px"
             >
               {hours.map((h, i) => (
@@ -145,11 +152,17 @@ export default function PlanDay({ hourly, group, now }: { hourly: ForecastPoint[
                   <div
                     className="w-full origin-bottom animate-grow rounded-t-sm"
                     style={{ height: `${Math.max(12, (h.pm25 / top) * 100)}%`, background: TONE_COLOR[h.rating.tone].bg, animationDelay: `${i * 20}ms` }}
-                    title={`${fmtHour(h.time)}: PM2.5 ${Math.round(h.pm25)}`}
+                    title={`${fmtHour(h.time)}: PM2.5 ${Math.round(h.pm25)}${h.rainProb != null ? `, rain ${Math.round(h.rainProb)}%` : ""}`}
                   />
                 </li>
               ))}
             </ol>
+            {/* Hours with rain likely, one thin mark under each bar. It hangs below the strip, so it adds no height. */}
+            <div aria-hidden className="pointer-events-none absolute inset-x-0 top-full mt-0.5 flex h-1 gap-px">
+              {hours.map((h) => (
+                <span key={h.time} className={`min-w-0 flex-1 rounded-full ${h.rainy ? "bg-accent" : ""}`} />
+              ))}
+            </div>
             {bandI < top && (
               <div aria-hidden className="pointer-events-none absolute inset-x-0 border-t border-dashed border-muted/60" style={{ bottom: `${(bandI / top) * 100}%` }}>
                 <span className="absolute left-full top-0 -translate-y-1/2 pl-1 text-fine leading-none text-muted">{bandI}</span>
@@ -158,13 +171,13 @@ export default function PlanDay({ hourly, group, now }: { hourly: ForecastPoint[
             {outline && (
               <div
                 aria-hidden
-                className="pointer-events-none absolute -bottom-1 -top-1 rounded-md border-2 border-fg transition-[left,width] duration-300 motion-reduce:transition-none"
+                className="pointer-events-none absolute -bottom-2 -top-1 rounded-md border-2 border-fg transition-[left,width] duration-300 motion-reduce:transition-none"
                 style={outline}
               />
             )}
             {midnight > 0 && <div aria-hidden className="pointer-events-none absolute -top-4 bottom-0 w-px bg-muted" style={{ left: pct(midnight) }} />}
           </div>
-          <div aria-hidden className="relative mt-1 h-4 text-fine text-muted">
+          <div aria-hidden className="relative mt-3 h-4 text-fine text-muted">
             {hours.map((h, i) =>
               sgHour(h.time) % 6 === 0 && i > 0 && i < n - 1 ? (
                 <span key={h.time} className="absolute -translate-x-1/2 whitespace-nowrap" style={{ left: pct(i + 0.5) }}>
@@ -185,6 +198,7 @@ export default function PlanDay({ hourly, group, now }: { hourly: ForecastPoint[
               {r.tones.map((t) => (
                 <span key={t} aria-hidden className="size-2.5 rounded-sm" style={{ background: TONE_COLOR[t].bg }} />
               ))}
+              {r.text === RAIN_TEXT && <span aria-hidden className="h-1 w-3 rounded-full bg-accent" />}
               {r.text}
             </li>
           ))}
@@ -201,7 +215,7 @@ export default function PlanDay({ hourly, group, now }: { hourly: ForecastPoint[
             <p key={t}>{t}</p>
           ))}
           <p className="flex flex-wrap gap-x-3 gap-y-1">
-            {[...CIGARETTE_SOURCES, ...BREATH_SOURCES].map(([name, url]) => (
+            {[...CIGARETTE_SOURCES, ...BREATH_SOURCES, ...UV_SOURCES].map(([name, url]) => (
               <a key={url} href={url} target="_blank" rel="noreferrer" className="underline">
                 {name}
               </a>

@@ -3,13 +3,13 @@ import type { DayPsi, HourPoint, NeaNow, NeaPm25History, RegionValues } from "..
 import { getJson, num, sgDate } from "../util";
 
 // NEA data via data.gov.sg (Singapore Open Data Licence).
-const BASE = "https://api-open.data.gov.sg/v2/real-time/api";
+export const BASE = "https://api-open.data.gov.sg/v2/real-time/api";
 
 export type NeaItem = { timestamp: string; readings: Record<string, Record<string, number>> };
 type Item = NeaItem;
 type Resp = { code: number; data: { items: Item[] } };
 
-function headers(): HeadersInit {
+export function headers(): HeadersInit {
   const key = process.env.DATA_GOV_SG_API_KEY;
   return key ? { "x-api-key": key } : {};
 }

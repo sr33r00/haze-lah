@@ -1,6 +1,6 @@
 import { Activity, BookOpen, Camera, CloudSun, Flame, History, Newspaper } from "lucide-react";
 import Link from "next/link";
-import { OPEN_DATA_LICENCE, WAQI_NAME, WAQI_URL } from "@/lib/links";
+import { OPEN_DATA_LICENCE, SG_OUTLINE_NAME, SG_OUTLINE_URL, WAQI_NAME, WAQI_URL } from "@/lib/links";
 import { pageMeta } from "@/lib/seo";
 import { GROUP_LABEL, LEVEL_COLOR, LEVEL_NAME, NEA_ADVICE, type Group } from "@/lib/bands";
 import AccuracyTable from "@/components/AccuracyTable";
@@ -44,7 +44,7 @@ const SOURCE_GROUPS = [
     title: "Live air readings",
     icon: Activity,
     items: [
-      ["NEA via data.gov.sg", "Live 1-hour PM2.5 and 24-hour PSI for the five regions, updated hourly", "https://data.gov.sg"],
+      ["NEA via data.gov.sg", "Live 1-hour PM2.5 and 24-hour PSI for the five regions, updated hourly, and the rain forecast, heat stress, UV and lightning on the Now page", "https://data.gov.sg"],
       ["Malaysia DOE APIMS", "Live Air Pollutant Index for Malaysian stations", "https://eqms.doe.gov.my/APIMS/main"],
       ["OpenAQ", "Low-cost community air sensors on the map, mainly AirGradient", "https://openaq.org"],
       [WAQI_NAME, "Air quality stations in Singapore on the map's US AQI view, from the agencies behind it. Not fully verified.", WAQI_URL],
@@ -97,6 +97,7 @@ const SOURCE_GROUPS = [
     title: "For reference",
     icon: BookOpen,
     items: [
+      [`${SG_OUTLINE_NAME} via data.gov.sg`, "Singapore's outline (the Region Boundary, No Sea) drawn on the maps", SG_OUTLINE_URL],
       ["ASEAN Specialised Meteorological Centre", "Regional haze outlook and hotspot maps", "https://asmc.asean.org"],
       ["MyCMAQ (MetMalaysia)", "Malaysian air-quality forecast maps", "https://mycmaq.met.gov.my"],
     ],
@@ -160,7 +161,7 @@ export default async function About() {
                 ))}
               </div>
               <p className="text-label text-muted">
-                Contains information from NEA and LTA made available under the{" "}
+                Contains information from NEA, LTA and URA made available under the{" "}
                 <a href={OPEN_DATA_LICENCE} target="_blank" rel="noreferrer" className="underline">
                   Singapore Open Data Licence
                 </a>

@@ -9,7 +9,7 @@ A Cloudflare Worker (free plan) that keeps the Haze Lah site current and starts 
 - The jobs run in the site Worker (`src/lib/jobs/`) and keep their data in its R2 bucket; this Worker only starts them. Each call sends the same bearer as the refresh and the site answers with each step's result, which is logged.
 - Binding: KV namespace `STATE` (key `nea`).
 - Variable: `SITE_URL` (in `cloudflare.config.ts`).
-- Secrets: `REFRESH_SECRET` (required; the same value as on the site Worker).
+- Secrets: `REFRESH_SECRET` (required; the same value as on the site Worker) and `DATA_GOV_SG_API_KEY` (the site's data.gov.sg key).
 - No public URL (`workersDev: false`). Logs are one JSON line per event (`unchanged`, `refreshed`, `refresh-failed`, `nea-error`, `warm`, `job`, `job-error`).
 - The pure logic is in `src/nea.ts` and `src/schedule.ts`; their tests run with the root `npm test`.
 
@@ -21,6 +21,7 @@ npx cf auth login
 npx cf kv namespaces create --help   # only if `cf deploy` does not create STATE for you
 npx cf deploy
 npx wrangler secret put REFRESH_SECRET --name haze-lah-nea-refresh
+npx wrangler secret put DATA_GOV_SG_API_KEY --name haze-lah-nea-refresh
 ```
 
 Set the same `REFRESH_SECRET` on the site Worker. Watch the logs with `npx wrangler tail haze-lah-nea-refresh`.

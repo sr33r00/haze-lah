@@ -2,8 +2,9 @@ import { BREATH_M3_PER_DAY, NORMAL_PM25 } from "./breath";
 import { cigarettes, PM25_PER_CIGARETTE } from "./cigarettes";
 import { PM25_BANDS, pm25Band, pm25Step, verdictFor, type Group } from "./bands";
 import { fromHour } from "./forecast";
-import type { ForecastPoint } from "./types";
-import { sgDate, sgHour } from "./util";
+import { UV_VERY_HIGH } from "./outdoor";
+import type { ForecastPoint, WeatherHour } from "./types";
+import { hourKey, sgDate, sgHour } from "./util";
 
 export type Activity = "out" | "run" | "cycle" | "play" | "football";
 
@@ -29,7 +30,39 @@ export type Rating = { tone: "go" | "easy" | "limit" | "stay"; text: string };
 /** Fine to do outdoors, if gently. */
 export const isOk = (r: Rating) => r.tone === "go" || r.tone === "easy";
 
-/** `pm25` is the weighted mean, `worst` the highest hour; `dustUg` is the fine dust breathed and `timesNormal` the mean against a normal day. */
+const TONES: Rating["tone"][] = ["go", "easy", "limit", "stay"];
+
+/** The harshest of the ratings; on a tie the earlier one, so the order passed is the order the words win in. */
+export function worstRating(first: Rating, ...rest: Rating[]): Rating {
+  return rest.reduce((w, r) => (TONES.indexOf(r.tone) > TONES.indexOf(w.tone) ? r : w), first);
+}
+
+/** The chance of rain (%) from which an hour counts as rainy. */
+export const RAIN_LIKELY = 50;
+export const RAIN_TEXT = "Rain likely";
+
+/**
+ * What the weather of an hour says about an activity, beyond the air: rain at a 50% chance or more is a "limit" for all of them;
+ * UV from 8 (WHO: Very high) is a "limit" for strenuous activities and kids' play, and for going out a nudge to find shade.
+ * Empty when the weather is fine or unknown.
+ */
+export function weatherRatings(w: Pick<WeatherHour, "rainProb" | "uv"> | undefined, activity: Activity): Rating[] {
+  const out: Rating[] = [];
+  if ((w?.rainProb ?? 0) >= RAIN_LIKELY) out.push({ tone: "limit", text: RAIN_TEXT });
+  if ((w?.uv ?? 0) >= UV_VERY_HIGH) out.push(ACTIVITY[activity].strenuous ? { tone: "limit", text: "Very high UV" } : { tone: "easy", text: "Very high UV, find shade" });
+  return out;
+}
+
+/** The weather of the hour that starts at `time`, from a list that may hold older hours or none at all. */
+const weatherIndex = (weather: WeatherHour[]) => {
+  const byHour = new Map(weather.map((w) => [hourKey(w.time), w]));
+  return (time: string) => byHour.get(hourKey(time));
+};
+
+/**
+ * `pm25` is the weighted mean, `worst` the highest hour; `dustUg` is the fine dust breathed and `timesNormal` the mean against a normal day.
+ * `rating` is the worst of the air, the rain and the UV in the session. `rainProb`, `uv` and `feelsLike` are the session's highest, null without a forecast.
+ */
 export type Slot = {
   day: "today" | "tomorrow";
   start: string;
@@ -40,13 +73,17 @@ export type Slot = {
   dustUg: number;
   cigarettes: number;
   timesNormal: number;
+  rainProb: number | null;
+  uv: number | null;
+  feelsLike: number | null;
   rating: Rating;
 };
 
 /** Shown under the plan: how the best time, the advice, the dust and the cigarettes are worked out. */
 export const PLAN_NOTES = [
-  "Best time is the session whose worst likely hour (the top of the forecast range) is lowest. If two tie, the lower average wins.",
+  "Best time is the session with the mildest rating for air, rain and UV. Among those, the one whose worst likely hour (the top of the forecast range) is lowest wins, then the lower average.",
   "The advice uses NEA's 1-hr PM2.5 guide on that worst hour.",
+  `Rain (Open-Meteo forecast) counts against an hour from a ${RAIN_LIKELY}% chance. UV from ${UV_VERY_HIGH} is Very high on the WHO scale: strenuous outings and kids' play avoid it, and going out suggests shade. The worst of air, rain and UV sets the colour. Feels like is for information.`,
   `Fine dust breathed is PM2.5 × air breathed × time. The air comes from US EPA tables by effort: hard exercise means more air, and mouth breathing skips the nose's filter.`,
   `Cigarettes: ${PM25_PER_CIGARETTE} µg/m³ for 24 hours carries about the same risk of early death as one cigarette (Berkeley Earth). The session's dust is shared over a day's ${BREATH_M3_PER_DAY} m³ of air. It compares risk, not smoke, and is a rough illustration. A normal day is ${NORMAL_PM25} µg/m³.`,
 ];
@@ -70,17 +107,24 @@ export function rate(pm: number, activity: Activity, group: Group): Rating {
 }
 
 /**
- * The steadiest session today (from now) and tomorrow: the start whose worst likely hour (highest `high`) is lowest,
- * then the lower weighted mean PM2.5, then the earlier start. `startIndex` counts from the current hour. A final part-hour counts by its fraction.
+ * The steadiest session today (from now) and tomorrow: the start with the mildest rating (the worst of air, rain and UV in it), then
+ * the lowest worst likely hour (highest `high`), then the lower weighted mean PM2.5, then the cooler feels-like, then the earlier start.
+ * `startIndex` counts from the current hour. A final part-hour counts by its fraction. Without `weather` only the air counts.
  */
-export function bestSlots(forecast: ForecastPoint[], activity: Activity, group: Group, now = Date.now(), hours = ACTIVITY[activity].hours): Slot[] {
+export function bestSlots(forecast: ForecastPoint[], activity: Activity, group: Group, now = Date.now(), hours = ACTIVITY[activity].hours, weather: WeatherHour[] = []): Slot[] {
   const a = ACTIVITY[activity];
+  const wx = weatherIndex(weather);
+  const maxOf = (xs: (number | null | undefined)[]) => {
+    const v = xs.filter((x): x is number => x != null);
+    return v.length ? Math.max(...v) : null;
+  };
   const hourly = fromHour(forecast, now);
   const weights = Array.from({ length: Math.ceil(hours) }, (_, k) => Math.min(1, hours - k));
   const days = [sgDate(0, new Date(now)), sgDate(1, new Date(now))];
   const out: Slot[] = [];
   days.forEach((date, d) => {
     let best: { slot: Slot; likely: number } | null = null;
+    const rank = (r: Rating) => TONES.indexOf(r.tone);
     for (let i = 0; i + weights.length <= hourly.length; i++) {
       const t = hourly[i].time;
       const h = sgHour(t);
@@ -89,8 +133,19 @@ export function bestSlots(forecast: ForecastPoint[], activity: Activity, group: 
       if (run.some((p, k) => Date.parse(p.time) !== Date.parse(t) + k * 3600_000)) continue;
       const pm = run.reduce((s, p, k) => s + p.pm25 * weights[k], 0) / hours;
       const likely = Math.max(...run.map((p) => p.high));
-      if (best && (likely > best.likely || (likely === best.likely && pm >= best.slot.pm25))) continue;
       const worst = Math.max(...run.map((p) => p.pm25));
+      const wxRun = run.map((p) => wx(p.time));
+      const rating = worstRating(rate(worst, activity, group), ...wxRun.flatMap((w) => weatherRatings(w, activity)));
+      const feelsLike = maxOf(wxRun.map((w) => w?.feelsLike));
+      if (best) {
+        const b = best.slot;
+        const worse =
+          rank(rating) - rank(b.rating) ||
+          likely - best.likely ||
+          pm - b.pm25 ||
+          (feelsLike != null && b.feelsLike != null ? feelsLike - b.feelsLike : 0);
+        if (worse >= 0) continue;
+      }
       const dustUg = pm * hours * a.m3PerHour;
       best = {
         likely,
@@ -104,7 +159,10 @@ export function bestSlots(forecast: ForecastPoint[], activity: Activity, group: 
           dustUg,
           cigarettes: cigarettes(dustUg / BREATH_M3_PER_DAY) ?? 0,
           timesNormal: pm / NORMAL_PM25,
-          rating: rate(worst, activity, group),
+          rainProb: maxOf(wxRun.map((w) => w?.rainProb)),
+          uv: maxOf(wxRun.map((w) => w?.uv)),
+          feelsLike,
+          rating,
         },
       };
     }
@@ -113,8 +171,8 @@ export function bestSlots(forecast: ForecastPoint[], activity: Activity, group: 
   return out;
 }
 
-/** One bar of the plan's hour strip: the forecast PM2.5 and how the chosen activity rates in it. */
-export type StripHour = { time: string; pm25: number; rating: Rating };
+/** One bar of the plan's hour strip: the forecast PM2.5, how the chosen activity rates in it (air, rain and UV together) and the rain chance. */
+export type StripHour = { time: string; pm25: number; rating: Rating; rainProb: number | null; rainy: boolean };
 
 /** How far ahead Plan your day looks, in hours: the forecast's error grows with lead time (`accuracy.json`). */
 export const PLAN_HOURS = 16;
@@ -122,10 +180,20 @@ export const PLAN_HOURS = 16;
 /**
  * The hours to plan in: from the current hour (`fromHour`) for `PLAN_HOURS`. Each hour carries the activity's own rating.
  */
-export function planStrip(hourly: ForecastPoint[], activity: Activity, group: Group, now = Date.now()): StripHour[] {
+export function planStrip(hourly: ForecastPoint[], activity: Activity, group: Group, now = Date.now(), weather: WeatherHour[] = []): StripHour[] {
+  const wx = weatherIndex(weather);
   return fromHour(hourly, now)
     .slice(0, PLAN_HOURS)
-    .map((p) => ({ time: p.time, pm25: p.pm25, rating: rate(p.pm25, activity, group) }));
+    .map((p) => {
+      const w = wx(p.time);
+      return {
+        time: p.time,
+        pm25: p.pm25,
+        rating: worstRating(rate(p.pm25, activity, group), ...weatherRatings(w, activity)),
+        rainProb: w?.rainProb ?? null,
+        rainy: (w?.rainProb ?? 0) >= RAIN_LIKELY,
+      };
+    });
 }
 
 /** The lowest PM2.5 of each NEA 1-hr band (I to IV), to read the ratings off. */
@@ -140,5 +208,14 @@ export function ratingLegend(activity: Activity, group: Group): { text: string; 
     if (!item) out.push({ text: r.text, tones: [r.tone] });
     else if (!item.tones.includes(r.tone)) item.tones.push(r.tone);
   }
+  // Then the weather's answers, once each (the worst case of both).
+  for (const r of weatherRatings({ rainProb: 100, uv: 11 }, activity)) out.push({ text: r.text, tones: [r.tone] });
   return out;
+}
+
+/** The weather and air behind a session's answer, as a short line: "Dry · UV 3 · Air normal". Parts without a forecast are left out. */
+export function slotReason(slot: Slot): string {
+  const rain = slot.rainProb == null ? null : slot.rainProb >= RAIN_LIKELY ? RAIN_TEXT : slot.rainProb >= 20 ? `Rain ${Math.round(slot.rainProb)}%` : "Dry";
+  const uv = slot.uv == null ? null : `UV ${Math.round(slot.uv)}`;
+  return [rain, uv, `Air ${pm25Band(slot.worst).name.toLowerCase()}`].filter(Boolean).join(" · ");
 }
