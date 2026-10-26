@@ -128,7 +128,7 @@ function Drop(props: { uid: string; x: number; y: number; fall: number; secs: nu
 }
 
 /** A four-point sparkle in a soft, edgeless glow that twinkles; at rest it is full size. */
-function Sparkle(props: { x: number; y: number; size: number; delay: number }) {
+export function Sparkle(props: { x: number; y: number; size: number; delay: number }) {
   return (
     <g transform={`translate(${props.x} ${props.y}) scale(${props.size})`}>
       <g className="animate-puff-twinkle" style={{ animationDelay: `${props.delay}s` }}>

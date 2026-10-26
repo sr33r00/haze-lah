@@ -18,6 +18,12 @@ export function haversineKm(lat1: number, lon1: number, lat2: number, lon2: numb
 /** Date string YYYY-MM-DD in Singapore time, offset by `days`. */
 /** Hour of the day in Singapore (0 to 23). */
 export const sgHour = (t: string | number | Date = new Date()) => (new Date(t).getUTCHours() + 8) % 24;
+/** True from 19:15 to before 07:00 in Singapore. */
+export const sgNight = (t: string | number | Date = new Date()) => {
+  const d = new Date(new Date(t).getTime() + 8 * 3600_000);
+  const m = d.getUTCHours() * 60 + d.getUTCMinutes();
+  return m >= 19 * 60 + 15 || m < 7 * 60;
+};
 
 export function sgDate(days = 0, from = new Date()) {
   const t = new Date(from.getTime() + 8 * 3600_000 + days * 86400_000);

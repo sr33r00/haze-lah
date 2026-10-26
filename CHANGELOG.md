@@ -6,6 +6,12 @@ The in-app "What's new" sheet shows the highlights of the current release. Data-
 
 ## [Unreleased]
 
+## [1.11.1] - 2026-10-26
+
+### Fixed
+
+- Puff's sky follows Singapore time: the sun shows only by day, and after dark good air brings a crescent moon and stars, which fade as the haze thickens. With no reading Puff just sleeps, so a moon never means missing data.
+
 ## [1.11.0] - 2026-10-26
 
 ### Changed
@@ -208,7 +214,8 @@ The in-app "What's new" sheet shows the highlights of the current release. Data-
 - Forecast smoke map, fire counts and a wind dial, "Plan your day", NEA news timeline and 7-day PSI history.
 - Feedback issue form.
 
-[Unreleased]: https://github.com/sr33r00/haze-lah/compare/v1.11.0...HEAD
+[Unreleased]: https://github.com/sr33r00/haze-lah/compare/v1.11.1...HEAD
+[1.11.1]: https://github.com/sr33r00/haze-lah/compare/v1.11.0...v1.11.1
 [1.11.0]: https://github.com/sr33r00/haze-lah/compare/v1.10.0...v1.11.0
 [1.10.0]: https://github.com/sr33r00/haze-lah/compare/v1.9.0...v1.10.0
 [1.9.0]: https://github.com/sr33r00/haze-lah/compare/v1.8.0...v1.9.0

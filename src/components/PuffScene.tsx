@@ -1,12 +1,27 @@
-import { useId, type CSSProperties } from "react";
+import { useId, useSyncExternalStore, type CSSProperties } from "react";
 import { heroPaint, type Step } from "@/lib/bands";
-import Puff, { PUFF_VIEW, puffMood, type PuffMood } from "./Puff";
+import { sgNight } from "@/lib/util";
+import Puff, { PUFF_VIEW, Sparkle, puffMood, type PuffMood } from "./Puff";
 import { fadeLayers, useLeaving } from "./puffFade";
 
 // The scene is drawn in Puff's own units (0..128 by 0..112) but reaches past them, so the haze can drift around the cloud.
 const VIEW = { x: -50, y: -44, w: 228, h: 190 };
 const SUN = { x: 94, y: 10 };
 const SMOKE = "#d8c7b8";
+const MOON = "#f6e2a0";
+const NIGHT_MS = 60_000;
+
+// Night stars [x, y, size], kept above and beside Puff and clear of the moon. The first three are the ones thin haze still lets through.
+const STARS = [
+  [22, -30, 0.6],
+  [150, -22, 0.7],
+  [-34, 38, 0.6],
+  [-30, -22, 0.7],
+  [60, -16, 0.5],
+  [162, 30, 0.55],
+  [-8, 4, 0.45],
+] as const;
+const FAINT_STARS = 3;
 
 type Drift = { x: number; y: number; dx: number; dy: number; secs: number; delay: number; o: number };
 type Wisp = Drift & { rx: number; ry: number };
@@ -77,15 +92,39 @@ function rays(n: number, inner: number, outer: number, short: number) {
 }
 const RAYS = rays(16, 12, 56, 42);
 
-/** What a mood draws behind Puff. Fills use the panel's own ink (currentColor) or a warm grey, so they read on every verdict colour. */
-function Haze({ mood, uid }: { mood: PuffMood; uid: string }) {
+/**
+ * Whether it is night in Singapore, re-checked each minute; null until hydrated. The page may be a cached one built at another
+ * hour, so the server and hydration leave the sky open and the client's clock fills it in.
+ */
+function useNight() {
+  return useSyncExternalStore<boolean | null>(
+    (notify) => {
+      const t = setInterval(notify, NIGHT_MS);
+      return () => clearInterval(t);
+    },
+    () => sgNight(),
+    () => null,
+  );
+}
+
+/**
+ * The key of a scene: its mood, plus "night" (or "wait" before the clock is known) for the moods whose sky differs after dark. The
+ * rest stay one scene, so they do not fade for nothing.
+ */
+const sceneKey = (mood: PuffMood, night: boolean | null) =>
+  mood === "happy" || mood === "uneasy" ? (night == null ? `${mood}-wait` : night ? `${mood}-night` : mood) : mood;
+
+/** What a scene draws behind Puff. Fills use the panel's own ink (currentColor) or a warm grey, so they read on every verdict colour. */
+function Haze({ scene, uid }: { scene: string; uid: string }) {
+  const [mood, sky] = scene.split("-") as [PuffMood, ("night" | "wait")?];
+  const night = sky === "night";
   const wisps = WISPS[mood] ?? [];
   const motes = MOTES[mood] ?? [];
   const fill = `url(#${uid}-${mood === "sad" ? "smoke" : "ink"})`;
   return (
     <>
       {mood === "sad" && <ellipse cx="64" cy="58" rx="112" ry="84" fill={`url(#${uid}-dim)`} />}
-      {mood === "happy" && (
+      {mood === "happy" && !sky && (
         <>
           <circle cx={SUN.x} cy={SUN.y} r="46" fill={`url(#${uid}-halo)`} />
           <g className="animate-puff-sun">
@@ -94,12 +133,19 @@ function Haze({ mood, uid }: { mood: PuffMood; uid: string }) {
           <circle cx={SUN.x} cy={SUN.y} r="15" fill={`url(#${uid}-sun)`} />
         </>
       )}
-      {mood === "sleepy" && (
-        <g transform="translate(16 8) scale(1.1)">
+      {mood === "happy" && night && (
+        <g transform={`translate(${SUN.x} ${SUN.y}) scale(1.3)`}>
           <circle r="28" fill={`url(#${uid}-moonglow)`} />
           <g className="animate-puff-float" style={{ animationDuration: "7s", "--puff-lift": "2px" } as CSSProperties}>
-            <circle r="12" fill="#f3c654" mask={`url(#${uid}-moon)`} />
+            <circle r="12" fill={MOON} mask={`url(#${uid}-moon)`} />
           </g>
+        </g>
+      )}
+      {night && (mood === "happy" || mood === "uneasy") && (
+        <g opacity={mood === "happy" ? 1 : 0.5}>
+          {STARS.slice(0, mood === "happy" ? STARS.length : FAINT_STARS).map(([x, y, size], i) => (
+            <Sparkle key={`${x}-${y}`} x={x} y={y} size={size} delay={-i * 0.7} />
+          ))}
         </g>
       )}
       {wisps.map((w) => (
@@ -115,14 +161,16 @@ function Haze({ mood, uid }: { mood: PuffMood; uid: string }) {
 }
 
 /**
- * The haze scene behind Puff: a sun for good air, then more wisps and specks as the air gets worse, a crescent moon when asleep.
- * It follows the mood Puff shows, cross-fades when that changes, and moves with transform and opacity only. Decorative: size it
+ * The haze scene behind Puff: for good air a sun by day and a crescent moon with stars at night (Singapore time), then more wisps and
+ * specks as the air gets worse, with the haze hiding the stars; nothing when there is no reading. It follows the mood Puff shows
+ * and the time of day, cross-fades when either changes, and moves with transform and opacity only. Decorative: size it
  * to Puff's box with `PuffStage`, and let the parent clip it.
  */
 export function PuffScene({ step }: { step: Step | null }) {
   const uid = useId().replace(/[^a-zA-Z0-9_-]/g, "");
   const { mood } = puffMood(step);
-  const gone = useLeaving(mood);
+  const scene = sceneKey(mood, useNight());
+  const gone = useLeaving(scene);
   const pct = (v: number, of: number) => `${(v / of) * 100}%`;
   const style: CSSProperties = { left: pct(VIEW.x, PUFF_VIEW.w), top: pct(VIEW.y, PUFF_VIEW.h), width: pct(VIEW.w, PUFF_VIEW.w), height: pct(VIEW.h, PUFF_VIEW.h) };
   return (
@@ -138,8 +186,8 @@ export function PuffScene({ step }: { step: Step | null }) {
           <circle cx="6.5" cy="-3.5" r="10" fill="#000" />
         </mask>
         <radialGradient id={`${uid}-moonglow`}>
-          <stop offset="0" stopColor="#f3c654" stopOpacity=".26" />
-          <stop offset="1" stopColor="#f3c654" stopOpacity="0" />
+          <stop offset="0" stopColor={MOON} stopOpacity=".3" />
+          <stop offset="1" stopColor={MOON} stopOpacity="0" />
         </radialGradient>
         <radialGradient id={`${uid}-smoke`}>
           <stop offset="0" stopColor={SMOKE} stopOpacity=".5" />
@@ -165,8 +213,8 @@ export function PuffScene({ step }: { step: Step | null }) {
           <stop offset="1" stopColor="#ffc94d" />
         </radialGradient>
       </defs>
-      {fadeLayers(mood, gone, (m) => (
-        <Haze mood={m} uid={uid} />
+      {fadeLayers(scene, gone, (k) => (
+        <Haze scene={k} uid={uid} />
       ))}
     </svg>
   );
