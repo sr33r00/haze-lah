@@ -263,3 +263,11 @@ export const TONE_COLOR: Record<Verdict["tone"], { bg: string; fg: string }> = {
   limit: { bg: "#c24e17", fg: "#ffffff" },
   stay: { bg: "#a91d1d", fg: "#ffffff" },
 };
+
+/** The Now panel's paint for an advice step: a solid verdict colour with a subtle same-hue shade, its ink and a softer ink; neutral with no reading. */
+export function heroPaint(step: Step | null) {
+  const tone = step != null ? TONE_COLOR[verdictFor(step).tone] : null;
+  const ink = tone ? tone.fg : "var(--fg)";
+  const bg = tone ? `linear-gradient(180deg, ${tone.bg}, color-mix(in srgb, ${tone.bg} 88%, black))` : "var(--surface)";
+  return { tone, ink, soft: `color-mix(in srgb, ${ink} 80%, transparent)`, bg };
+}

@@ -1,11 +1,10 @@
 import { useId, type CSSProperties } from "react";
 import type { Step } from "@/lib/bands";
-import Puff, { puffMood, type PuffMood } from "./Puff";
+import Puff, { PUFF_VIEW, puffMood, type PuffMood } from "./Puff";
 import { fadeLayers, useLeaving } from "./puffFade";
 
 // The scene is drawn in Puff's own units (0..128 by 0..112) but reaches past them, so the haze can drift around the cloud.
 const VIEW = { x: -50, y: -44, w: 228, h: 190 };
-const PUFF = { w: 128, h: 112 };
 const SUN = { x: 94, y: 10 };
 const SMOKE = "#d8c7b8";
 
@@ -125,7 +124,7 @@ export function PuffScene({ step }: { step: Step | null }) {
   const { mood } = puffMood(step);
   const gone = useLeaving(mood);
   const pct = (v: number, of: number) => `${(v / of) * 100}%`;
-  const style: CSSProperties = { left: pct(VIEW.x, PUFF.w), top: pct(VIEW.y, PUFF.h), width: pct(VIEW.w, PUFF.w), height: pct(VIEW.h, PUFF.h) };
+  const style: CSSProperties = { left: pct(VIEW.x, PUFF_VIEW.w), top: pct(VIEW.y, PUFF_VIEW.h), width: pct(VIEW.w, PUFF_VIEW.w), height: pct(VIEW.h, PUFF_VIEW.h) };
   return (
     <svg viewBox={`${VIEW.x} ${VIEW.y} ${VIEW.w} ${VIEW.h}`} aria-hidden="true" className="pointer-events-none absolute select-none" style={style}>
       <defs>
@@ -174,8 +173,9 @@ export function PuffScene({ step }: { step: Step | null }) {
 }
 
 /**
- * Puff on her haze scene, in a fixed box that sits to the right of the headline. `className` sets the width (default: 108 px on the
- * smallest phones, 120 px on phones, 220 px from `lg`). The scene reaches beyond the box, so put it where the parent clips overflow.
+ * Puff on her haze scene, in a fixed box that sits to the right of the headline. Puff is a button (tap to say hi). `className` sets
+ * the width (default: 108 px on the smallest phones, 120 px on phones, 220 px from `lg`). The scene reaches beyond the box and Puff
+ * jumps above it, so put it where the parent clips overflow.
  */
 export function PuffStage({ step, className = "w-[108px] min-[390px]:w-[120px] lg:w-[220px]" }: { step: Step | null; className?: string }) {
   return (

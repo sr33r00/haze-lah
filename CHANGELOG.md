@@ -6,6 +6,12 @@ The in-app "What's new" sheet shows the highlights of the current release. Data-
 
 ## [Unreleased]
 
+## [1.10.0] - 2026-10-26
+
+### Changed
+
+- Puff has a new look and comes alive: a solid, clay-like body with floating hands and feet, and its own routines for each kind of air. It hops and waves when the air is fine, fidgets and wipes its brow as it gets hazier, sighs and rubs its eyes at the worst, and nods off when there is no reading. Tap Puff for a reaction; three quick taps make it spin. With reduced motion it stays still.
+
 ## [1.9.0] - 2026-10-26
 
 ### Changed
@@ -195,7 +201,8 @@ The in-app "What's new" sheet shows the highlights of the current release. Data-
 - Forecast smoke map, fire counts and a wind dial, "Plan your day", NEA news timeline and 7-day PSI history.
 - Feedback issue form.
 
-[Unreleased]: https://github.com/sr33r00/haze-lah/compare/v1.9.0...HEAD
+[Unreleased]: https://github.com/sr33r00/haze-lah/compare/v1.10.0...HEAD
+[1.10.0]: https://github.com/sr33r00/haze-lah/compare/v1.9.0...v1.10.0
 [1.9.0]: https://github.com/sr33r00/haze-lah/compare/v1.8.0...v1.9.0
 [1.8.0]: https://github.com/sr33r00/haze-lah/compare/v1.7.0...v1.8.0
 [1.7.0]: https://github.com/sr33r00/haze-lah/compare/v1.6.2...v1.7.0

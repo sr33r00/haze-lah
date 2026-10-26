@@ -1,7 +1,7 @@
 import { Info, Maximize2 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
-import { GROUP_LABEL, LEVEL_COLOR, LEVEL_NAME, STEP_TEXT, TONE_COLOR, adviceStep, pm25Band, pm25Color, pm25ToUsAqi, psiLevel, verdictFor, type Group } from "@/lib/bands";
+import { GROUP_LABEL, LEVEL_COLOR, LEVEL_NAME, STEP_TEXT, adviceStep, heroPaint, pm25Band, pm25Color, pm25ToUsAqi, psiLevel, verdictFor, type Group } from "@/lib/bands";
 import { fmtHour } from "@/lib/format";
 import { GUIDE_AQICN_URL } from "@/lib/links";
 import type { ForecastPoint } from "@/lib/types";
@@ -32,11 +32,7 @@ export default function Hero(props: {
   const [open, setOpen] = useState<keyof typeof EXPLAIN | null>(null);
   const step = adviceStep(pm25, psi, group);
   const v = step != null ? verdictFor(step) : null;
-  // Solid verdict colour with a subtle same-hue shade; neutral when there is no reading.
-  const tone = v ? TONE_COLOR[v.tone] : null;
-  const ink = tone ? tone.fg : "var(--fg)";
-  const soft = `color-mix(in srgb, ${ink} 80%, transparent)`;
-  const bg = tone ? `linear-gradient(180deg, ${tone.bg}, color-mix(in srgb, ${tone.bg} 88%, black))` : "var(--surface)";
+  const { tone, ink, soft, bg } = heroPaint(step);
 
   return (
     <section
