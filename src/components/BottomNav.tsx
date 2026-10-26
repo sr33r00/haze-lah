@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
-/** Tab order. */
+/** Tab order. Every tab link sets `prefetch`: the whole page is fetched ahead, so a tap renders from the router cache with no skeleton (the default prefetch of a route with a loading.tsx fetches only the skeleton). */
 const ITEMS = [
   { href: "/", label: "Now", icon: CircleGauge },
   { href: "/forecast", label: "Forecast", icon: CalendarDays },
@@ -51,6 +51,7 @@ export function TopNav({ newest }: { newest: number | null }) {
             <li key={href}>
               <Link
                 href={href}
+                prefetch
                 aria-current={on ? "page" : undefined}
                 className={`relative flex h-14 items-center gap-1.5 px-3 text-label font-semibold hover:text-fg xl:px-4 ${on ? "text-fg" : "text-muted"}`}
               >
@@ -87,6 +88,7 @@ export default function BottomNav({ newest }: { newest: number | null }) {
             <li key={href}>
               <Link
                 href={href}
+                prefetch
                 aria-current={on ? "page" : undefined}
                 className={`flex min-h-[56px] flex-col items-center justify-center gap-0.5 text-fine font-semibold ${on ? "text-fg" : "text-muted"}`}
               >

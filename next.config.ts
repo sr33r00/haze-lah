@@ -22,6 +22,8 @@ const nextConfig: NextConfig = {
   // A cached page older than an hour is rebuilt before it is served, not served while it rebuilds (the default allows a year).
   // Each Cloudflare location keeps its own copy, so a quiet location would otherwise hand its first visitor a page hours old.
   expireTime: 3600,
+  // The router keeps prefetched and visited pages for 5 minutes (the default for visited pages is 0), so switching tabs back and forth reuses them without a fetch.
+  experimental: { staleTimes: { static: 300, dynamic: 300 } },
   // www.hazelah.app is a second custom domain of the Worker only so it can send visitors to the main address.
   async redirects() {
     return [{ source: "/:path*", has: [{ type: "host", value: "www.hazelah.app" }], destination: "https://hazelah.app/:path*", permanent: true }];
