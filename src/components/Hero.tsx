@@ -1,7 +1,7 @@
 import { ChevronRight, Info, Maximize2 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
-import { GROUP_LABEL, LEVEL_COLOR, LEVEL_NAME, adviceStep, heroPaint, pm25Band, pm25Color, pm25ToUsAqi, psiLevel, verdictFor, type Group, type Region } from "@/lib/bands";
+import { GROUP_LABEL, LEVEL_COLOR, LEVEL_NAME, adviceStep, airMark, heroPaint, pm25Band, pm25Color, pm25ToUsAqi, psiLevel, verdictFor, type Group, type Region } from "@/lib/bands";
 import { bestTimeLine, planSlot, planStrip } from "@/lib/exercise";
 import { fromHour } from "@/lib/forecast";
 import { fmtHour } from "@/lib/format";
@@ -170,7 +170,7 @@ export default function Hero(props: {
               <li key={p.time} className="text-center">
                 <div
                   className="h-2.5 origin-bottom animate-grow rounded-full"
-                  style={{ background: pm25Color(p.pm25), animationDelay: `${i * 60}ms` }}
+                  style={{ ...airMark(pm25Color(p.pm25)), animationDelay: `${i * 60}ms` }}
                 />
                 <div className="tabular mt-1 text-label font-bold">{p.pm25}</div>
                 <div className="text-label text-muted">{fmtHour(p.time)}</div>

@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useEffect, useMemo, useState, type KeyboardEvent } from "react";
-import { LEVEL_NAME, LEVEL_TEXT, psiLevel } from "@/lib/bands";
+import { LEVEL_NAME, LEVEL_TEXT, airMark, psiLevel } from "@/lib/bands";
 import { fmtDateShort, fmtDay, fmtDayHour, fmtHour, fmtLongWhen, fmtWeekday } from "@/lib/format";
 import type { HistoryDay } from "@/lib/historyTypes";
 import { loadDay } from "@/lib/historyClient";
@@ -254,7 +254,7 @@ export default function HazeOrigin({
                 <span className="font-semibold">Smoke PM2.5</span>
                 {names.map((n, i) => (
                   <span key={n} className="flex items-center gap-1.5">
-                    <span className="size-2.5 rounded-sm border border-fg/30" style={{ background: bandColor(i as 0 | 1 | 2 | 3) }} />
+                    <span className="size-2.5 rounded-sm border border-fg/30" style={airMark(bandColor(i as 0 | 1 | 2 | 3))} />
                     {n}
                   </span>
                 ))}

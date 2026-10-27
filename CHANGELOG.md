@@ -10,12 +10,12 @@ The in-app "What's new" sheet shows the highlights of the last three releases. D
 
 ### Changed
 
-- Every colour has one meaning. Green, amber, orange and red are for the air alone (readings and air advice). Blue is for rain alone, violet for UV alone, and fires are ember black in a white ring, so none of them can be mistaken for a level.
+- Every colour has one meaning. Green, amber, orange and red (the same four colours as the verdict card, so one level looks the same everywhere) are for the air alone (readings and air advice). Blue is for rain alone, violet for UV alone, and fires are ember black in a white ring, so none of them can be mistaken for a level.
 - The PSI uses the same scale as the PM2.5 advice: Good and Moderate are green, Unhealthy amber, Very unhealthy orange, Hazardous red. NEA's band name stays as text, and the blue that stood for Moderate is gone from the bars, the forecast strips, the map and the About table. The US AQI view on the map keeps the US EPA colours and now says so in its legend.
 - Links are the text colour with an underline that thickens on hover, and the main buttons (Alerts, Yes I'd use it, Got it, Send, Install) are solid ink, white-on-dark in the dark theme. Nothing about an action is coloured any more. The keyboard focus ring is ink, or the hero's own ink inside the coloured card.
 - Plan your day colours each bar by the air alone and marks rain (blue) and very high UV (violet) in thin lines under the bars; "Rain likely" and "Very high UV" no longer borrow an air colour. The weather tiles use the same blue and violet, and heat and lightning warnings are bold ink. Errors and the News dot are plain ink.
 - The smoke map's shading, reading dots and legend use the same four air colours. "You are here" is an ink dot, not blue.
-- Air-level marks are at least 3:1 and text at least 4.5:1 against the page and cards in both themes; the verdict card's softer labels are a touch stronger, and a few text greys and the hero's green and orange are a shade darker to pass (`src/lib/colours.test.ts` checks them).
+- Air-level marks are at least 3:1 and text at least 4.5:1 against the page and cards in both themes (bright amber on a light page and deep red on a dark one carry a thin edge); the verdict card's softer labels are a touch stronger, and a few text greys and the hero's green and orange are a shade darker to pass (`src/lib/colours.test.ts` checks them).
 
 ### Fixed
 

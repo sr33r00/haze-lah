@@ -220,7 +220,7 @@ export default function Instrument({ hours, windFailed }: { hours: InstrumentHou
                   </text>
                 ))}
                 <line x1={selX} x2={selX} y1={pmY} y2={bottom} stroke="var(--fg)" />
-                {selV != null && <circle cx={selX} cy={y(selV)} r={5.5} fill={pm25Color(selV)} stroke="var(--bg)" strokeWidth={2} />}
+                {selV != null && <circle cx={selX} cy={y(selV)} r={5.5} fill={pm25Color(selV)} stroke="var(--fg)" strokeWidth={1.5} />}
               </>
             )}
           </svg>

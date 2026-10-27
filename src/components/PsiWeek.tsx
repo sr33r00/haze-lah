@@ -1,4 +1,4 @@
-import { LEVEL_COLOR, LEVEL_NAME, psiLevel } from "@/lib/bands";
+import { LEVEL_COLOR, LEVEL_NAME, airMark, psiLevel } from "@/lib/bands";
 import { fmtDay } from "@/lib/format";
 import { sgDate } from "@/lib/util";
 import type { DayPsi } from "@/lib/types";
@@ -16,7 +16,7 @@ export default function PsiWeek({ days }: { days: DayPsi[] }) {
           <div className="flex h-24 items-end">
             <div
               className="w-full origin-bottom animate-grow rounded-t-md"
-              style={{ height: `${(d.max / top) * 100}%`, background: LEVEL_COLOR[psiLevel(d.max)], animationDelay: `${i * 60}ms` }}
+              style={{ height: `${(d.max / top) * 100}%`, ...airMark(LEVEL_COLOR[psiLevel(d.max)]), animationDelay: `${i * 60}ms` }}
             />
           </div>
           <div aria-hidden className="mt-1 text-label text-muted">

@@ -1,6 +1,6 @@
 import { ChevronRight, TrendingDown, TrendingUp, Minus } from "lucide-react";
 import Link from "next/link";
-import { LEVEL_COLOR, psiLevel } from "@/lib/bands";
+import { LEVEL_COLOR, airMark, psiLevel } from "@/lib/bands";
 import { fmtDay } from "@/lib/format";
 import { hazeTrend } from "@/lib/trend";
 import type { DayOutlook } from "@/lib/types";
@@ -25,7 +25,7 @@ export default function HazeOutlook({ days, psiNow }: { days: DayOutlook[]; psiN
       <span className="mt-3 grid gap-1.5" style={{ gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))` }}>
         {days.map((d, k) => (
           <span key={d.date} className="text-center">
-            <span className="block h-1.5 rounded-full" style={{ background: LEVEL_COLOR[psiLevel(d.psiMax)] }} />
+            <span className="block h-1.5 rounded-full" style={airMark(LEVEL_COLOR[psiLevel(d.psiMax)])} />
             <span className="mt-1 block text-label text-muted">{fmtDay(d.date, k)}</span>
             <span className="tabular block text-label font-semibold">{d.psiMax}</span>
           </span>

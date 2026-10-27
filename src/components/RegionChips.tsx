@@ -1,5 +1,5 @@
 import { LocateFixed } from "lucide-react";
-import { REGIONS, pm25Color, type Region } from "@/lib/bands";
+import { REGIONS, airMark, pm25Color, type Region } from "@/lib/bands";
 import type { NeaPm25History } from "@/lib/types";
 import { cap } from "./ui";
 
@@ -40,7 +40,7 @@ export default function RegionChips(props: {
               <span
                 aria-hidden
                 className="mx-auto mt-1 block h-1 w-6 rounded-full"
-                style={{ background: v != null ? pm25Color(v) : "transparent" }}
+                style={v != null ? airMark(pm25Color(v)) : { background: "transparent" }}
               />
             </button>
           );

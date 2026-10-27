@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 import { LogoMark } from "@/lib/appIcon";
-import { LEVEL_COLOR, LEVEL_NAME } from "@/lib/bands";
+import { LEVEL_NAME, LEVEL_TEXT_LIGHT } from "@/lib/bands";
 import { getHazeData } from "@/lib/data";
 import { islandSummary } from "@/lib/situation";
 
@@ -11,7 +11,7 @@ export const contentType = "image/png";
 
 export default async function Image() {
   const s = islandSummary(await getHazeData().catch(() => ({ nea: null, history: null })));
-  const color = s ? LEVEL_COLOR[s.level] : "#13232e";
+  const color = s ? LEVEL_TEXT_LIGHT[s.level] : "#13232e";
   const range = s ? (s.psi.min === s.psi.max ? `${s.psi.max}` : `${s.psi.min}-${s.psi.max}`) : "";
   return new ImageResponse(
     (

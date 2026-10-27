@@ -34,11 +34,22 @@ export function nearestRegion(lat: number, lon: number): Region {
 export const LEVEL_NAME = ["Good", "Moderate", "Unhealthy", "Very unhealthy", "Hazardous"] as const;
 
 /**
- * The air-level colours, one palette for the whole site and used for nothing else: green, amber, orange, red. They sit between 3:1 and 5:1
- * against the page and card in both themes, and white (green, orange, red) or dark ink (amber) is at least 4.5:1 on them.
- * The PSI uses NEA's levels but this scale: Good and Moderate are both green, because "Moderate" is not yet a warning (see the advice below).
+ * The air-level colours, one palette for the whole site and used for nothing else: green, amber, orange, red. They are the hero's own
+ * fills (`TONE_COLOR`), so one level is one visible colour everywhere; white (green, orange, red) or dark ink (amber) is at least 4.5:1 on them.
+ * Green and orange are 3:1 on the page and cards in both themes. Amber is not on light ones and red is not on dark ones, so those two
+ * marks carry a 1 px edge (`airMark`). The PSI uses NEA's levels but this scale: Good and Moderate are both green, because "Moderate"
+ * is not yet a warning (see the advice below).
  */
-export const AIR = { green: "#268455", amber: "#af8000", orange: "#bf5518", red: "#d43643" } as const;
+export const AIR = { green: "#2b7a52", amber: "#eba21c", orange: "#b94814", red: "#a91d1d" } as const;
+
+/** The edge colour tokens (globals.css, theme-aware, clear where the fill already has 3:1) of the two marks that need one. */
+const EDGE: Record<string, string> = { [AIR.amber]: "--edge-amber", [AIR.red]: "--edge-red" };
+
+/** The style of an air mark (a bar, dot or swatch) in `color`: the fill, and for amber and red an inset 1 px edge where the fill alone would be under 3:1 against the page. */
+export const airMark = (color: string): { background: string; boxShadow?: string } => (color in EDGE ? { background: color, boxShadow: `inset 0 0 0 1px var(${EDGE[color]})` } : { background: color });
+
+/** The levels' text colours for a server-drawn image on the light page (the same as `--lv0` to `--lv4` in light, which a test keeps in step). */
+export const LEVEL_TEXT_LIGHT = ["#2a7650", "#2a7650", "#856100", "#a84a16", "#9e2b35"] as const;
 export const LEVEL_COLOR = [AIR.green, AIR.green, AIR.amber, AIR.orange, AIR.red] as const;
 
 /** Relative luminance of a `#rrggbb` colour (WCAG). */
@@ -267,13 +278,13 @@ export const verdict = (level: Level, group: Group): Verdict => verdictFor(psiSt
 
 /** The hero's colours per verdict tone: a solid card with its ink, which passes WCAG AA (4.5:1) even softened to 90%. Marks drawn on a page or card (the plan's bars) use `TONE_MARK`. */
 export const TONE_COLOR: Record<Verdict["tone"], { bg: string; fg: string }> = {
-  go: { bg: "#2b7a52", fg: "#ffffff" },
-  easy: { bg: "#eba21c", fg: "#1d1a10" },
-  limit: { bg: "#b94814", fg: "#ffffff" },
-  stay: { bg: "#a91d1d", fg: "#ffffff" },
+  go: { bg: AIR.green, fg: "#ffffff" },
+  easy: { bg: AIR.amber, fg: "#1d1a10" },
+  limit: { bg: AIR.orange, fg: "#ffffff" },
+  stay: { bg: AIR.red, fg: "#ffffff" },
 };
 
-/** The same four verdict tones as marks on a page or card, from the air-level palette (3:1 on both). */
+/** The same four verdict tones as marks on a page or card (the same colours; see `airMark` for the edge). */
 export const TONE_MARK: Record<Verdict["tone"], string> = { go: AIR.green, easy: AIR.amber, limit: AIR.orange, stay: AIR.red };
 
 /** The Now panel's paint for an advice step: a solid verdict colour with a subtle same-hue shade, its ink and a softer ink; neutral with no reading. */

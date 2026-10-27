@@ -2,7 +2,7 @@
 
 import { Activity, ArrowUpRight, Bell, ChevronDown, Flame } from "lucide-react";
 import { useState } from "react";
-import { LEVEL_COLOR, LEVEL_NAME, LEVEL_TEXT, psiLevel } from "@/lib/bands";
+import { LEVEL_COLOR, LEVEL_NAME, LEVEL_TEXT, airMark, psiLevel } from "@/lib/bands";
 import { ALERTS_URL } from "@/lib/links";
 import { fmtDateShort, fmtTime, fmtWhen } from "@/lib/format";
 import { latestNeaUpdate, type Outlook } from "@/lib/neaOutlook";
@@ -99,7 +99,7 @@ function NeaLatest({ item, outlook }: { item: TimelineItem; outlook: Outlook | n
         <p className="mt-1.5 flex flex-wrap items-baseline gap-x-3 gap-y-1">
           {range && <span className="tabular text-[40px] font-extrabold leading-none">{range}</span>}
           <span className={`font-bold ${range ? "text-label" : "text-[24px] leading-tight"}`} style={{ color }}>
-            <span aria-hidden className="mr-2 inline-block size-2 rounded-full align-middle" style={{ background: LEVEL_COLOR[outlook.level] }} />
+            <span aria-hidden className="mr-2 inline-block size-2 rounded-full align-middle" style={airMark(LEVEL_COLOR[outlook.level])} />
             {outlook.band}
           </span>
         </p>

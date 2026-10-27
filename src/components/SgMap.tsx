@@ -270,7 +270,7 @@ export default function SgMap(props: {
           </span>
         </LegendRow>
         <div className="pb-0.5">
-          <RampBar {...(aqi ? AQI_SCALE : PM25_SCALE)} bar="border-line" text="text-muted" />
+          <RampBar {...(aqi ? AQI_SCALE : PM25_SCALE)} bar="border-fg/50" text="text-muted" />
         </div>
         {/* Both captions share one grid cell, so the legend is as tall in either view; the other one is only hidden. */}
         <div className="grid">

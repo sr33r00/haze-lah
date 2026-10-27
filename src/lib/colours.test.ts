@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
-import { AIR, LEVEL_COLOR, PM25_COLORS, TONE_COLOR, textOn } from "@/lib/bands";
+import { AIR, LEVEL_COLOR, LEVEL_TEXT_LIGHT, PM25_COLORS, TONE_COLOR, TONE_MARK, airMark, textOn } from "@/lib/bands";
 import { FIRE_COLOR } from "@/lib/replay";
 
 /** WCAG contrast of two `#rrggbb` colours. */
@@ -26,7 +26,7 @@ function over(fg: string, bg: string, alpha: number) {
 /** The site's colour tokens in globals.css, light and dark. */
 const css = readFileSync(join(process.cwd(), "src/app/globals.css"), "utf8");
 const block = (selector: string) => css.slice(css.indexOf(selector)).match(/\{([^}]*)\}/)![1];
-const tokens = (body: string) => Object.fromEntries([...body.matchAll(/--([\w-]+):\s*(#[0-9a-f]{6})/gi)].map((m) => [m[1], m[2]]));
+const tokens = (body: string) => Object.fromEntries([...body.matchAll(/--([\w-]+):\s*(#[0-9a-f]{6}|transparent)/gi)].map((m) => [m[1], m[2]]));
 const light = tokens(block(":root {"));
 const dark = { ...light, ...tokens(block(':root[data-theme="dark"]')) };
 const themes = { light, dark } as const;
@@ -59,11 +59,23 @@ test("a primary button (page colour on ink) and the focus ring (ink) have the co
   }
 });
 
-test("the air-level marks are 3:1 on the page and on a card in both themes, and their text is 4.5:1", () => {
+test("the air-level marks are one colour with the hero's fills, 3:1 on the page and on a card in both themes (the edge carries it for amber on light and red on dark), and their text is 4.5:1", () => {
+  assert.deepEqual(TONE_MARK, { go: TONE_COLOR.go.bg, easy: TONE_COLOR.easy.bg, limit: TONE_COLOR.limit.bg, stay: TONE_COLOR.stay.bg });
   for (const [name, t] of Object.entries(themes))
     for (const [level, c] of Object.entries(AIR))
-      for (const ground of ["bg", "surface"]) assert.ok(contrast(c, t[ground]) >= MARK, `${name}: ${level} on ${ground} ${contrast(c, t[ground]).toFixed(2)}`);
+      for (const ground of ["bg", "surface"]) {
+        const edge = /var\((--edge-[a-z]+)\)/.exec(airMark(c).boxShadow ?? "")?.[1].slice(2);
+        const edgeless = contrast(c, t[ground]) >= MARK;
+        // Where the fill is under 3:1 the mark has an edge colour that is, and where it is not the edge stays clear.
+        if (edgeless) assert.ok(!edge || t[edge] === "transparent", `${name}: ${level} on ${ground} needs no edge`);
+        else assert.ok(edge && t[edge] !== "transparent" && contrast(t[edge], t[ground]) >= MARK, `${name}: ${level} on ${ground} ${contrast(c, t[ground]).toFixed(2)} needs an edge of 3:1`);
+      }
   for (const c of Object.values(AIR)) assert.ok(contrast(c, textOn(c)) >= TEXT, `text on ${c} ${contrast(c, textOn(c)).toFixed(2)}`);
+});
+
+test("the server images' level text colours are the light --lv tokens, 4.5:1 on the page", () => {
+  assert.deepEqual(LEVEL_TEXT_LIGHT, [light.lv0, light.lv0, light.lv2, light.lv3, light.lv4]);
+  for (const c of LEVEL_TEXT_LIGHT) assert.ok(contrast(c, light.bg) >= TEXT, c);
 });
 
 test("blue is rain's and violet UV's: the air levels use neither, and Good and Moderate share one green", () => {

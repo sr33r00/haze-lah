@@ -9,6 +9,8 @@
   --line: #d3dce2;
   --rain: #2563c0; /* rain, and only rain: the Plan marks, the rain tile, the forecast's rain lane */
   --uv: #7c3aed; /* UV, and only UV (WHO's UV colours end in violet) */
+  --edge-amber: #856100; /* the 1 px edge of an amber air mark: the bright amber is under 3:1 on a light page; clear on dark */
+  --edge-red: transparent; /* and of a red one: the deep red is under 3:1 on a dark page; clear on light */
   --sg-border: #d4113c; /* Singapore's outline on the maps: red, kept clear of the fire orange */
   --on-sg-border: #ffffff; /* text on it: white is 5.3:1 on this red */
   --lv0: #2a7650;
@@ -36,6 +38,8 @@
   --line: #22313c;
   --rain: #7db1f5;
   --uv: #b39bfa;
+  --edge-amber: transparent;
+  --edge-red: #f07a84;
   --sg-border: #ff4d6a;
   --on-sg-border: #13232e; /* white would be 3.2:1 on this lighter red; the dark ink is 5.0:1 */
   --lv0: #6cc596;
@@ -54,6 +58,8 @@
     --line: #22313c;
     --rain: #7db1f5;
     --uv: #b39bfa;
+    --edge-amber: transparent;
+    --edge-red: #f07a84;
     --sg-border: #ff4d6a;
     --on-sg-border: #13232e;
     --lv0: #6cc596;

@@ -1,4 +1,4 @@
-import { LEVEL_COLOR, LEVEL_TEXT, psiLevel, type Region } from "@/lib/bands";
+import { LEVEL_COLOR, LEVEL_TEXT, airMark, psiLevel, type Region } from "@/lib/bands";
 import type { NeaNow } from "@/lib/types";
 import { Tag } from "./ui";
 
@@ -37,7 +37,7 @@ export default function AirDetail({ nea, region }: { nea: NeaNow; region: Region
                 {ok && (
                   <div
                     className="h-2 origin-left animate-grow-x rounded-full"
-                    style={{ width: `${Math.min(100, (v / max) * 100)}%`, background: LEVEL_COLOR[psiLevel(v)], animationDelay: `${i * 80}ms` }}
+                    style={{ width: `${Math.min(100, (v / max) * 100)}%`, ...airMark(LEVEL_COLOR[psiLevel(v)]), animationDelay: `${i * 80}ms` }}
                   />
                 )}
               </div>

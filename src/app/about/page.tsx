@@ -2,7 +2,7 @@ import { Activity, BookOpen, Camera, CloudSun, Flame, History, Newspaper } from 
 import Link from "next/link";
 import { OPEN_DATA_LICENCE, SG_OUTLINE_NAME, SG_OUTLINE_URL, WAQI_NAME, WAQI_URL } from "@/lib/links";
 import { pageMeta } from "@/lib/seo";
-import { GROUP_LABEL, LEVEL_COLOR, LEVEL_NAME, NEA_ADVICE, type Group } from "@/lib/bands";
+import { GROUP_LABEL, LEVEL_NAME, LEVEL_TEXT, NEA_ADVICE, type Group } from "@/lib/bands";
 import AccuracyTable from "@/components/AccuracyTable";
 import AppShell from "@/components/AppShell";
 import ReleaseList from "@/components/ReleaseList";
@@ -191,7 +191,7 @@ export default async function About() {
                     {LEVEL_NAME.map((name, i) => (
                       <tr key={name} className="border-b border-line align-top last:border-0">
                         <td className="p-2">
-                          <span className="font-semibold" style={{ color: LEVEL_COLOR[i] }}>
+                          <span className="font-semibold" style={{ color: LEVEL_TEXT[i] }}>
                             {name}
                           </span>
                           <br />

@@ -2,7 +2,7 @@
 
 import { ArrowUp, CloudRain } from "lucide-react";
 import { useState } from "react";
-import { LEVEL_COLOR, LEVEL_TEXT, pm25ToLevel, psiLevel, verdict, type Group } from "@/lib/bands";
+import { LEVEL_COLOR, LEVEL_TEXT, airMark, pm25ToLevel, psiLevel, verdict, type Group } from "@/lib/bands";
 import { fmtDay } from "@/lib/format";
 import { windFrom, windFromShort } from "@/lib/context";
 import { HIGH_PM25 } from "@/lib/forecast";
@@ -38,7 +38,7 @@ export default function Outlook({ days, group, outlook = null }: { days: DayOutl
                       key={k}
                       className="h-2.5 flex-1 rounded-full"
                       // Never safer than the day: the worse of the part's PM2.5 level and the day's PSI level.
-                      style={{ background: p != null ? LEVEL_COLOR[Math.max(pm25ToLevel(p), lv)] : "var(--line)" }}
+                      style={p != null ? airMark(LEVEL_COLOR[Math.max(pm25ToLevel(p), lv)]) : { background: "var(--line)" }}
                     />
                   ))}
                 </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronDown, TriangleAlert } from "lucide-react";
-import { PM25_BANDS, TONE_MARK, type Group } from "@/lib/bands";
+import { PM25_BANDS, TONE_MARK, airMark, type Group } from "@/lib/bands";
 import { BREATH_SOURCES, fmtDust } from "@/lib/breath";
 import { CIGARETTE_SOURCES } from "@/lib/cigarettes";
 import { ACTIVITIES, ACTIVITY, DURATIONS, PLAN_NOTES, RAIN_TEXT, fmtSlot, isOk, planSlot, planStrip, ratingLegend, slotReason, type Activity, type Rating, type Slot } from "@/lib/exercise";
@@ -51,7 +51,7 @@ function Answer({ slot }: { slot: Slot }) {
       <div className="mt-1 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <p className="tabular text-[28px] font-bold leading-tight">{fmtSlot(slot)}</p>
         <p className="flex items-center gap-2 text-label font-semibold">
-          <span aria-hidden className="size-2.5 shrink-0 rounded-full" style={{ background: slot.rating.cause ? causeColor(slot.rating.cause) : TONE_MARK[slot.rating.tone] }} />
+          <span aria-hidden className="size-2.5 shrink-0 rounded-full" style={slot.rating.cause ? { background: causeColor(slot.rating.cause) } : airMark(TONE_MARK[slot.rating.tone])} />
           {slot.rating.text}
         </p>
       </div>
@@ -146,7 +146,7 @@ export default function PlanDay({ hourly, weather, group, now }: { hourly: Forec
                 <li key={h.time} className="flex h-full min-w-0 flex-1 items-end">
                   <div
                     className="w-full origin-bottom animate-grow rounded-t-sm"
-                    style={{ height: `${Math.max(12, (h.pm25 / top) * 100)}%`, background: TONE_MARK[h.air], animationDelay: `${i * 20}ms` }}
+                    style={{ height: `${Math.max(12, (h.pm25 / top) * 100)}%`, ...airMark(TONE_MARK[h.air]), animationDelay: `${i * 20}ms` }}
                     title={`${fmtHour(h.time)}: PM2.5 ${Math.round(h.pm25)}${h.rainProb != null ? `, rain ${Math.round(h.rainProb)}%` : ""}`}
                   />
                 </li>
@@ -193,7 +193,7 @@ export default function PlanDay({ hourly, weather, group, now }: { hourly: Forec
           {ratingLegend(activity, group).map((r) => (
             <li key={r.text} className="flex items-center gap-1.5">
               {r.tones.map((t) => (
-                <span key={t} aria-hidden className="size-2.5 rounded-sm" style={{ background: TONE_MARK[t] }} />
+                <span key={t} aria-hidden className="size-2.5 rounded-sm" style={airMark(TONE_MARK[t])} />
               ))}
               {r.cause && <span aria-hidden className="h-1 w-3 rounded-full" style={{ background: causeColor(r.cause) }} />}
               {r.text}
