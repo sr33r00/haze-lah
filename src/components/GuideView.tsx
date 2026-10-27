@@ -46,7 +46,7 @@ export default function GuideView() {
                           {it.sources.map(([name, url], i) => (
                             <span key={url}>
                               {i > 0 && " · "}
-                              <a href={url} target="_blank" rel="noreferrer" className="text-accent underline">
+                              <a href={url} target="_blank" rel="noreferrer" className="link">
                                 {name}
                               </a>
                             </span>

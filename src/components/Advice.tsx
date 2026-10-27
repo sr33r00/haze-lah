@@ -41,7 +41,7 @@ export default function Advice({ items }: { items: Tip[] }) {
           </li>
         ))}
       </ul>
-      <Link href="/guide" className="mx-4 mt-3 block text-label text-muted underline">
+      <Link href="/guide" className="mx-4 mt-3 block link text-label">
         More in the Guide
       </Link>
     </>
@@ -56,7 +56,7 @@ function Sources({ list }: { list: [string, string][] }) {
       {list.map(([name, url], i) => (
         <span key={url}>
           {i > 0 && ", "}
-          <a href={url} target="_blank" rel="noreferrer" className="text-accent underline">
+          <a href={url} target="_blank" rel="noreferrer" className="link">
             {name}
           </a>
         </span>

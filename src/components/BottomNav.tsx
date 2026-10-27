@@ -32,7 +32,7 @@ function useFresh(newest: number | null, path: string) {
 
 function NewDot({ className }: { className: string }) {
   return (
-    <span className={`absolute h-2.5 w-2.5 rounded-full border-2 border-surface bg-[var(--lv3)] ${className}`}>
+    <span className={`absolute h-2.5 w-2.5 rounded-full border-2 border-surface bg-fg ${className}`}>
       <span className="sr-only">New updates</span>
     </span>
   );

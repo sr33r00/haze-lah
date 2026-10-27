@@ -1,7 +1,7 @@
 import { ChevronRight, Info, Maximize2 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
-import { LEVEL_COLOR, LEVEL_NAME, adviceStep, heroPaint, pm25Band, pm25Color, pm25ToUsAqi, psiLevel, verdictFor, type Group, type Region } from "@/lib/bands";
+import { GROUP_LABEL, LEVEL_COLOR, LEVEL_NAME, adviceStep, heroPaint, pm25Band, pm25Color, pm25ToUsAqi, psiLevel, verdictFor, type Group, type Region } from "@/lib/bands";
 import { bestTimeLine, planSlot, planStrip } from "@/lib/exercise";
 import { fromHour } from "@/lib/forecast";
 import { fmtHour } from "@/lib/format";
@@ -14,7 +14,8 @@ import { PuffStage } from "./PuffScene";
 import WeatherTiles from "./WeatherTiles";
 
 const GROUPS: Group[] = ["healthy", "sensitive", "chronic"];
-const GROUP_SHORT: Record<Group, string> = { healthy: "Healthy adult", sensitive: "Child, elderly, pregnant", chronic: "Heart or lung condition" };
+/** The chips' words: short enough to sit on one line on a phone. The full names (`GROUP_LABEL`) are what a screen reader hears. */
+const GROUP_SHORT: Record<Group, string> = { healthy: "Healthy adult", sensitive: "Child, elderly, pregnant", chronic: "Heart or lung" };
 
 // Wording follows the NEA haze advisory: 1-hr PM2.5 for the next few hours, 24-hr PSI for planning the day.
 const EXPLAIN = {
@@ -38,7 +39,7 @@ export default function Hero(props: {
   const [open, setOpen] = useState<keyof typeof EXPLAIN | null>(null);
   const step = adviceStep(pm25, psi, group);
   const v = step != null ? verdictFor(step) : null;
-  const { tone, ink, soft, bg } = heroPaint(step);
+  const { tone, ink, soft, bg, tray } = heroPaint(step);
   const next = fromHour(props.hourly, props.now).slice(0, 6);
   // The same activity, length and window as Plan your day, so the two always agree.
   const { activity, hours } = usePlanChoice();
@@ -49,7 +50,7 @@ export default function Hero(props: {
     <section
       id="now"
       className="relative mt-3 overflow-hidden rounded-b-[32px] px-5 pb-6 pt-5 lg:mx-4 lg:rounded-[32px]"
-      style={{ background: bg, color: ink }}
+      style={{ background: bg, color: ink, "--focus": ink } as React.CSSProperties}
     >
       <Link href="/glance" aria-label="Big screen view" className="absolute right-3 top-3 z-10 flex h-10 w-10 items-center justify-center" style={{ color: soft }}>
         <Maximize2 size={20} aria-hidden />
@@ -65,13 +66,14 @@ export default function Hero(props: {
         <PuffStage step={step} />
       </div>
 
-      <div role="group" aria-label="Advice for" className="mt-5 grid grid-cols-3 gap-1 rounded-2xl p-1" style={{ background: `color-mix(in srgb, ${ink} 14%, transparent)` }}>
+      <div role="group" aria-label="Advice for" className="mt-5 grid gap-0.5 rounded-2xl p-0.5" style={{ gridTemplateColumns: "auto auto auto", background: tray }}>
         {GROUPS.map((g) => (
           <button
             key={g}
+            aria-label={GROUP_LABEL[g]}
             aria-pressed={g === group}
             onClick={() => props.onGroup(g)}
-            className="rounded-xl px-1 py-2 text-label font-semibold leading-tight transition-colors"
+            className="min-h-11 rounded-xl px-1 py-2 text-fine min-[380px]:whitespace-nowrap font-semibold leading-tight transition-colors"
             style={g === group ? { background: ink, color: tone ? tone.bg : "var(--surface)" } : { color: soft }}
           >
             {GROUP_SHORT[g]}
@@ -133,7 +135,7 @@ export default function Hero(props: {
         // One small line, so the AQICN number reads as another site's scale, not as NEA's reading.
         <p className="mt-3 text-label" style={{ color: soft }}>
           <span className="tabular font-semibold">{pm25ToUsAqi(pm25)}</span> on AQICN (US scale) ·{" "}
-          <Link href={GUIDE_AQICN_URL} className="-my-3.5 inline-block py-3.5 font-semibold underline">
+          <Link href={GUIDE_AQICN_URL} className="-my-3.5 inline-block py-3.5 font-semibold link">
             Why?
           </Link>
         </p>

@@ -78,7 +78,7 @@ function Legend({ layer, expanded }: { layer: LayerChoice; expanded: boolean }) 
       {p?.tracer && (
         <p className={`mt-1 text-label leading-5 text-white/65 ${expanded ? "block" : "hidden"} ${EXTRAS}`}>
           {p.tracer.note}{" "}
-          <a href={NEA_PSI_URL} target="_blank" rel="noreferrer" className="underline">
+          <a href={NEA_PSI_URL} target="_blank" rel="noreferrer" className="link">
             NEA PSI method
           </a>
         </p>
@@ -160,15 +160,15 @@ export default function GlobeCard({ headline, facts, layer, day, dots, live, exp
           <p className="pb-1 pt-1 text-label leading-5 text-white/60">
             Fires: NASA FIRMS. Satellite pictures: NASA GIBS (OMPS). Pollution and wind: Copernicus Atmosphere Monitoring Service and ECMWF via Open-Meteo; contains modified Copernicus
             Atmosphere Monitoring Service information. Readings: NEA under the{" "}
-            <a href={OPEN_DATA_LICENCE} target="_blank" rel="noreferrer" className="underline">
+            <a href={OPEN_DATA_LICENCE} target="_blank" rel="noreferrer" className="link">
               Singapore Open Data Licence
             </a>
             , Malaysia APIMS and OpenAQ. Map:{" "}
-            <a href="https://openfreemap.org" target="_blank" rel="noreferrer" className="underline">
+            <a href="https://openfreemap.org" target="_blank" rel="noreferrer" className="link">
               OpenFreeMap
             </a>
             , ©{" "}
-            <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer" className="underline">
+            <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer" className="link">
               OpenStreetMap contributors
             </a>
             .

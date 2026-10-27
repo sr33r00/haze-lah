@@ -2,7 +2,7 @@
 
 import { CloudRain, Sun, Thermometer, Zap, type LucideIcon } from "lucide-react";
 import { useState } from "react";
-import { LEVEL_TEXT, type Region } from "@/lib/bands";
+import type { Region } from "@/lib/bands";
 import { OPEN_DATA_LICENCE } from "@/lib/links";
 import { feelsLikeNow, outdoorCells, type OutdoorCell } from "@/lib/outdoor";
 import type { WeatherHour } from "@/lib/types";
@@ -17,14 +17,17 @@ const TILES: { key: Key; label: string; icon: LucideIcon }[] = [
   { key: "lightning", label: "Strikes", icon: Zap },
 ];
 
-const WARN = LEVEL_TEXT[3];
+/** What a warning turns a tile: UV its violet, rain its blue; heat and lightning have no colour of their own, so they stand out in bold ink (the air-level colours are for the air alone). */
+const WARN: Partial<Record<Key, string>> = { uv: "var(--uv)", rain: "var(--rain)" };
+const warnColor = (key: Key) => WARN[key] ?? "var(--fg)";
 /** Every tile has this height, loading or not, so nothing moves when the readings arrive. */
 const TILE = "h-[84px] w-full rounded-lg";
 /** The columns sit side by side with a thin divider between them, no boxes. */
 const CELL = "min-w-0 border-l border-line px-0.5 first:border-l-0";
 
 /** One tile: icon and label, the value and a muted line. `cell` is null when the source has no answer. */
-function Tile({ label, icon: Icon, cell, open, onToggle }: { label: string; icon: LucideIcon; cell: OutdoorCell; open: boolean; onToggle: () => void }) {
+function Tile({ id, label, icon: Icon, cell, open, onToggle }: { id: Key; label: string; icon: LucideIcon; cell: OutdoorCell; open: boolean; onToggle: () => void }) {
+  const warn = warnColor(id);
   return (
     <div className={CELL}>
       <button
@@ -33,19 +36,19 @@ function Tile({ label, icon: Icon, cell, open, onToggle }: { label: string; icon
         aria-expanded={open}
         aria-controls="outdoor-detail"
         className={`${TILE} flex flex-col items-start px-1.5 py-1 text-left ${open ? "bg-line" : ""}`}
-        style={cell?.warn === "tile" ? { background: `color-mix(in srgb, ${WARN} 10%, transparent)` } : undefined}
+        style={cell?.warn === "tile" ? { background: `color-mix(in srgb, ${warn} 10%, transparent)` } : undefined}
       >
         <span className="flex w-full items-center gap-1 text-fine text-muted">
-          <Icon aria-hidden size={14} className="shrink-0" style={cell?.warn === "tile" || cell?.warn === "value" || cell?.warn === "icon" ? { color: WARN } : undefined} />
+          <Icon aria-hidden size={14} className="shrink-0" style={cell?.warn === "tile" || cell?.warn === "value" || cell?.warn === "icon" ? { color: warn } : undefined} />
           {label}
         </span>
         <span
           className={`flex min-h-[38px] w-full items-center ${cell?.big ? "tabular text-[19px] font-bold leading-none" : "text-balance text-label font-semibold leading-tight"} ${cell ? "" : "text-muted"}`}
-          style={cell?.warn === "value" || cell?.warn === "tile" ? { color: WARN } : undefined}
+          style={cell?.warn === "value" || cell?.warn === "tile" ? { color: warn } : undefined}
         >
           {cell ? cell.value : "–"}
         </span>
-        <span className="w-full truncate text-fine text-muted" style={cell?.warn === "sub" ? { color: WARN } : undefined}>
+        <span className={`w-full truncate text-fine ${cell?.warn === "sub" ? "font-bold" : "text-muted"}`} style={cell?.warn === "sub" ? { color: warn } : undefined}>
           {cell ? cell.sub : "Unavailable"}
         </span>
       </button>
@@ -68,7 +71,7 @@ export default function WeatherTiles({ region, now, weather }: { region: Region;
       <div aria-live="polite" className="grid grid-cols-4">
         {TILES.map((t) =>
           cells ? (
-            <Tile key={t.key} label={t.label} icon={t.icon} cell={cells[t.key]} open={open === t.key} onToggle={() => setOpen(open === t.key ? null : t.key)} />
+            <Tile key={t.key} id={t.key} label={t.label} icon={t.icon} cell={cells[t.key]} open={open === t.key} onToggle={() => setOpen(open === t.key ? null : t.key)} />
           ) : (
             <div key={t.key} aria-hidden className={CELL}>
               <span className={`block ${TILE} animate-pulse bg-line`} />
@@ -79,14 +82,14 @@ export default function WeatherTiles({ region, now, weather }: { region: Region;
       <p id="outdoor-detail" aria-live="polite" hidden={!open} className="mt-2 text-label leading-snug">
         {open && (shown ? shown.detail : "NEA has no current reading.")}
         {shown?.links?.map(([name, url]) => (
-          <a key={url} href={url} target="_blank" rel="noreferrer" className="ml-1 underline">
+          <a key={url} href={url} target="_blank" rel="noreferrer" className="ml-1 link">
             {name}
           </a>
         ))}
       </p>
       <p className="mt-1.5 text-fine text-muted">
         Contains information from NEA via data.gov.sg, made available under the{" "}
-        <a href={OPEN_DATA_LICENCE} target="_blank" rel="noreferrer" className="underline">
+        <a href={OPEN_DATA_LICENCE} target="_blank" rel="noreferrer" className="link">
           Singapore Open Data Licence
         </a>
         .

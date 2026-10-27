@@ -45,7 +45,7 @@ export default function WhatsNew() {
         <button
           type="button"
           onClick={close}
-          className="min-h-11 w-full rounded-full bg-accent px-5 text-label font-semibold text-bg transition-opacity hover:opacity-90"
+          className="min-h-11 w-full btn-primary rounded-full px-5 text-label font-semibold transition-opacity"
         >
           Got it
         </button>

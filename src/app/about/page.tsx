@@ -120,14 +120,14 @@ export default async function About() {
           <p>No ads and no accounts. Made by sr33.</p>
           <p>
             Not an official government service. For official advisories, see{" "}
-            <a href="https://www.haze.gov.sg" target="_blank" rel="noreferrer" className="text-accent underline">
+            <a href="https://www.haze.gov.sg" target="_blank" rel="noreferrer" className="link">
               haze.gov.sg
             </a>
             .
           </p>
           <p>
             Questions about masks, schools, work or health? See the{" "}
-            <Link href="/guide" className="text-accent underline">
+            <Link href="/guide" className="link">
               Guide
             </Link>
             .
@@ -149,7 +149,7 @@ export default async function About() {
                   <ul className="divide-y divide-line rounded-2xl bg-surface">
                     {items.map(([name, what, url]) => (
                       <li key={name} className="p-3">
-                        <a href={url} target="_blank" rel="noreferrer" className="font-semibold text-accent">
+                        <a href={url} target="_blank" rel="noreferrer" className="link font-semibold">
                           {name}
                         </a>
                         <div className="text-label text-muted">{what}</div>
@@ -161,7 +161,7 @@ export default async function About() {
               </div>
               <p className="text-label text-muted">
                 Contains information from NEA, LTA and URA made available under the{" "}
-                <a href={OPEN_DATA_LICENCE} target="_blank" rel="noreferrer" className="underline">
+                <a href={OPEN_DATA_LICENCE} target="_blank" rel="noreferrer" className="link">
                   Singapore Open Data Licence
                 </a>
                 . Contains modified Copernicus Atmosphere
@@ -216,7 +216,7 @@ export default async function About() {
                   href="https://www.haze.gov.sg/docs/default-source/posters/haze-pm-psi-guide-a4-english.pdf"
                   target="_blank"
                   rel="noreferrer"
-                  className="text-accent underline"
+                  className="link"
                 >
                   NEA PSI and PM2.5 guide
                 </a>
@@ -270,7 +270,7 @@ export default async function About() {
                 {CIGARETTE_SOURCES.map(([name, url], i) => (
                   <span key={url}>
                     {i > 0 && "; "}
-                    <a href={url} target="_blank" rel="noreferrer" className="text-accent underline">
+                    <a href={url} target="_blank" rel="noreferrer" className="link">
                       {name}
                     </a>
                   </span>
@@ -294,7 +294,7 @@ export default async function About() {
             <section className="rounded-2xl border border-line bg-surface p-3">
               This is an independent tool, not an official government service. If you feel unwell, seek medical attention. Official
               advisories:{" "}
-              <a className="underline" href="https://www.haze.gov.sg">
+              <a className="link" href="https://www.haze.gov.sg">
                 haze.gov.sg
               </a>
               .

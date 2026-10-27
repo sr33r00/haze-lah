@@ -2,10 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { readoutLines, readoutText, type InstrumentHour } from "@/lib/forecastHours";
-import { FIRE_COLOR } from "@/lib/replay";
-
-/** Fire orange, mixed with the text colour so it reads on both the light and the dark card. */
-const FIRE_TEXT = `color-mix(in srgb, ${FIRE_COLOR} 70%, var(--fg))`;
 const ANNOUNCE_MS = 500; // a screen reader hears the hour only once the scrub has paused this long
 
 /**
@@ -35,7 +31,7 @@ export default function Readout({ hour, className = "" }: { hour: InstrumentHour
         <p className="line-clamp-1 h-5 text-muted">{line2}</p>
         <p className="line-clamp-2 h-10 text-muted">
           {fires && (
-            <span className="font-semibold" style={{ color: FIRE_TEXT }}>
+            <span className="font-semibold text-fg">
               {fires}
             </span>
           )}

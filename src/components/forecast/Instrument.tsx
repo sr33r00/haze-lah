@@ -5,7 +5,6 @@ import { PM25_BANDS, PM25_COLORS, pm25Color } from "@/lib/bands";
 import { fmtHour, fmtWeekday } from "@/lib/format";
 import { HIGH_PM25 } from "@/lib/forecast";
 import { peakAhead, readoutLines, type InstrumentHour } from "@/lib/forecastHours";
-import { FIRE_COLOR } from "@/lib/replay";
 import { sgDate, sgHour } from "@/lib/util";
 import Readout from "./Readout";
 
@@ -154,7 +153,7 @@ export default function Instrument({ hours, windFailed }: { hours: InstrumentHou
         }}
         onPointerMove={(e) => e.currentTarget.hasPointerCapture(e.pointerId) && fromPointer(e.clientX)}
         style={{ "--h": `${heightFor(LANE.pm)}px`, "--h-wide": `${heightFor(LANE.pmWide)}px` } as React.CSSProperties}
-        className="@container mt-2 w-full cursor-ew-resize touch-pan-y select-none rounded-lg outline-offset-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--accent)]"
+        className="@container mt-2 w-full cursor-ew-resize touch-pan-y select-none rounded-lg outline-offset-2"
       >
         <div className="h-[var(--h)] @[640px]:h-[var(--h-wide)]">
           <svg width={w} height={height} className="tabular block" aria-hidden>
@@ -202,14 +201,14 @@ export default function Instrument({ hours, windFailed }: { hours: InstrumentHou
                       Wind
                     </text>
                     {hours.map((h, i) =>
-                      h.wind && h.pm25 != null ? <Arrow key={h.t} x={x(times[i])} y={windY + LANE.wind / 2} deg={h.wind.deg} color={h.wind.near > 0 ? FIRE_COLOR : "var(--muted)"} /> : null,
+                      h.wind && h.pm25 != null ? <Arrow key={h.t} x={x(times[i])} y={windY + LANE.wind / 2} deg={h.wind.deg} color={h.wind.near > 0 ? "var(--fg)" : "var(--muted)"} /> : null,
                     )}
                   </>
                 )}
                 <line x1={PAD} x2={PAD + plotW} y1={bottom} y2={bottom} stroke="var(--line)" />
                 {hours.map((h, i) =>
                   h.rainProb != null && h.rainProb > 0 ? (
-                    <rect key={h.t} x={x(times[i]) - barW / 2} width={barW} y={bottom - (h.rainProb / 100) * LANE.rain} height={(h.rainProb / 100) * LANE.rain} fill="var(--accent)" fillOpacity={0.45} />
+                    <rect key={h.t} x={x(times[i]) - barW / 2} width={barW} y={bottom - (h.rainProb / 100) * LANE.rain} height={(h.rainProb / 100) * LANE.rain} fill="var(--rain)" fillOpacity={0.85} />
                   ) : null,
                 )}
                 <text x={PAD} y={rainY + 10} {...LABEL} {...HALO}>

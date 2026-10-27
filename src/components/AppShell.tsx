@@ -58,7 +58,7 @@ export default function AppShell({ data, title, wide = false, children }: { data
         </div>
       </header>
       <main id="main" className={`mx-auto ${width} [&>h1+section]:mt-4`}>
-        {data?.mock && <p className="mx-4 mb-3 rounded-xl bg-[var(--lv2)]/15 px-3 py-2 text-label">Demo data. These are not real readings.</p>}
+        {data?.mock && <p className="mx-4 mb-3 rounded-xl bg-line px-3 py-2 text-label">Demo data. These are not real readings.</p>}
         {title && <h1 className="px-4 pt-1 text-[28px] lg:pt-4 text-balance font-extrabold leading-tight tracking-tight">{title}</h1>}
         {children}
       </main>

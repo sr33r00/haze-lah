@@ -1,10 +1,10 @@
 "use client";
 
 import { ChevronDown, TriangleAlert } from "lucide-react";
-import { PM25_BANDS, TONE_COLOR, type Group } from "@/lib/bands";
+import { PM25_BANDS, TONE_MARK, type Group } from "@/lib/bands";
 import { BREATH_SOURCES, fmtDust } from "@/lib/breath";
 import { CIGARETTE_SOURCES } from "@/lib/cigarettes";
-import { ACTIVITIES, ACTIVITY, DURATIONS, PLAN_NOTES, RAIN_TEXT, fmtSlot, isOk, planSlot, planStrip, ratingLegend, slotReason, type Activity, type Slot } from "@/lib/exercise";
+import { ACTIVITIES, ACTIVITY, DURATIONS, PLAN_NOTES, RAIN_TEXT, fmtSlot, isOk, planSlot, planStrip, ratingLegend, slotReason, type Activity, type Rating, type Slot } from "@/lib/exercise";
 import { cap, fmtHour } from "@/lib/format";
 import { UV_SOURCES } from "@/lib/outdoor";
 import type { ForecastPoint, WeatherHour } from "@/lib/types";
@@ -38,6 +38,9 @@ function ChipSelect({ label, value, options, onChange }: { label: string; value:
   );
 }
 
+/** The weather's own colour for an answer that comes from rain or UV. */
+const causeColor = (cause: NonNullable<Rating["cause"]>) => `var(--${cause})`;
+
 /** The answer: which day, the time range and how the air rates then. */
 function Answer({ slot }: { slot: Slot }) {
   return (
@@ -48,7 +51,7 @@ function Answer({ slot }: { slot: Slot }) {
       <div className="mt-1 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
         <p className="tabular text-[28px] font-bold leading-tight">{fmtSlot(slot)}</p>
         <p className="flex items-center gap-2 text-label font-semibold">
-          <span aria-hidden className="size-2.5 shrink-0 rounded-full" style={{ background: TONE_COLOR[slot.rating.tone].bg }} />
+          <span aria-hidden className="size-2.5 shrink-0 rounded-full" style={{ background: slot.rating.cause ? causeColor(slot.rating.cause) : TONE_MARK[slot.rating.tone] }} />
           {slot.rating.text}
         </p>
       </div>
@@ -143,18 +146,20 @@ export default function PlanDay({ hourly, weather, group, now }: { hourly: Forec
                 <li key={h.time} className="flex h-full min-w-0 flex-1 items-end">
                   <div
                     className="w-full origin-bottom animate-grow rounded-t-sm"
-                    style={{ height: `${Math.max(12, (h.pm25 / top) * 100)}%`, background: TONE_COLOR[h.rating.tone].bg, animationDelay: `${i * 20}ms` }}
+                    style={{ height: `${Math.max(12, (h.pm25 / top) * 100)}%`, background: TONE_MARK[h.air], animationDelay: `${i * 20}ms` }}
                     title={`${fmtHour(h.time)}: PM2.5 ${Math.round(h.pm25)}${h.rainProb != null ? `, rain ${Math.round(h.rainProb)}%` : ""}`}
                   />
                 </li>
               ))}
             </ol>
-            {/* Hours with rain likely, one thin mark under each bar. It hangs below the strip, so it adds no height. */}
-            <div aria-hidden className="pointer-events-none absolute inset-x-0 top-full mt-0.5 flex h-1 gap-px">
-              {hours.map((h) => (
-                <span key={h.time} className={`min-w-0 flex-1 rounded-full ${h.rainy ? "bg-accent" : ""}`} />
-              ))}
-            </div>
+            {/* Hours with rain likely (blue) and with very high UV (violet): one thin mark each under the bar. They hang below the strip, so they add no height. */}
+            {(["rainy", "uvHigh"] as const).map((key, row) => (
+              <div key={key} aria-hidden className="pointer-events-none absolute inset-x-0 flex h-1 gap-px" style={{ top: `calc(100% + ${2 + row * 6}px)` }}>
+                {hours.map((h) => (
+                  <span key={h.time} className={`min-w-0 flex-1 rounded-full ${h[key] ? (key === "rainy" ? "bg-rain" : "bg-uv") : ""}`} />
+                ))}
+              </div>
+            ))}
             {bandI < top && (
               <div aria-hidden className="pointer-events-none absolute inset-x-0 border-t border-dashed border-muted/60" style={{ bottom: `${(bandI / top) * 100}%` }}>
                 <span className="absolute left-full top-0 -translate-y-1/2 pl-1 text-fine leading-none text-muted">{bandI}</span>
@@ -169,7 +174,7 @@ export default function PlanDay({ hourly, weather, group, now }: { hourly: Forec
             )}
             {midnight > 0 && <div aria-hidden className="pointer-events-none absolute -top-4 bottom-0 w-px bg-muted" style={{ left: pct(midnight) }} />}
           </div>
-          <div aria-hidden className="relative mt-3 h-4 text-fine text-muted">
+          <div aria-hidden className="relative mt-4 h-4 text-fine text-muted">
             {hours.map((h, i) =>
               sgHour(h.time) % 6 === 0 && i > 0 && i < n - 1 ? (
                 <span key={h.time} className="absolute -translate-x-1/2 whitespace-nowrap" style={{ left: pct(i + 0.5) }}>
@@ -188,9 +193,9 @@ export default function PlanDay({ hourly, weather, group, now }: { hourly: Forec
           {ratingLegend(activity, group).map((r) => (
             <li key={r.text} className="flex items-center gap-1.5">
               {r.tones.map((t) => (
-                <span key={t} aria-hidden className="size-2.5 rounded-sm" style={{ background: TONE_COLOR[t].bg }} />
+                <span key={t} aria-hidden className="size-2.5 rounded-sm" style={{ background: TONE_MARK[t] }} />
               ))}
-              {r.text === RAIN_TEXT && <span aria-hidden className="h-1 w-3 rounded-full bg-accent" />}
+              {r.cause && <span aria-hidden className="h-1 w-3 rounded-full" style={{ background: causeColor(r.cause) }} />}
               {r.text}
             </li>
           ))}
@@ -208,7 +213,7 @@ export default function PlanDay({ hourly, weather, group, now }: { hourly: Forec
           ))}
           <p className="flex flex-wrap gap-x-3 gap-y-1">
             {[...CIGARETTE_SOURCES, ...BREATH_SOURCES, ...UV_SOURCES].map(([name, url]) => (
-              <a key={url} href={url} target="_blank" rel="noreferrer" className="underline">
+              <a key={url} href={url} target="_blank" rel="noreferrer" className="link">
                 {name}
               </a>
             ))}

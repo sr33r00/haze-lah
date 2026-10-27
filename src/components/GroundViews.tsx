@@ -126,7 +126,7 @@ export default function GroundViews() {
 
       <p className="mt-2 text-label text-muted">
         Grey, washed-out views mean haze. Road cameras contain information from LTA&apos;s traffic images, made available under the{" "}
-        <a href={OPEN_DATA_LICENCE} target="_blank" rel="noreferrer" className="underline">
+        <a href={OPEN_DATA_LICENCE} target="_blank" rel="noreferrer" className="link">
           Singapore Open Data Licence
         </a>
         .
@@ -135,11 +135,11 @@ export default function GroundViews() {
       {webcams.length > 0 && (
         <p className="mt-1 text-right text-label text-muted">
           Webcams provided by{" "}
-          <a href="https://www.windy.com/" target="_blank" rel="noreferrer" className="underline">
+          <a href="https://www.windy.com/" target="_blank" rel="noreferrer" className="link">
             windy.com
           </a>{" "}
           &mdash;{" "}
-          <a href="https://www.windy.com/webcams/add" target="_blank" rel="noreferrer" className="underline">
+          <a href="https://www.windy.com/webcams/add" target="_blank" rel="noreferrer" className="link">
             add a webcam
           </a>
         </p>

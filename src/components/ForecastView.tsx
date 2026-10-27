@@ -68,7 +68,7 @@ export default function ForecastView(props: {
         {since && (
           <p className="mt-2 px-4 text-label text-muted">
             This week&apos;s peak {weekPeak} is the {since[0].toLowerCase() + since.slice(1)}.{" "}
-            <a href={HISTORY_URL} target="_blank" rel="noreferrer" className="underline">
+            <a href={HISTORY_URL} target="_blank" rel="noreferrer" className="link">
               NEA data
             </a>
           </p>

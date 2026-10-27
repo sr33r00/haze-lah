@@ -42,8 +42,15 @@ const AREAS: [string, number, number][] = [
   ["Peninsular Malaysia", 3.8, 102.0],
 ];
 
-/** Map colours for fires and for the air's path, shared by every view of the replay. */
-export const FIRE_COLOR = "#c2410c";
+/**
+ * Map colours for fires and for the air's path, shared by every view of the replay. Fires are ember black with a thin white edge
+ * (`FIRE_MARK`): the air-level colours (green to red) are for readings alone, and a fire is not a level.
+ */
+export const FIRE_COLOR = "#2b1a14";
+/** The look of a fire in a legend or an HTML mark: the fire colour inside a white ring, so it shows on light and dark alike. */
+export const FIRE_MARK = { background: FIRE_COLOR, boxShadow: "0 0 0 1px #fff" } as const;
+/** The key to the dashed line that follows the smoke on the wind: dashes in the fire colour, each with a white halo as on the maps. */
+export const AHEAD_MARK = { backgroundImage: `repeating-linear-gradient(90deg, ${FIRE_COLOR} 0 5px, transparent 5px 8px)`, filter: "drop-shadow(0 0 1px #fff)" } as const;
 export const TRAIL_COLOR = "#a855f7";
 export const NEW_FIRE_COLOR = "#5fe3ee";
 

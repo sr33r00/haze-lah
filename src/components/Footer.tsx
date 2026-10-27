@@ -11,26 +11,26 @@ export default function Footer({ errors }: { errors: string[] }) {
       </p>
       <p>
         An independent tool, not an official NEA service. For official advisories visit{" "}
-        <a className="font-semibold text-accent underline" href="https://www.haze.gov.sg" target="_blank" rel="noreferrer">
+        <a className="link font-semibold" href="https://www.haze.gov.sg" target="_blank" rel="noreferrer">
           haze.gov.sg
         </a>
         , and NEA&apos;s daily{" "}
-        <a className="font-semibold text-accent underline" href="https://www.nea.gov.sg/media/news/advisories" target="_blank" rel="noreferrer">
+        <a className="link font-semibold" href="https://www.nea.gov.sg/media/news/advisories" target="_blank" rel="noreferrer">
           haze updates
         </a>{" "}
         for the official 24-hour PSI outlook.
       </p>
       <p>
-        <Link className="font-semibold text-accent underline" href="/about">
+        <Link className="link font-semibold" href="/about">
           About and data sources
         </Link>
         {" · "}
-        <Link className="font-semibold text-accent underline" href="/glance">
+        <Link className="link font-semibold" href="/glance">
           Big screen view
         </Link>
       </p>
       <p>Created by sr33</p>
-      {errors.length > 0 && <p style={{ color: "var(--lv3)" }}>Not loading right now: {errors.join(", ")}.</p>}
+      {errors.length > 0 && <p className="font-semibold text-fg">Not loading right now: {errors.join(", ")}.</p>}
     </footer>
   );
 }

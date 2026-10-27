@@ -38,7 +38,7 @@ export default function LiveViews({ cameras, region }: { cameras: Camera[]; regi
       </ul>
       <p className="mt-1 px-5 text-label text-muted">
         Grey, washed-out views mean haze. Contains information from LTA&apos;s traffic images, made available under the{" "}
-        <a href={OPEN_DATA_LICENCE} target="_blank" rel="noreferrer" className="underline">
+        <a href={OPEN_DATA_LICENCE} target="_blank" rel="noreferrer" className="link">
           Singapore Open Data Licence
         </a>
         .

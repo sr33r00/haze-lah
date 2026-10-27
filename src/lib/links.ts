@@ -37,6 +37,8 @@ export const WAQI_NAME = "World Air Quality Index Project";
 export const GUIDE_AQICN_URL = "/guide#other-apps";
 
 /** Said under the US AQI view of the Now map. */
+/** The US AQI legend's heading: the colours are the US EPA's, not the site's air colours. */
+export const US_AQI_SCALE = "US AQI scale, in the US EPA colours as AQICN shows them.";
 export const US_AQI_NOTE = "US AQI reads higher than Singapore's PSI for the same air. NEA's PSI is the official measure.";
 
 /** URA Master Plan 2019 Region Boundary (No Sea) on data.gov.sg: the source of Singapore's outline on the maps. */

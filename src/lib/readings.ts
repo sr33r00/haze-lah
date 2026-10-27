@@ -1,4 +1,4 @@
-import { REGIONS, REGION_POINT, psiLevel, type Region } from "@/lib/bands";
+import { PM25_COLORS, REGIONS, REGION_POINT, psiLevel, type Region } from "@/lib/bands";
 import { cap } from "@/lib/format";
 import { PM25, bandOf, colorOf, concentrationOfSub, pollutant, type Pollutant, type PollutantId } from "@/lib/pollutants";
 import type { HazeData, NeaNow, Station } from "@/lib/types";
@@ -91,14 +91,11 @@ export function readingDots(data: DotData, layer: PollutantId | "smoke" | "off",
 
 const rgbOf = ([r, g, b]: number[], k = 1) => `rgb(${Math.round(r * k)},${Math.round(g * k)},${Math.round(b * k)})`;
 
-/** One value in each band to take the colour from the shared ramp (the band limits for 0 and 1, then mid-band for 2 and 3). */
-const BAND_VALUE = [55, 100, 200, 350] as const;
 const GREY = "rgb(150,150,150)";
 
-/** The ramp colour of a band at full opacity (the same ramp as the field, so a dot matches the colours around it); Normal is darkened so that a ring of quiet readings does not look like a hazard. */
+/** The air-level colour of a band, at full opacity: the colour the field is drawn in (see `STOPS` in pollutants.ts), so a dot matches the shading around it. */
 export function bandColor(band: Dot["band"]): string {
-  if (band == null) return GREY;
-  return rgbOf(colorOf(PM25, BAND_VALUE[band]), band === 0 ? 0.6 : 1);
+  return band == null ? GREY : PM25_COLORS[band];
 }
 
 /** The dots as GeoJSON points for the map's source. */

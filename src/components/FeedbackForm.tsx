@@ -97,7 +97,7 @@ export default function FeedbackForm({ pill }: { pill: string }) {
             <button
               type="submit"
               disabled={status === "sending"}
-              className="rounded-full bg-accent px-5 py-2 text-label font-semibold text-bg disabled:opacity-60"
+              className="btn-primary rounded-full px-5 py-2 text-label font-semibold disabled:opacity-60"
             >
               {status === "sending" ? "Sending…" : "Send"}
             </button>
@@ -107,9 +107,9 @@ export default function FeedbackForm({ pill }: { pill: string }) {
           </div>
           <div aria-live="polite">
             {status === "error" && (
-              <p className="text-label" style={{ color: "var(--lv3)" }}>
+              <p className="text-label font-semibold">
                 {error}. You can also{" "}
-                <a href={ISSUE_URL} target="_blank" rel="noreferrer" className="underline">
+                <a href={ISSUE_URL} target="_blank" rel="noreferrer" className="link">
                   post it on GitHub
                 </a>
                 .

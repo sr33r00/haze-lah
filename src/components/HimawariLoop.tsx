@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { fmtDateTime, fmtTimeRange } from "@/lib/format";
-import { AHEAD_LABEL, AHEAD_NONE, FIRE_COLOR, NEW_FIRE_COLOR, aheadParts, newZonesText, trailCaption } from "@/lib/replay";
+import { AHEAD_LABEL, AHEAD_MARK, AHEAD_NONE, FIRE_MARK, NEW_FIRE_COLOR, aheadParts, newZonesText, trailCaption } from "@/lib/replay";
 import { SAT_SIZE, himawariUrl, visibleTimes } from "@/lib/satellite";
 import type { Replay } from "@/lib/types";
 import { sgDate } from "@/lib/util";
@@ -78,7 +78,7 @@ function Controls({ playing, onPlaying, loading, n, at, onSeek, caption, onDark 
           disabled={n < 2}
           onChange={(e) => onSeek(Number(e.target.value))}
           aria-label="Picture time"
-          className={`h-11 min-w-0 flex-1 ${onDark ? "accent-white" : "accent-[var(--accent)]"}`}
+          className={`h-11 min-w-0 flex-1 ${onDark ? "accent-white" : "accent-[var(--fg)]"}`}
         />
       </div>
       {/* Announced only while paused: a loop at 4 pictures a second would read out every one. */}
@@ -147,11 +147,11 @@ export function LiveKey({ replay, fresh, layers }: { replay: Replay | null; fres
       <ul className="mt-1.5 space-y-1.5 text-label text-muted">
         <Key mark={<span className="size-3.5 rounded-sm" style={{ background: "#9b8f84" }} />}>Smoke: smooth grey-brown veil, often over Sumatra and Borneo</Key>
         <Key mark={<span className="size-3.5 rounded-sm border border-fg/30 bg-white" />}>Cloud: bright white, lumpy</Key>
-        {layers.fires && hasLayer(replay, "fires") && <Key mark={<span className="size-2.5 rounded-full" style={{ background: FIRE_COLOR }} />}>Fire seen by NASA today</Key>}
+        {layers.fires && hasLayer(replay, "fires") && <Key mark={<span className="size-2.5 rounded-full" style={FIRE_MARK} />}>Fire seen by NASA today</Key>}
         {layers.fires && fresh.length > 0 && (
           <Key mark={<span className="size-3.5 rounded-full border-[1.5px]" style={{ borderColor: NEW_FIRE_COLOR }} />}>{newZonesText(fresh.length)}</Key>
         )}
-        {layers.ahead && hasLayer(replay, "ahead") && <Key mark={<span className="w-5 border-t-[3px] border-dashed" style={{ borderColor: FIRE_COLOR }} />}>{AHEAD_LABEL}</Key>}
+        {layers.ahead && hasLayer(replay, "ahead") && <Key mark={<span className="h-[3px] w-5" style={AHEAD_MARK} />}>{AHEAD_LABEL}</Key>}
       </ul>
       <p className="mt-2 text-label text-muted">Fires and paths: latest, not the loop&apos;s time.</p>
     </>

@@ -8,9 +8,9 @@ const LABEL_W = 38; // room for the lead on the left
 const VALUE_W = 34; // and for the number at the end of the longest bar
 const BAR = { h: 16, gap: 2, group: 14 } as const; // px: one bar, between bars, between leads
 const METHODS = [
-  { key: "ours", label: "This site", fill: "var(--accent)", opacity: 1 },
-  { key: "cams", label: "Copernicus", fill: "var(--fg)", opacity: 0.75 },
-  { key: "persistence", label: "No change", fill: "var(--muted)", opacity: 0.6 },
+  { key: "ours", label: "This site", fill: "var(--fg)", opacity: 1 },
+  { key: "cams", label: "Copernicus", fill: "var(--fg)", opacity: 0.65 },
+  { key: "persistence", label: "No change", fill: "var(--muted)", opacity: 0.8 },
 ] as const;
 
 /**
@@ -68,7 +68,7 @@ export default function Skill({ accuracy, bias, sigma, className }: { accuracy: 
             {sigma != null && `, typical error ±${Math.round((Math.exp(sigma) - 1) * 100)}%`}.
           </p>
         )}
-        <Link href="/about#accuracy" className="mt-1 inline-flex min-h-[44px] items-center text-label font-semibold text-accent underline">
+        <Link href="/about#accuracy" className="mt-1 inline-flex min-h-[44px] items-center text-label link font-semibold">
           How we measure this
         </Link>
       </div>

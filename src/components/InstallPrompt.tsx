@@ -83,7 +83,7 @@ export default function InstallPrompt() {
         )}
       </div>
       {mode === "install" && (
-        <button onClick={install} className="min-h-11 shrink-0 rounded-full bg-accent px-4 text-label font-semibold text-bg ring-2 ring-bg/30 hover:opacity-90">
+        <button onClick={install} className="min-h-11 shrink-0 rounded-full bg-bg px-4 text-label font-semibold text-fg hover:opacity-90">
           Install
         </button>
       )}

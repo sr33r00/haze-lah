@@ -27,7 +27,8 @@ export const ACTIVITY: Record<Activity, { phrase: string; hours: number; from: n
 export const DURATIONS = [0.5, 1, 1.5, 2, 3];
 export const ACTIVITIES = Object.keys(ACTIVITY) as Activity[];
 
-export type Rating = { tone: "go" | "easy" | "limit" | "stay"; text: string };
+/** `tone` says how mild the answer is; the air-level colours are for the air alone, so an answer that comes from the weather has a `cause` (drawn in the rain's or the UV's own colour) instead. */
+export type Rating = { tone: "go" | "easy" | "limit" | "stay"; text: string; cause?: "rain" | "uv" };
 /** Fine to do outdoors, if gently. */
 export const isOk = (r: Rating) => r.tone === "go" || r.tone === "easy";
 
@@ -49,8 +50,8 @@ export const RAIN_TEXT = "Rain likely";
  */
 export function weatherRatings(w: Pick<WeatherHour, "rainProb" | "uv"> | undefined, activity: Activity): Rating[] {
   const out: Rating[] = [];
-  if ((w?.rainProb ?? 0) >= RAIN_LIKELY) out.push({ tone: "limit", text: RAIN_TEXT });
-  if ((w?.uv ?? 0) >= UV_VERY_HIGH) out.push(ACTIVITY[activity].strenuous ? { tone: "limit", text: "Very high UV" } : { tone: "easy", text: "Very high UV, find shade" });
+  if ((w?.rainProb ?? 0) >= RAIN_LIKELY) out.push({ tone: "limit", text: RAIN_TEXT, cause: "rain" });
+  if ((w?.uv ?? 0) >= UV_VERY_HIGH) out.push(ACTIVITY[activity].strenuous ? { tone: "limit", text: "Very high UV", cause: "uv" } : { tone: "easy", text: "Very high UV, find shade", cause: "uv" });
   return out;
 }
 
@@ -172,8 +173,8 @@ export function bestSlots(forecast: ForecastPoint[], activity: Activity, group: 
   return out;
 }
 
-/** One bar of the plan's hour strip: the forecast PM2.5, how the chosen activity rates in it (air, rain and UV together) and the rain chance. */
-export type StripHour = { time: string; pm25: number; rating: Rating; rainProb: number | null; rainy: boolean };
+/** One bar of the plan's hour strip: the forecast PM2.5, how the chosen activity rates in it (air, rain and UV together), the tone of the air alone (the bar's colour) and the rain chance. */
+export type StripHour = { time: string; pm25: number; rating: Rating; air: Rating["tone"]; rainProb: number | null; rainy: boolean; uvHigh: boolean };
 
 /** How far ahead Plan your day looks, in hours: the forecast's error grows with lead time (`accuracy.json`). */
 export const PLAN_HOURS = 16;
@@ -187,12 +188,15 @@ export function planStrip(hourly: ForecastPoint[], activity: Activity, group: Gr
     .slice(0, PLAN_HOURS)
     .map((p) => {
       const w = wx(p.time);
+      const air = rate(p.pm25, activity, group);
       return {
         time: p.time,
         pm25: p.pm25,
-        rating: worstRating(rate(p.pm25, activity, group), ...weatherRatings(w, activity)),
+        rating: worstRating(air, ...weatherRatings(w, activity)),
+        air: air.tone,
         rainProb: w?.rainProb ?? null,
         rainy: (w?.rainProb ?? 0) >= RAIN_LIKELY,
+        uvHigh: (w?.uv ?? 0) >= UV_VERY_HIGH,
       };
     });
 }
@@ -225,9 +229,9 @@ export function bestTimeLine(slot: Slot, activity: Activity, now: number): { tex
 /** The lowest PM2.5 of each NEA 1-hr band (I to IV), to read the ratings off. */
 const BAND_PM25 = PM25_BANDS.map((_, i) => (i ? PM25_BANDS[i - 1].max + 1 : 0));
 
-/** The distinct answers the chosen activity can give, mildest first, each with every colour it is drawn in. */
-export function ratingLegend(activity: Activity, group: Group): { text: string; tones: Rating["tone"][] }[] {
-  const out: { text: string; tones: Rating["tone"][] }[] = [];
+/** The distinct answers the chosen activity can give, mildest first. Each air answer lists every colour it is drawn in; a weather answer has none, only its `cause`. */
+export function ratingLegend(activity: Activity, group: Group): { text: string; tones: Rating["tone"][]; cause?: Rating["cause"] }[] {
+  const out: { text: string; tones: Rating["tone"][]; cause?: Rating["cause"] }[] = [];
   for (const pm of BAND_PM25) {
     const r = rate(pm, activity, group);
     const item = out.find((o) => o.text === r.text);
@@ -235,7 +239,7 @@ export function ratingLegend(activity: Activity, group: Group): { text: string; 
     else if (!item.tones.includes(r.tone)) item.tones.push(r.tone);
   }
   // Then the weather's answers, once each (the worst case of both).
-  for (const r of weatherRatings({ rainProb: 100, uv: 11 }, activity)) out.push({ text: r.text, tones: [r.tone] });
+  for (const r of weatherRatings({ rainProb: 100, uv: 11 }, activity)) out.push({ text: r.text, tones: [], cause: r.cause });
   return out;
 }
 

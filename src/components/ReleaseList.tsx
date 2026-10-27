@@ -22,9 +22,9 @@ export default function ReleaseList({ on = "sheet", onNavigate }: { on?: keyof t
                 <Link
                   href={href}
                   onClick={onNavigate}
-                  className="flex min-h-11 items-center gap-3 px-3 py-3 transition-colors hover:bg-line active:bg-line focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent"
+                  className="flex min-h-11 items-center gap-3 px-3 py-3 transition-colors hover:bg-line active:bg-line"
                 >
-                  <span className={`grid size-9 shrink-0 place-items-center rounded-xl text-accent ${tile}`}>
+                  <span className={`grid size-9 shrink-0 place-items-center rounded-xl text-fg ${tile}`}>
                     <Icon className="size-5" aria-hidden />
                   </span>
                   <span className="min-w-0 flex-1">

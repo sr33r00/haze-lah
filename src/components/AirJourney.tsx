@@ -3,7 +3,7 @@
 import { Share2 } from "lucide-react";
 import { useRef, useState } from "react";
 import { SITE_URL } from "@/lib/links";
-import { FIRE_COLOR, TRAIL_COLOR, journeyText } from "@/lib/replay";
+import { FIRE_MARK, TRAIL_COLOR, journeyText } from "@/lib/replay";
 import type { ReplayDay } from "@/lib/types";
 
 const PICTURE = "/air-journey";
@@ -95,7 +95,7 @@ export default function AirJourney({ day, shareable = true }: { day: ReplayDay; 
       </div>
       <div className="flex min-h-[3.75rem] items-center justify-between gap-3 px-4 py-2">
         <p className="flex items-center gap-2 text-label font-bold">
-          {day.near > 0 && <span aria-hidden className="size-2.5 shrink-0 rounded-full" style={{ background: FIRE_COLOR }} />}
+          {day.near > 0 && <span aria-hidden className="size-2.5 shrink-0 rounded-full" style={FIRE_MARK} />}
           {t.fires}
         </p>
         {shareable && <ShareJourney text={`Today's air travelled ${t.trip} to reach Singapore.`} onShared={() => setShared(true)} />}

@@ -45,7 +45,7 @@ export default function PollCard() {
       {thanked ? (
         <div aria-live="polite" className="flex items-center justify-between gap-x-4">
           <p className="text-body font-bold">Thanks, noted.</p>
-          <a href={FEEDBACK_URL} className="inline-flex min-h-11 items-center text-label font-semibold text-accent underline">
+          <a href={FEEDBACK_URL} className="inline-flex min-h-11 items-center text-label link font-semibold">
             Suggest a feature
           </a>
         </div>
@@ -62,14 +62,14 @@ export default function PollCard() {
           <p className="pr-10 text-body font-bold leading-snug">Want a message when the air turns clean?</p>
           <p className="mt-1 pr-6 text-label text-muted">We&apos;re thinking of an opt-in Telegram alert for your area, so you know when it&apos;s a good time to run, cycle or hike.</p>
           <div className="mt-3 grid grid-cols-2 gap-2">
-            <button type="button" disabled={status === "sending"} onClick={() => vote("yes")} className={`${button} bg-accent text-bg hover:opacity-90`}>
+            <button type="button" disabled={status === "sending"} onClick={() => vote("yes")} className={`${button} btn-primary`}>
               Yes, I&apos;d use it
             </button>
             <button type="button" disabled={status === "sending"} onClick={() => vote("no")} className={`${button} border border-line bg-bg text-fg hover:bg-line`}>
               Not for me
             </button>
           </div>
-          <p aria-live="polite" className="mt-2 empty:hidden text-label" style={{ color: "var(--lv3)" }}>
+          <p aria-live="polite" className="mt-2 empty:hidden text-label font-semibold">
             {status === "error" && "Couldn't send. Try again."}
           </p>
         </>

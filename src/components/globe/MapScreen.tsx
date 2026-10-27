@@ -217,7 +217,7 @@ export default function MapScreen({ dots: dotData, psiDaily, summary }: Props) {
   );
 
   return (
-    <div className="fixed inset-0 overflow-hidden bg-[#02030a] text-white">
+    <div className="fixed inset-0 overflow-hidden bg-[#02030a] text-white [--focus:#fff]">
       <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-2 focus:top-2 focus:z-[1100] focus:rounded-full focus:bg-white focus:px-4 focus:py-2 focus:text-label focus:font-semibold focus:text-[#02030a]">
         Skip to content
       </a>

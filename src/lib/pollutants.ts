@@ -1,4 +1,4 @@
-import { LEVEL_NAME, PM25_BANDS } from "@/lib/bands";
+import { LEVEL_NAME, PM25_BANDS, PM25_COLORS } from "@/lib/bands";
 import { NEA_PSI_URL } from "@/lib/links";
 
 export type PollutantId = "pm25" | "pm10" | "co" | "no2" | "so2" | "o3" | "dust";
@@ -120,19 +120,22 @@ function position(p: Pollutant, v: number): number {
 /** Below this share of the band 0 limit the air is clean: nothing is drawn (PM2.5: 20 of 55 µg/m³). */
 const CLEAR = 20 / 55;
 
+/** A `#rrggbb` air-level colour as the ramp's rgb. */
+const rgb = (hex: string): Rgb => [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16)];
+const [GREEN, AMBER, ORANGE, RED] = PM25_COLORS.map(rgb);
+
 /**
- * The smoke ramp on band position: a smoky veil that only looks dangerous when the air is. Normal is a faint grey-brown at most
- * (alpha 0.16 at the limit); Elevated turns to brown haze, High to rust, Very high to dark blood red.
- * For PM2.5 this is the spike's palette: stops at 20, 55, 100, 150, 250 and 350 µg/m³ (position 1.5 is 102 µg/m³).
+ * The smoke ramp on band position, in the air-level colours (PM25_COLORS) so that the shading, the reading dots and the legend agree:
+ * Normal is a faint green (alpha 0.16 at the limit), Elevated amber (full colour half way through the band, at 102 µg/m³ for PM2.5),
+ * High orange and Very high red, and the opacity rises with the air. Stops for PM2.5: 20, 55, 102, 200 and 350 µg/m³ (position 2.5 is 200).
  */
 const STOPS: Stop[] = [
-  [CLEAR, [150, 140, 120], 0],
-  [1, [165, 140, 105], 0.16],
-  [1.5, [175, 120, 70], 0.5],
-  [2, [170, 90, 50], 0.66],
-  [3, [150, 40, 35], 0.76],
-  [3.4, [110, 20, 35], 0.82],
-  [4, [110, 20, 35], 0.82],
+  [CLEAR, GREEN, 0],
+  [1, GREEN, 0.16],
+  [1.5, AMBER, 0.5],
+  [2.5, ORANGE, 0.68],
+  [3.4, RED, 0.8],
+  [4, RED, 0.82],
 ];
 
 /** Where `v` sits on a tracer scale: 0 at or below `lo` (and for a missing value), 1 at or above `hi`, log-spaced between. */

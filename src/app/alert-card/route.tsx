@@ -1,5 +1,5 @@
 import { ImageResponse } from "next/og";
-import { LEVEL_COLOR, LEVEL_NAME, REGIONS, TONE_COLOR, pm25Color, psiLevel, verdict, type Group } from "@/lib/bands";
+import { LEVEL_COLOR, LEVEL_NAME, REGIONS, TONE_COLOR, pm25Color, psiLevel, textOn, verdict, type Group } from "@/lib/bands";
 import { bestWindowFor, trendDir } from "@/lib/alerts";
 import { INK, LogoMark } from "@/lib/appIcon";
 import { cigarettes } from "@/lib/cigarettes";
@@ -93,7 +93,7 @@ export async function GET() {
 
   const { nea, history } = data;
   const color = LEVEL_COLOR[s.level];
-  const fg = s.level === 2 ? "#1d1a10" : "#fff";
+  const fg = textOn(color);
   const range = s.psi.min === s.psi.max ? `${s.psi.max}` : `${s.psi.min}–${s.psi.max}`;
   const trend = s.peak && trendDir(history?.regions[s.peak.region]);
   const hourly = data.forecast.hourly.slice(0, 12);
@@ -163,7 +163,7 @@ export async function GET() {
                 height: 120,
                 borderRadius: 20,
                 background: LEVEL_COLOR[psiLevel(v)],
-                color: psiLevel(v) === 2 ? "#1d1a10" : "#fff",
+                color: textOn(LEVEL_COLOR[psiLevel(v)]),
               }}
             >
               <div style={{ fontSize: 36 }}>{r[0].toUpperCase()}</div>

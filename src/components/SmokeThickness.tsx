@@ -5,7 +5,7 @@ import { fmtDateShort, fmtFullDate, fmtWeekday } from "@/lib/format";
 import { loadDay, loadIndex } from "@/lib/historyClient";
 import type { HistoryDay, HistoryIndex } from "@/lib/historyTypes";
 import { NASA_AOD_URL } from "@/lib/links";
-import { FIRE_COLOR } from "@/lib/replay";
+import { FIRE_MARK } from "@/lib/replay";
 import { AOD_DAYS, AOD_MAX, AOD_STOPS, RELIEF, SAT_SIZE, aodDates, aodUrl } from "@/lib/satellite";
 import { psiByDate } from "@/lib/timeline";
 import type { DayPsi, Replay } from "@/lib/types";
@@ -53,7 +53,7 @@ function DaySlider({ dates, sel, onSel, onDark = false }: { dates: string[]; sel
         onChange={(e) => onSel(Number(e.target.value))}
         aria-label="Day"
         aria-valuetext={`${today ? "Today, " : ""}${fmtWeekday(date, "long")} ${fmtFullDate(date)}`}
-        className={`h-11 w-full ${onDark ? "accent-white" : "accent-[var(--accent)]"}`}
+        className={`h-11 w-full ${onDark ? "accent-white" : "accent-[var(--fg)]"}`}
       />
       <div aria-hidden className={`flex justify-between text-label ${onDark ? "text-white/70" : "text-muted"}`}>
         <span>{fmtDateShort(dates[0])}</span>
@@ -88,12 +88,12 @@ export function WeekKey({ replay, layers }: { replay: Replay | null; layers: Rec
       </div>
       {layers.fires && hasLayer(replay, "fires") && (
         <ul className="mt-2 space-y-1.5 text-label text-muted">
-          <Key mark={<span className="size-2.5 rounded-full" style={{ background: FIRE_COLOR }} />}>Fire seen by NASA that day</Key>
+          <Key mark={<span className="size-2.5 rounded-full" style={FIRE_MARK} />}>Fire seen by NASA that day</Key>
         </ul>
       )}
       <p className="mt-2 text-label text-muted">
         Aerosol optical depth: how much sunlight the smoke and haze block. Above about 1 is thick haze.{" "}
-        <a href={NASA_AOD_URL} target="_blank" rel="noreferrer" className="text-accent underline">
+        <a href={NASA_AOD_URL} target="_blank" rel="noreferrer" className="link">
           Source
         </a>
       </p>

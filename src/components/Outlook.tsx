@@ -76,7 +76,7 @@ export default function Outlook({ days, group, outlook = null }: { days: DayOutl
       <button
         onClick={() => setOpen(!open)}
         aria-expanded={open}
-        className="mt-1 flex min-h-[44px] items-center px-1 text-label font-semibold text-accent"
+        className="mt-1 flex min-h-[44px] items-center px-1 link text-label font-semibold"
       >
         {open ? "Hide details" : "Show details"}
       </button>

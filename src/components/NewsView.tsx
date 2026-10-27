@@ -30,9 +30,9 @@ const SOURCE_NAME: Record<TimelineItem["source"], string> = {
 /** Events worked out from the readings and fires, not published by anyone: shown small so the news reads clearly. */
 const isDerived = (n: TimelineItem) => n.source === "NEA readings" || n.source === "NASA FIRMS";
 
-/** Source chips: NEA in the accent, Met Service in a soft sky tint, outlets neutral. */
+/** Source chips: NEA in an inked ring, Met Service on a soft tint, outlets neutral. */
 const chipStyle = (source: TimelineItem["source"]) =>
-  source === "NEA" ? "bg-accent text-bg" : source === "MSS" ? "bg-accent/12 text-soft" : "bg-surface text-soft ring-1 ring-line";
+  source === "NEA" ? "bg-line text-fg ring-1 ring-fg/40" : source === "MSS" ? "bg-line text-soft" : "bg-surface text-soft ring-1 ring-line";
 
 /** The arrow and screen-reader note for a link that opens another site. */
 function Outbound({ url }: { url: string }) {
@@ -111,7 +111,7 @@ function NeaLatest({ item, outlook }: { item: TimelineItem; outlook: Outlook | n
           Posted {fmtWhen(item.time, item.hasHour)}
         </p>
         {item.url && (
-          <a href={item.url} target="_blank" rel="noreferrer" className="-mr-2 flex min-h-[44px] items-center px-2 text-label font-semibold text-accent">
+          <a href={item.url} target="_blank" rel="noreferrer" className="-mr-2 flex min-h-[44px] items-center px-2 link text-label font-semibold">
             Full update
             <Outbound url={item.url} />
           </a>
@@ -175,7 +175,7 @@ export default function NewsView({ items, streak, psi }: { items: TimelineItem[]
                 rel="noreferrer"
                 aria-label="Get haze alerts on Telegram"
                 title="A Telegram message when the PSI band changes or NEA posts an update"
-                className="flex min-h-[44px] shrink-0 items-center gap-1.5 rounded-full bg-accent px-4 text-label font-semibold text-bg"
+                className="flex min-h-[44px] shrink-0 items-center gap-1.5 btn-primary rounded-full px-4 text-label font-semibold"
               >
                 <Bell size={16} aria-hidden />
                 Alerts
@@ -207,7 +207,7 @@ export default function NewsView({ items, streak, psi }: { items: TimelineItem[]
         {days.length === 0 ? (
           <div className="px-4 pt-6 text-label">
             <p className="font-bold">No updates right now</p>
-            <a href={ADVISORIES} target="_blank" rel="noreferrer" className="flex min-h-[44px] items-center font-semibold text-accent underline">
+            <a href={ADVISORIES} target="_blank" rel="noreferrer" className="flex min-h-[44px] items-center link font-semibold">
               NEA advisories
             </a>
           </div>
@@ -216,8 +216,8 @@ export default function NewsView({ items, streak, psi }: { items: TimelineItem[]
             const open = isOpen(d.key, di);
             const label =
               d.key === today ? (
-                <span className="inline-flex items-center gap-2 text-accent">
-                  <span aria-hidden className="size-2 rounded-full bg-accent" />
+                <span className="inline-flex items-center gap-2">
+                  <span aria-hidden className="size-2 rounded-full bg-fg" />
                   {d.label}
                 </span>
               ) : (

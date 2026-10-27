@@ -125,14 +125,14 @@ export default function SmokeOverlay({
           {layers.ahead && path && (
             <g fill="none" strokeLinecap="round" strokeLinejoin="round">
               <polyline points={path} stroke={DARK} strokeWidth={6} />
-              <polyline points={path} stroke={FIRE_COLOR} strokeWidth={3} strokeDasharray="7 6" />
+              <polyline points={path} stroke={FIRE_COLOR} strokeWidth={3} strokeDasharray="7 6" style={{ filter: "drop-shadow(0 0 1px #fff)" }} />
             </g>
           )}
           {layers.fires && (
             <g>
               {fires.map(([la, lo], i) => {
                 const p = at(la, lo);
-                return inside(p) && <circle key={i} cx={p.x} cy={p.y} r={2.4} fill={FIRE_COLOR} stroke="rgb(0 0 0 / 0.55)" strokeWidth={0.8} />;
+                return inside(p) && <circle key={i} cx={p.x} cy={p.y} r={2.4} fill={FIRE_COLOR} stroke="#fff" strokeWidth={0.8} />;
               })}
               {fresh.map(([la, lo], i) => {
                 const p = at(la, lo);

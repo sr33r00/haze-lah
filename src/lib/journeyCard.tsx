@@ -31,7 +31,7 @@ function PathPanel({ day, relief }: { day: ReplayDay; relief: string }) {
       <img src={relief} alt="" width={PANEL.w} height={PANEL.h} style={{ position: "absolute", left: 0, top: 0 }} />
       <svg width={PANEL.w} height={PANEL.h} viewBox={`0 0 ${PANEL.w} ${PANEL.h}`} style={{ position: "absolute", left: 0, top: 0 }}>
         {fires.map((p, i) => (
-          <circle key={i} cx={p[0]} cy={p[1]} r={6} fill={FIRE_COLOR} fillOpacity={0.9} />
+          <circle key={i} cx={p[0]} cy={p[1]} r={6} fill={FIRE_COLOR} fillOpacity={0.9} stroke="#fff" strokeWidth={2} />
         ))}
         <polyline points={line} fill="none" stroke={TRAIL_COLOR} strokeOpacity={0.35} strokeWidth={20} strokeLinecap="round" strokeLinejoin="round" />
         <polyline points={line} fill="none" stroke={TRAIL_COLOR} strokeWidth={6} strokeLinecap="round" strokeLinejoin="round" />
@@ -92,7 +92,7 @@ export function JourneyCard({ day, relief }: { day: ReplayDay; relief: string })
               <div style={{ fontSize: 28, fontWeight: 700, background: "#fff", padding: "0 20px" }}>{t.trip}</div>
             </div>
             <div style={{ ...row, marginTop: 24 }}>
-              {day.near > 0 && <div style={{ width: 20, height: 20, borderRadius: 10, background: FIRE_COLOR, marginRight: 16 }} />}
+              {day.near > 0 && <div style={{ width: 20, height: 20, borderRadius: 10, background: FIRE_COLOR, border: "2px solid #fff", marginRight: 16 }} />}
               <div style={{ fontSize: 40, fontWeight: 800 }}>{t.fires}</div>
             </div>
           </div>

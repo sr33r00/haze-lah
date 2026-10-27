@@ -168,7 +168,7 @@ export default function OriginMap({ layers, onTap }: { layers: OriginLayers; onT
   const { model, wind, motion, trail, marks, fires, firesDim, fresh, ahead, dots, spot } = layers;
   const touch = useMemo(() => window.matchMedia("(pointer: coarse)").matches, []); // one finger scrolls the page; two zoom the map
   const veil = useVeil(model);
-  const fire = { color: FIRE_COLOR, weight: 0, fillOpacity: firesDim ? 0.4 : 0.85 };
+  const fire = { fillColor: FIRE_COLOR, color: "#fff", weight: 0.8, opacity: firesDim ? 0.5 : 0.9, fillOpacity: firesDim ? 0.5 : 0.95 };
   return (
     <MapContainer
       bounds={START}
@@ -234,7 +234,7 @@ export default function OriginMap({ layers, onTap }: { layers: OriginLayers; onT
       ))}
       <ViewFit trail={trail} />
       <Tap onTap={onTap} />
-      {spot && <CircleMarker center={spot} radius={7} interactive={false} pathOptions={{ color: "#fff", weight: 3, fillColor: "#2563eb", fillOpacity: 1 }} />}
+      {spot && <CircleMarker center={spot} radius={7} interactive={false} pathOptions={{ color: "#fff", weight: 3, fillColor: "#13232e", fillOpacity: 1 }} />}
       {wind && <WindLayer {...wind} motion={motion} />}
     </MapContainer>
   );

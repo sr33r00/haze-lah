@@ -11,7 +11,7 @@ import { fireDayAt, frameAt, originSteps } from "@/lib/originSteps";
 import { PM25, bandNames, bandOf } from "@/lib/pollutants";
 import { WIND_HEIGHT, WIND_NOTE } from "@/lib/links";
 import { bandColor, readingDots } from "@/lib/readings";
-import { AHEAD_LABEL, FIRE_COLOR, NEW_FIRE_COLOR, TRAIL_COLOR, fetchReplay, fetchSmoke, newFires, newZonesText, trailCaption, windAtSg, windText } from "@/lib/replay";
+import { AHEAD_LABEL, AHEAD_MARK, FIRE_MARK, NEW_FIRE_COLOR, TRAIL_COLOR, fetchReplay, fetchSmoke, newFires, newZonesText, trailCaption, windAtSg, windText } from "@/lib/replay";
 import { islandMax } from "@/lib/situation";
 import type { NeaNow, NeaPm25History, Replay, Sensor, SmokeGrid, Station } from "@/lib/types";
 import { SG, sgDate } from "@/lib/util";
@@ -187,7 +187,7 @@ export default function HazeOrigin({
           role="group"
           tabIndex={0}
           aria-label="Smoke map. Tap to read the smoke level at a spot, or use the arrow keys."
-          className="relative isolate h-[23rem] overflow-hidden rounded-2xl bg-line outline-offset-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--accent)] lg:h-[calc(100dvh-14rem)] lg:min-h-[420px] lg:flex-none"
+          className="relative isolate h-[23rem] overflow-hidden rounded-2xl bg-line outline-offset-2 lg:h-[calc(100dvh-14rem)] lg:min-h-[420px] lg:flex-none"
         >
           <OriginMap layers={layers} onTap={(at) => tap(...at)} />
           {day && step && (
@@ -223,7 +223,7 @@ export default function HazeOrigin({
                             setPlaying(false);
                             setFrame(null);
                           }}
-                          className="-my-3 min-h-[44px] font-semibold text-accent"
+                          className="-my-3 link min-h-[44px] font-semibold"
                         >
                           Back to now
                         </button>
@@ -259,7 +259,7 @@ export default function HazeOrigin({
                   </span>
                 ))}
                 <span className="flex items-center gap-1.5">
-                  <span className="size-2 rounded-full" style={{ background: FIRE_COLOR }} />
+                  <span className="size-2 rounded-full" style={FIRE_MARK} />
                   {fireNote ? `Fires of ${fireNote}` : "Fires"}
                 </span>
                 {fresh.length > 0 && (
@@ -277,7 +277,7 @@ export default function HazeOrigin({
                 )}
                 {ahead.length > 0 && (
                   <span className="flex items-center gap-1.5">
-                    <span aria-hidden className="w-4 border-t-[3px] border-dashed" style={{ borderColor: FIRE_COLOR }} />
+                    <span aria-hidden className="h-[3px] w-4" style={AHEAD_MARK} />
                     {AHEAD_LABEL}
                   </span>
                 )}
@@ -308,7 +308,7 @@ export default function HazeOrigin({
                     sensors.length > 0 && (
                       <span>
                         Data:{" "}
-                        <a href="https://openaq.org" target="_blank" rel="noreferrer" className="underline">
+                        <a href="https://openaq.org" target="_blank" rel="noreferrer" className="link">
                           OpenAQ
                         </a>{" "}
                         and AirGradient
@@ -331,7 +331,7 @@ export default function HazeOrigin({
             <>
               {day.journey ? <AirJourney day={day} shareable={step.kind !== "past"} /> : <p className="text-label font-bold text-fg">{trailCaption(day)}</p>}
               <p className="mt-3">Traced back 3 days along the wind {WIND_HEIGHT}. Fires near the path are a likely, not certain, source.</p>
-              <Link href="/map?view=path" className="mt-1 inline-block py-1 text-label font-semibold text-accent">
+              <Link href="/map?view=path" className="mt-1 inline-block py-1 link text-label font-semibold">
                 See it on the map
               </Link>
               {replay?.days.at(-1)?.ahead && (

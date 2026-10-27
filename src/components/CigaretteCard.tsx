@@ -72,7 +72,7 @@ export default function CigaretteCard({ region, pm25, today }: { region: string;
         </div>
       )}
       <details className="mt-3 text-label">
-        <summary className="cursor-pointer font-semibold text-[#ffb27a]">How is this worked out?</summary>
+        <summary className="cursor-pointer link font-semibold">How is this worked out?</summary>
         <p className="mt-2 text-white/75">{CIGARETTE_NOTES.join(" ")}</p>
         {BREATH_NOTES.map((t) => (
           <p key={t} className="mt-2 text-white/75">
@@ -81,7 +81,7 @@ export default function CigaretteCard({ region, pm25, today }: { region: string;
         ))}
         <p className="mt-2 flex flex-wrap gap-x-3 gap-y-1">
           {[...CIGARETTE_SOURCES, ...BREATH_SOURCES].map(([name, url]) => (
-            <a key={url} href={url} target="_blank" rel="noreferrer" className="text-[#ffb27a] underline">
+            <a key={url} href={url} target="_blank" rel="noreferrer" className="link">
               {name}
             </a>
           ))}

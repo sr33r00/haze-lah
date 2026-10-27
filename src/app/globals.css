@@ -4,16 +4,16 @@
   --bg: #e9eef1;
   --surface: #f7f9fa;
   --fg: #13232e;
-  --muted: #566773;
+  --muted: #51626e;
   --soft: #3a4b57;
   --line: #d3dce2;
-  --accent: #1f6f9f;
+  --rain: #2563c0; /* rain, and only rain: the Plan marks, the rain tile, the forecast's rain lane */
+  --uv: #7c3aed; /* UV, and only UV (WHO's UV colours end in violet) */
   --sg-border: #d4113c; /* Singapore's outline on the maps: red, kept clear of the fire orange */
-  --on-sg-border: #fff; /* text on it: white is 5.3:1 on this red */
-  --lv0: #2e7d55;
-  --lv1: #2c6a99;
-  --lv2: #8f6a06;
-  --lv3: #b4511c;
+  --on-sg-border: #ffffff; /* text on it: white is 5.3:1 on this red */
+  --lv0: #2a7650;
+  --lv2: #856100;
+  --lv3: #a84a16;
   --lv4: #9e2b35;
   --nav-h: 64px; /* phone tab bar: link height */
   --nav-pad: max(env(safe-area-inset-bottom), 8px); /* its padding below the links, clear of the home indicator */
@@ -34,11 +34,11 @@
   --muted: #8a9ba7;
   --soft: #b7c5ce;
   --line: #22313c;
-  --accent: #6fb3dc;
+  --rain: #7db1f5;
+  --uv: #b39bfa;
   --sg-border: #ff4d6a;
   --on-sg-border: #13232e; /* white would be 3.2:1 on this lighter red; the dark ink is 5.0:1 */
   --lv0: #6cc596;
-  --lv1: #7fb5e0;
   --lv2: #e8bd45;
   --lv3: #f08c55;
   --lv4: #f07a84;
@@ -52,11 +52,11 @@
     --muted: #8a9ba7;
     --soft: #b7c5ce;
     --line: #22313c;
-    --accent: #6fb3dc;
+    --rain: #7db1f5;
+    --uv: #b39bfa;
     --sg-border: #ff4d6a;
     --on-sg-border: #13232e;
     --lv0: #6cc596;
-    --lv1: #7fb5e0;
     --lv2: #e8bd45;
     --lv3: #f08c55;
     --lv4: #f07a84;
@@ -70,7 +70,8 @@
   --color-muted: var(--muted);
   --color-soft: var(--soft);
   --color-line: var(--line);
-  --color-accent: var(--accent);
+  --color-rain: var(--rain);
+  --color-uv: var(--uv);
   --font-sans: "Atkinson Hyperlegible Next Variable", ui-sans-serif, system-ui, sans-serif;
 }
 
@@ -79,6 +80,24 @@
   --text-fine: 13px;
   --text-label: 15px;
   --text-body: 16px;
+}
+
+/* Actions have no hue. A link is the ink around it with an underline (hover: thicker); a primary button is a solid ink fill with the page colour as its text. Secondary buttons stay outlined or neutral. */
+@utility link {
+  text-decoration-line: underline;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 3px;
+  &:hover {
+    text-decoration-thickness: 3px;
+  }
+}
+
+@utility btn-primary {
+  background-color: var(--fg);
+  color: var(--bg);
+  &:hover {
+    opacity: 0.88;
+  }
 }
 
 /* Motion: transform and opacity only. Each says something: rise = new content, sheet = a panel opening from the bottom, grow = a value, pop = a count, ring = look here, ember and wisp = burning now. */
@@ -400,8 +419,9 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+/* Keyboard focus: a 2 px ring in the ink. A surface that is not the page (the hero's verdict colour, the dark map) sets --focus to the ink it uses there. */
 :focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--focus, var(--fg));
   outline-offset: 2px;
 }
 /* Focused by code only (e.g. a dialog title), never by Tab: no ring. */
