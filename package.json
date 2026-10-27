@@ -1,13 +1,13 @@
 {
   "name": "haze-lah",
-  "version": "1.14.4",
+  "version": "1.14.3",
   "license": "AGPL-3.0-only",
   "private": true,
   "scripts": {
     "dev": "CLOUDFLARE_INCLUDE_PROCESS_ENV=true vite dev --port 3000",
     "build": "vite build",
     "preview": "wrangler dev --config dist/server/wrangler.json",
-    "deploy": "NEXT_PUBLIC_CF_BEACON=90cbf560af114d27828aa5d317a167ad vinext-cloudflare deploy --warm-cache --warm-cache-target https://hazelah.app",
+    "deploy": "NEXT_PUBLIC_CF_BEACON=90cbf560af114d27828aa5d317a167ad vinext-cloudflare deploy",
     "lint": "eslint",
     "test": "tsx --test \"src/**/*.test.ts\" \"workers/**/*.test.ts\""
   },

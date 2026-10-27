@@ -11,7 +11,7 @@ The jobs are code in `src/lib/jobs/`, run by `POST /api/jobs/<job>` (`src/app/ap
 | Job | Started by (UTC) | Steps | Writes (bucket keys) |
 |---|---|---|---|
 | `hourly` | After every NEA refresh (`2,5,10,20 * * * *` check), and `40 * * * *` as a safety net | Archive and score forecasts, Telegram alerts, APIMS capture | `archive/YYYY-MM.jsonl`, `forecast-latest.json`, `accuracy.json`, `alert-state.json`, `readings/pending/<date>.json` |
-| `history` | `30 17 * * *`: 01:30 SGT daily | Air globe history, then deletes retired versions of the shared page cache | `history/<date>.json`, `history/index.json`; deletes under `runtime-cache/` in the bucket `haze-lah-cache` |
+| `history` | `30 17 * * *`: 01:30 SGT daily | Air globe history | `history/<date>.json`, `history/index.json` |
 | `readings` | `45 17 * * *`: 01:45 SGT daily | Readings archive | `readings/<date>.json`, `readings/index.json` |
 
 The schedules and the job each starts are in `workers/nea-refresh/src/schedule.ts`. Cloudflare's Cron Triggers are reliable, and every job is idempotent, so a repeated run is harmless: the archive skips an NEA hour it already saved, alerts send once per reading, the capture replaces an hour it already holds.

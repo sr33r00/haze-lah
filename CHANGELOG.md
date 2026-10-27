@@ -6,14 +6,6 @@ The in-app "What's new" sheet shows the highlights of the last three releases. D
 
 ## [Unreleased]
 
-## [1.14.4] - 2026-10-28
-
-### Fixed
-
-- Pages are built once for the whole world instead of once in every Cloudflare data centre. The page cache is now shared (Workers Response Store: bodies in R2, freshness and tags in one Durable Object near Singapore), so a visitor in a quiet region no longer waits for a rebuild that another region already did, and a refresh reaches every region at once.
-- Deploys are staged: the new version is uploaded without traffic, its pages are warmed through the live address, and only then does it take over, so nobody meets an empty cache after a deploy.
-- The daily history job deletes cached versions that are no longer current and have not been used for 48 hours, so old deploys do not pile up in storage while a recent rollback still finds a warm cache.
-
 ## [1.14.3] - 2026-10-27
 
 ### Changed

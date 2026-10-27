@@ -1,6 +1,5 @@
 import { sendAlerts } from "./alerts";
 import { archiveForecast } from "./archive";
-import { cleanCacheVersions } from "./cacheCleanup";
 import { buildHistory } from "./history";
 import { storeReplay, storeSmoke } from "./latest";
 import { sendPollTally } from "./pollTally";
@@ -20,8 +19,8 @@ const JOBS: Record<JobName, (q: URLSearchParams) => Steps> = {
     const steps: Steps = q.get("test") === "1" ? { alerts: () => sendAlerts(true) } : { archive: archiveForecast, alerts: () => sendAlerts(), readingsCapture: captureApims, pollTally: () => sendPollTally(), replay: storeReplay, smoke: storeSmoke };
     return steps;
   },
-  /** Daily: the air globe's history for `from`..`to` (default yesterday, SGT), then the page cache's retired versions deleted. */
-  history: (q) => ({ history: () => buildHistory(q.get("from"), q.get("to")), cacheCleanup: cleanCacheVersions }),
+  /** Daily: the air globe's history for `from`..`to` (default yesterday, SGT). */
+  history: (q) => ({ history: () => buildHistory(q.get("from"), q.get("to")) }),
   /** Daily: the readings archive for `from`..`to` (default yesterday, SGT). */
   readings: (q) => ({ readings: () => buildReadings(q.get("from"), q.get("to")) }),
 };
