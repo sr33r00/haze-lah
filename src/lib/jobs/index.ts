@@ -1,6 +1,7 @@
 import { sendAlerts } from "./alerts";
 import { archiveForecast } from "./archive";
 import { buildHistory } from "./history";
+import { storeReplay, storeSmoke } from "./latest";
 import { sendPollTally } from "./pollTally";
 import { buildReadings, captureApims } from "./readings";
 
@@ -13,9 +14,9 @@ type Steps = Record<string, () => Promise<object>>;
 
 /** The jobs, each a list of steps. */
 const JOBS: Record<JobName, (q: URLSearchParams) => Steps> = {
-  /** After each NEA hour (and again as a safety net): archive and score the forecast, send the alerts, keep the latest APIMS hour, tell the owner the poll counts once a day. */
+  /** After each NEA hour (and again as a safety net): archive and score the forecast, send the alerts, keep the latest APIMS hour, tell the owner the poll counts once a day, store the replay and the smoke grid for the API routes. */
   hourly: (q) => {
-    const steps: Steps = q.get("test") === "1" ? { alerts: () => sendAlerts(true) } : { archive: archiveForecast, alerts: () => sendAlerts(), readingsCapture: captureApims, pollTally: () => sendPollTally() };
+    const steps: Steps = q.get("test") === "1" ? { alerts: () => sendAlerts(true) } : { archive: archiveForecast, alerts: () => sendAlerts(), readingsCapture: captureApims, pollTally: () => sendPollTally(), replay: storeReplay, smoke: storeSmoke };
     return steps;
   },
   /** Daily: the air globe's history for `from`..`to` (default yesterday, SGT). */

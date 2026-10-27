@@ -1,7 +1,7 @@
 import { env } from "cloudflare:workers";
 import { ImageResponse } from "next/og";
 import { JOURNEY_SIZE, JourneyCard } from "@/lib/journeyCard";
-import { getReplay } from "@/lib/replayData";
+import { readReplay } from "@/lib/replayData";
 import { RELIEF } from "@/lib/satellite";
 
 // Same caching as /api/replay: upstream requests sit in the fetch cache, the CDN holds the picture.
@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 /** The newest day of the replay as a shareable picture. */
 export async function GET(req: Request) {
   try {
-    const day = (await getReplay()).days.at(-1);
+    const day = (await readReplay()).days.at(-1);
     if (!day) throw new Error("no replay day");
     // The relief map ships in public/; it is read from this origin and embedded, so the renderer needs no network.
     // A Worker cannot fetch its own hostname, so the file comes from the static assets binding.

@@ -29,6 +29,11 @@ export const metadata: Metadata = {
   twitter: { card: "summary_large_image", title: "Singapore haze today: live PSI, PM2.5 and forecast", description: DESCRIPTION },
   robots: { index: true, follow: true, googleBot: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1 } },
   formatDetection: { telephone: false },
+  // Static files in public/ (the PNGs come from scripts/icons.mjs), served by the assets without running the Worker.
+  icons: {
+    icon: { url: "/icon.svg", type: "image/svg+xml", sizes: "any" },
+    apple: { url: "/apple-icon.png", type: "image/png", sizes: "180x180" },
+  },
 };
 
 const SCHEMA = [
@@ -38,7 +43,7 @@ const SCHEMA = [
     "@type": "Organization",
     name: "Haze Lah",
     url: SITE_URL,
-    logo: `${SITE_URL}/icons/512`,
+    logo: `${SITE_URL}/icons/512.png`,
     sameAs: ["https://t.me/hazelahh", "https://github.com/sr33r00/haze-lah"],
   },
   {

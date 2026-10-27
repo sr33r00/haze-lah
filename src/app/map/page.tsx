@@ -5,7 +5,7 @@ import { mapContext } from "@/lib/context";
 import { getHazeData } from "@/lib/data";
 import { dotData } from "@/lib/readings";
 import { REPLAY_URL, SMOKE_URL, aheadParts, trailCaption } from "@/lib/replay";
-import { getReplay } from "@/lib/replayData";
+import { readReplay } from "@/lib/replayData";
 import { pageMeta } from "@/lib/seo";
 import { islandMax } from "@/lib/situation";
 import type { HazeData, Replay } from "@/lib/types";
@@ -36,7 +36,7 @@ function summaryOf(data: HazeData, replay: Replay | null): string[] {
 }
 
 export default async function MapPage() {
-  const [data, replay] = await Promise.all([getHazeData(), getReplay().catch(() => null)]);
+  const [data, replay] = await Promise.all([getHazeData(), readReplay().catch(() => null)]);
   return (
     <>
       {/* The page's own data and the globe's hosts are on their way from the first bytes, long before the code that uses them has loaded. Elements, not react-dom's preload(): those would also fire when the router prefetches this page from another one. */}

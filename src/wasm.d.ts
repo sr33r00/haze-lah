@@ -10,7 +10,7 @@ declare module "cloudflare:workers" {
   export const env: {
     ASSETS: { fetch(input: Request | URL | string): Promise<Response> };
     DATA: {
-      get(key: string): Promise<{ text(): Promise<string> } | null>;
+      get(key: string): Promise<{ text(): Promise<string>; uploaded: Date } | null>;
       put(key: string, value: string, options?: { httpMetadata?: { contentType?: string } }): Promise<unknown>;
       delete(key: string): Promise<void>;
       list(options?: { prefix?: string; cursor?: string }): Promise<{ objects: { key: string }[]; truncated: boolean; cursor?: string }>;

@@ -1,4 +1,5 @@
 import { env } from "cloudflare:workers";
+import { isFresh } from "./util";
 
 // The site's private data in the R2 bucket `DATA` (wrangler.jsonc). Server only, and the one place that touches the bucket.
 // Keys are paths without a leading slash: `history/index.json`, `archive/2026-10.jsonl`, `accuracy.json`.
@@ -10,6 +11,17 @@ export const hasStore = () => Boolean(env.DATA);
 export async function readText(key: string): Promise<string | null> {
   const obj = await env.DATA.get(key);
   return obj ? obj.text() : null;
+}
+
+/** The text at `key` if it was stored within `maxAgeMs`; null when there is none, it is older, the bucket is unbound or on any error (the caller builds the data instead). */
+export async function readTextFresh(key: string, maxAgeMs: number): Promise<string | null> {
+  try {
+    if (!hasStore()) return null;
+    const obj = await env.DATA.get(key);
+    return obj && isFresh(obj.uploaded.getTime(), maxAgeMs) ? await obj.text() : null;
+  } catch {
+    return null;
+  }
 }
 
 /** The JSON at `key`; null when there is none. Throws when the bucket cannot be read or the text is not JSON (what a job needs, so it never overwrites a file it failed to read). */

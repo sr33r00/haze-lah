@@ -26,7 +26,8 @@
     "html_handling": "none",
     "not_found_handling": "none",
     "binding": "ASSETS",
-    "run_worker_first": ["/*", "!/_next/static/*", "!/*/_next/static/*"]
+    // Everything runs the Worker except the hashed build files and the static icons (public/icons, apple-icon.png, icon.svg; headers in public/_headers).
+    "run_worker_first": ["/*", "!/_next/static/*", "!/*/_next/static/*", "!/icons/*.png", "!/apple-icon.png", "!/icon.svg"]
   },
   // The data cache (ISR pages, unstable_cache and revalidateTag) behind kvDataAdapter() in vite.config.ts: namespace haze-lah-cache.
   "kv_namespaces": [{ "binding": "VINEXT_KV_CACHE", "id": "48f28b2a5e24498fb3fe8091c06e5594" }],

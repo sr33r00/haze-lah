@@ -6,6 +6,13 @@ The in-app "What's new" sheet shows the highlights of the last three releases. D
 
 ## [Unreleased]
 
+## [1.14.2] - 2026-10-27
+
+### Changed
+
+- The air replay and the smoke grid are built once an hour by the hourly job and served from storage, instead of being rebuilt by every Cloudflare data centre. If the stored copy is missing or old, they are built on demand as before.
+- The app icons are plain files served without running the Worker, and browsers keep them for a day. The old icon addresses redirect to them.
+
 ## [1.14.1] - 2026-10-27
 
 ### Fixed

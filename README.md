@@ -84,6 +84,8 @@ npx tsc --noEmit    # types
 npm run lint        # ESLint
 ```
 
+The app icons in `public/` are PNGs saved by `node scripts/icons.mjs` against a running dev server (see the script).
+
 More in [docs/development.md](docs/development.md).
 
 ## Configuration

@@ -1,0 +1,11 @@
+# Cache content-hashed assets immutably (vinext writes this rule itself only when there is no public/_headers)
+/_next/static/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# The static icons rarely change: browsers keep them for a day.
+/icons/*
+  Cache-Control: public, max-age=86400
+/apple-icon.png
+  Cache-Control: public, max-age=86400
+/icon.svg
+  Cache-Control: public, max-age=86400

@@ -6,6 +6,9 @@ export const inSingapore = (lat: number, lon: number) => Math.abs(lat - SG.lat) 
 /** A community sensor reading older than this (ms) is not shown. */
 export const MAX_SENSOR_AGE_MS = 3 * 3600_000;
 
+/** Whether something built at `builtAt` (ms) is at most `maxAgeMs` old at `now`. */
+export const isFresh = (builtAt: number, maxAgeMs: number, now = Date.now()) => now - builtAt <= maxAgeMs;
+
 export function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number) {
   const R = 6371;
   const toRad = (d: number) => (d * Math.PI) / 180;
