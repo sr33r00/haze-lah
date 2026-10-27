@@ -6,6 +6,16 @@ The in-app "What's new" sheet shows the highlights of the last three releases. D
 
 ## [Unreleased]
 
+## [1.14.1] - 2026-10-27
+
+### Fixed
+
+- The poll card now shows for everyone who closed a "What's new" sheet on an earlier visit, instead of waiting an hour from a first-visit time that only started being kept in 1.14.0.
+
+### Changed
+
+- The advice-for group picker is back right under the answer, above the PM2.5 and PSI numbers.
+
 ## [1.14.0] - 2026-10-27
 
 ### Added

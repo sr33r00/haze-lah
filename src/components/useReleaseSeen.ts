@@ -32,3 +32,14 @@ export function useReleaseSeen() {
   }, []);
   return seen;
 }
+
+/** Whether this browser closed a "What's new" sheet on an earlier page load, so it is a returning visitor. Read on mount, before this page load's sheet can be closed. False until hydrated, and when storage is unavailable. */
+export function useReturning() {
+  const [returning, setReturning] = useState(false);
+  useEffect(() => {
+    try {
+      setReturning(localStorage.getItem(SEEN) !== null);
+    } catch {}
+  }, []);
+  return returning;
+}

@@ -4,24 +4,23 @@ import { X } from "lucide-react";
 import { useState } from "react";
 import { CLEAN_ALERT, type PollVote } from "@/lib/poll";
 import { FEEDBACK_URL } from "@/lib/links";
-import { useReleaseSeen } from "./useReleaseSeen";
-import { useReturning, useStored } from "./usePrefs";
+import { useReleaseSeen, useReturning } from "./useReleaseSeen";
+import { useStored } from "./usePrefs";
 
 /** What this browser did with the poll: "pending" until it votes (yes or no) or dismisses the card. */
 type Answer = "pending" | PollVote | "dismissed";
 const ANSWERS: readonly Answer[] = ["pending", "yes", "no", "dismissed"];
-const RETURNING_AFTER = 60 * 60_000; // ms since the first visit
 
 const button = "min-h-11 rounded-full px-5 text-label font-semibold transition-opacity disabled:opacity-60";
 
 /**
  * "Want a message when the air turns clean?": a yes/no poll on whether an opt-in Telegram alert would be used (the votes are counted
- * anonymously by `/api/poll`). Only for visitors whose first visit was over an hour ago, and never while the What's new sheet is due or open.
+ * anonymously by `/api/poll`). Only for returning visitors (who closed a What's new sheet on an earlier visit), and never while the What's new sheet is due or open.
  * A vote or a dismissal hides it for good; after a vote it thanks the visitor until the page is left.
  */
 export default function PollCard() {
   const [answer, setAnswer] = useStored<Answer>(`poll-${CLEAN_ALERT}`, ANSWERS, "pending");
-  const returning = useReturning(RETURNING_AFTER);
+  const returning = useReturning();
   const sheetDone = useReleaseSeen();
   const [thanked, setThanked] = useState(false);
   const [status, setStatus] = useState<"idle" | "sending" | "error">("idle");

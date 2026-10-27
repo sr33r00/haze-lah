@@ -4,7 +4,7 @@ import { fmtFullDate } from "./format";
 /** One change in a release: a row in the "What's new" sheet and on the About page. */
 export type ReleaseItem = { title: string; text: string; href: string; icon: LucideIcon };
 
-/** One release: its version (in step with package.json for the newest), its date (YYYY-MM-DD) and its highlights. */
+/** One release: its version (the newest is in step with package.json, except for fix-only releases, which leave it so the sheet does not open again), its date (YYYY-MM-DD) and its highlights. */
 export type Release = { version: string; date: string; items: ReleaseItem[] };
 
 /** The last three releases, newest first: all shown in the "What's new" sheet and on the About page. Drop the oldest when adding one. */

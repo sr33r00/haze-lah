@@ -54,21 +54,6 @@ export function usePlanChoice() {
   return { activity, setActivity, hours: Number(chosen), setHours, usual };
 }
 
-const FIRST_VISIT = "first-visit";
-
-/** Whether this browser first visited more than `afterMs` ago (false on the first visit, which records the time). False until the page has hydrated. */
-export function useReturning(afterMs: number) {
-  const [returning, setReturning] = useState(false);
-  useEffect(() => {
-    try {
-      const first = Number(localStorage.getItem(FIRST_VISIT));
-      if (first) setReturning(Date.now() - first > afterMs);
-      else localStorage.setItem(FIRST_VISIT, String(Date.now()));
-    } catch {}
-  }, [afterMs]);
-  return returning;
-}
-
 /**
  * The visitor's remembered region and health group, plus "use my location". Until the visitor picks a region,
  * `defaultRegion` (the one with the highest PSI) is shown and nothing is stored, so it follows the haze.

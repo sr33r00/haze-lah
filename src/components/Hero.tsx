@@ -65,6 +65,20 @@ export default function Hero(props: {
         <PuffStage step={step} />
       </div>
 
+      <div role="group" aria-label="Advice for" className="mt-5 grid grid-cols-3 gap-1 rounded-2xl p-1" style={{ background: `color-mix(in srgb, ${ink} 14%, transparent)` }}>
+        {GROUPS.map((g) => (
+          <button
+            key={g}
+            aria-pressed={g === group}
+            onClick={() => props.onGroup(g)}
+            className="rounded-xl px-1 py-2 text-label font-semibold leading-tight transition-colors"
+            style={g === group ? { background: ink, color: tone ? tone.bg : "var(--surface)" } : { color: soft }}
+          >
+            {GROUP_SHORT[g]}
+          </button>
+        ))}
+      </div>
+
       <dl className="mt-6 grid grid-cols-2 gap-4">
         <div>
           <dt>
@@ -140,20 +154,6 @@ export default function Hero(props: {
         )}
       </div>
       <WeatherTiles region={props.region} now={props.now} weather={props.weather} />
-
-      <div role="group" aria-label="Advice for" className="mt-4 grid grid-cols-3 gap-1 rounded-2xl p-1" style={{ background: `color-mix(in srgb, ${ink} 14%, transparent)` }}>
-        {GROUPS.map((g) => (
-          <button
-            key={g}
-            aria-pressed={g === group}
-            onClick={() => props.onGroup(g)}
-            className="rounded-xl px-1 py-2 text-label font-semibold leading-tight transition-colors"
-            style={g === group ? { background: ink, color: tone ? tone.bg : "var(--surface)" } : { color: soft }}
-          >
-            {GROUP_SHORT[g]}
-          </button>
-        ))}
-      </div>
 
       <p id="explain" hidden={!open} className="mt-3 text-label leading-snug" style={{ color: soft }}>
         {open && EXPLAIN[open]}
