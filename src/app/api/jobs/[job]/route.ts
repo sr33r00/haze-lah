@@ -3,7 +3,7 @@ import { NO_STORE, refuse } from "@/lib/routeAuth";
 
 /**
  * The scheduled jobs, started by the Cloudflare Worker in `workers/nea-refresh` with the same bearer secret as `/api/refresh`:
- *   hourly    archive and score the forecast, send the alerts, keep the latest APIMS hour (`?test=1`: only a test alert)
+ *   hourly    archive and score the forecast, send the alerts, keep the latest APIMS hour, send the owner the poll counts (once a day, privately) (`?test=1`: only a test alert)
  *   history   the air globe's history; `?from=YYYY-MM-DD&to=YYYY-MM-DD` (default yesterday, SGT; at most 31 days)
  *   readings  the readings archive; same `from` and `to`
  * Answers with each step's result or error, and 500 when any step failed. Also the way to backfill by hand.

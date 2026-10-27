@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { PLAN_HOURS, RAIN_TEXT, bestSlots, planStrip, rate, ratingLegend, slotReason, weatherRatings } from "@/lib/exercise";
+import { PLAN_HOURS, RAIN_TEXT, bestSlots, bestTimeLine, fmtSlot, planSlot, planStrip, rate, ratingLegend, slotReason, weatherRatings } from "@/lib/exercise";
 import type { ForecastPoint, WeatherHour } from "@/lib/types";
 
 const START = Date.parse("2026-10-23T22:00:00Z"); // 6am SGT, Sat 24 Oct
@@ -165,4 +165,30 @@ test("the reason line gives rain, UV and air", () => {
   const [wet] = bestSlots(hourly(() => 20), "run", "healthy", NOW, 1, wx(() => 60, () => 3));
   assert.equal(slotReason(wet), "Rain likely · UV 3 · Air normal");
   assert.equal(slotReason(bestSlots(hourly(() => 80), "run", "healthy", NOW)[0]), "Air elevated");
+});
+
+test("the best-time line names the day and hours, and says Now when the session starts this hour", () => {
+  const h = hourly((i) => (i === 3 ? 10 : 20));
+  const [today] = bestSlots(h, "run", "healthy", NOW);
+  assert.deepEqual(bestTimeLine(today, "run", NOW), { text: "Cleanest air to run: today 9–10am", detail: "PM2.5 about 10 · Normal" });
+  const [first] = bestSlots(hourly((i) => (i === 0 ? 10 : 20)), "run", "healthy", NOW);
+  assert.deepEqual(bestTimeLine(first, "run", NOW), { text: "Cleanest air to run: now till 7am", detail: "PM2.5 about 10 · Normal" });
+  const [tomorrow] = bestSlots(hourly(() => 20), "play", "healthy", NOW).slice(1);
+  assert.match(bestTimeLine(tomorrow, "play", NOW).text, /^Cleanest air to take the kids out to play: tomorrow /);
+});
+
+test("the best-time line reads the same for a poor session, and ends on the half hour when the session does", () => {
+  const [bad] = bestSlots(hourly(() => 300), "out", "healthy", NOW);
+  assert.match(bestTimeLine(bad, "out", NOW).text, /^Cleanest air to go out: (now till |today )/);
+  const [half] = bestSlots(hourly((i) => (i === 3 ? 10 : 20)), "football", "healthy", NOW);
+  assert.equal(fmtSlot(half), "9:00–10:30am");
+});
+
+test("the plan's slot ignores hours past the strip, like the card", () => {
+  // Clean only from hour 30 (noon tomorrow), beyond the 16-hour strip.
+  const h = hourly((i) => (i === 30 ? 5 : 40));
+  const strip = planStrip(h, "run", "healthy", NOW);
+  const slot = planSlot(h, strip, "run", "healthy", NOW, 1, []);
+  assert.ok(slot && slot.startIndex < PLAN_HOURS);
+  assert.equal(planSlot(h, [], "run", "healthy", NOW, 1, []), undefined);
 });

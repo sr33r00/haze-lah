@@ -1,10 +1,9 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { RELEASE, RELEASE_LABEL } from "@/lib/releases";
 import ReleaseList from "./ReleaseList";
+import { hasSeenRelease, markReleaseSeen } from "./useReleaseSeen";
 
-const SEEN = "seen-release";
 const DELAY = 1200; // ms: let the page settle first
 
 /**
@@ -15,45 +14,38 @@ export default function WhatsNew() {
   const dialog = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    try {
-      if (localStorage.getItem(SEEN) === RELEASE.version) return;
-      timer = setTimeout(() => {
-        if (dialog.current && !dialog.current.open) dialog.current.showModal();
-      }, DELAY);
-    } catch {}
+    if (hasSeenRelease()) return;
+    const timer = setTimeout(() => {
+      if (dialog.current && !dialog.current.open) dialog.current.showModal();
+    }, DELAY);
     return () => clearTimeout(timer);
   }, []);
 
   const close = () => dialog.current?.close();
-  // Every way out (Got it, Esc, backdrop, a link) ends in `close`, so mark it seen there.
-  const markSeen = () => {
-    try {
-      localStorage.setItem(SEEN, RELEASE.version);
-    } catch {}
-  };
-
   return (
     <dialog
       ref={dialog}
       aria-labelledby="whats-new-title"
-      onClose={markSeen}
+      // Every way out (Got it, Esc, backdrop, a link) ends in `close`, so mark it seen there.
+      onClose={markReleaseSeen}
       onClick={(e) => e.target === e.currentTarget && close()}
-      className="fixed inset-x-0 bottom-0 top-auto m-0 max-h-[85dvh] w-full max-w-none animate-sheet overflow-y-auto overscroll-contain rounded-t-[28px] border border-line bg-surface p-0 text-fg backdrop:bg-black/50 lg:inset-0 lg:m-auto lg:h-fit lg:max-w-md lg:animate-rise lg:rounded-[28px]"
+      className="fixed inset-x-0 bottom-0 top-auto m-0 max-h-[85dvh] w-full max-w-none animate-sheet overflow-hidden rounded-t-[28px] border border-line bg-surface p-0 text-fg backdrop:bg-black/50 open:flex open:flex-col lg:inset-0 lg:m-auto lg:h-fit lg:max-w-md lg:animate-rise lg:rounded-[28px]"
     >
-      <div className="px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-6">
+      {/* The releases scroll; the title and "Got it" stay put so the button is always in reach. */}
+      <div className="px-5 pt-6">
         <h2 id="whats-new-title" tabIndex={-1} autoFocus className="text-[22px] font-extrabold leading-tight tracking-tight">
           New in Haze Lah
         </h2>
-        <p className="mt-0.5 text-label text-muted">{RELEASE_LABEL}</p>
         <p className="mt-0.5 text-label text-muted">Tap one to see it.</p>
-        <div className="mt-3">
-          <ReleaseList onNavigate={close} />
-        </div>
+      </div>
+      <div className="mt-3 min-h-0 flex-1 overflow-y-auto overscroll-contain px-5">
+        <ReleaseList onNavigate={close} />
+      </div>
+      <div className="px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-4">
         <button
           type="button"
           onClick={close}
-          className="mt-4 min-h-11 w-full rounded-full bg-accent px-5 text-label font-semibold text-bg transition-opacity hover:opacity-90"
+          className="min-h-11 w-full rounded-full bg-accent px-5 text-label font-semibold text-bg transition-opacity hover:opacity-90"
         >
           Got it
         </button>

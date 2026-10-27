@@ -1,11 +1,14 @@
-import { Info, Maximize2 } from "lucide-react";
+import { ChevronRight, Info, Maximize2 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { LEVEL_COLOR, LEVEL_NAME, adviceStep, heroPaint, pm25Band, pm25Color, pm25ToUsAqi, psiLevel, verdictFor, type Group, type Region } from "@/lib/bands";
+import { bestTimeLine, planSlot, planStrip } from "@/lib/exercise";
+import { fromHour } from "@/lib/forecast";
 import { fmtHour } from "@/lib/format";
 import { GUIDE_AQICN_URL } from "@/lib/links";
 import type { ForecastPoint, WeatherHour } from "@/lib/types";
 import { cap } from "./ui";
+import { usePlanChoice } from "./usePrefs";
 import Counter from "./bits/Counter";
 import { PuffStage } from "./PuffScene";
 import WeatherTiles from "./WeatherTiles";
@@ -29,13 +32,18 @@ export default function Hero(props: {
   trend: string | null;
   group: Group;
   onGroup: (g: Group) => void;
-  next: ForecastPoint[];
+  hourly: ForecastPoint[];
 }) {
   const { pm25, psi, group } = props;
   const [open, setOpen] = useState<keyof typeof EXPLAIN | null>(null);
   const step = adviceStep(pm25, psi, group);
   const v = step != null ? verdictFor(step) : null;
   const { tone, ink, soft, bg } = heroPaint(step);
+  const next = fromHour(props.hourly, props.now).slice(0, 6);
+  // The same activity, length and window as Plan your day, so the two always agree.
+  const { activity, hours } = usePlanChoice();
+  const slot = planSlot(props.hourly, planStrip(props.hourly, activity, group, props.now, props.weather), activity, group, props.now, hours, props.weather);
+  const best = slot ? bestTimeLine(slot, activity, props.now) : null;
 
   return (
     <section
@@ -116,6 +124,21 @@ export default function Hero(props: {
           </Link>
         </p>
       )}
+      <div aria-live="polite">
+        {slot && best && (
+          // Slightly stronger than the AQICN line above, and well under the numbers: a link down to Plan your day.
+          <a href="#plan" className="group -mx-1 mt-3 flex min-h-11 items-center gap-2 px-1 leading-snug">
+            <span className="min-w-0 flex-1">
+              <span className="block text-[16px] font-semibold">{best.text}</span>
+              <span className="mt-0.5 flex items-center gap-1.5 text-label" style={{ color: soft }}>
+                <Dot color={pm25Color(slot.pm25)} />
+                {best.detail}
+              </span>
+            </span>
+            <ChevronRight size={18} aria-hidden className="shrink-0 transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none" style={{ color: soft }} />
+          </a>
+        )}
+      </div>
       <WeatherTiles region={props.region} now={props.now} weather={props.weather} />
 
       <div role="group" aria-label="Advice for" className="mt-4 grid grid-cols-3 gap-1 rounded-2xl p-1" style={{ background: `color-mix(in srgb, ${ink} 14%, transparent)` }}>
@@ -136,12 +159,12 @@ export default function Hero(props: {
         {open && EXPLAIN[open]}
       </p>
 
-      {props.next.length > 0 && (
+      {next.length > 0 && (
         // A neutral panel, so the PM2.5 band colours stay visible on every verdict colour.
         <div className="mt-6 rounded-2xl bg-surface p-3 text-fg">
-          <p className="mb-2 text-label text-muted">Next {props.next.length} hours, PM2.5 µg/m³, island-wide</p>
-          <ol className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${props.next.length}, minmax(0, 1fr))` }}>
-            {props.next.map((p, i) => (
+          <p className="mb-2 text-label text-muted">Next {next.length} hours, PM2.5 µg/m³, island-wide</p>
+          <ol className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${next.length}, minmax(0, 1fr))` }}>
+            {next.map((p, i) => (
               <li key={p.time} className="text-center">
                 <div
                   className="h-2.5 origin-bottom animate-grow rounded-full"

@@ -2,6 +2,7 @@ import { BREATH_M3_PER_DAY, NORMAL_PM25 } from "./breath";
 import { cigarettes, PM25_PER_CIGARETTE } from "./cigarettes";
 import { PM25_BANDS, pm25Band, pm25Step, verdictFor, type Group } from "./bands";
 import { fromHour } from "./forecast";
+import { fmtHour, fmtHourRange, fmtTime, fmtTimeRange } from "./format";
 import { UV_VERY_HIGH } from "./outdoor";
 import type { ForecastPoint, WeatherHour } from "./types";
 import { hourKey, sgDate, sgHour } from "./util";
@@ -194,6 +195,31 @@ export function planStrip(hourly: ForecastPoint[], activity: Activity, group: Gr
         rainy: (w?.rainProb ?? 0) >= RAIN_LIKELY,
       };
     });
+}
+
+/** The hours of a session as a range, "7–10am"; with minutes ("3:30–5pm") when it ends on the half hour. SGT is a whole-hour offset, so UTC minutes are local minutes. */
+export const fmtSlot = (s: Pick<Slot, "start" | "end">) => (new Date(s.end).getUTCMinutes() ? fmtTimeRange : fmtHourRange)(s.start, s.end);
+
+/**
+ * The best session for the chosen activity inside the plan's `strip` of hours (see `planStrip`), the only window Plan your day looks at:
+ * further ahead the forecast is less sure. Plan your day and the Now page's best-time line both read it, so they always agree.
+ */
+export function planSlot(hourly: ForecastPoint[], strip: StripHour[], activity: Activity, group: Group, now: number, hours: number, weather: WeatherHour[]): Slot | undefined {
+  const until = strip.length ? Date.parse(strip[0].time) + strip.length * 3600_000 : 0;
+  return bestSlots(hourly.filter((p) => Date.parse(p.time) < until), activity, group, now, hours, weather)[0];
+}
+
+/**
+ * The Now page's two-line answer to "when should I {activity}?". `text`: "Cleanest air to run: now till 8am" when the session starts in the
+ * current hour, otherwise "Cleanest air to run: today 6–7am" (or "tomorrow"). It is relative, so it reads the same for a fine slot and a poor one;
+ * `detail` says how good it is: "PM2.5 about 45 · Normal" (the session's mean and its NEA 1-hr band).
+ */
+export function bestTimeLine(slot: Slot, activity: Activity, now: number): { text: string; detail: string } {
+  const when =
+    slot.startIndex === 0 || Date.parse(slot.start) <= now
+      ? `now till ${(new Date(slot.end).getUTCMinutes() ? fmtTime : fmtHour)(slot.end)}`
+      : `${slot.day} ${fmtSlot(slot)}`;
+  return { text: `Cleanest air to ${ACTIVITY[activity].phrase}: ${when}`, detail: `PM2.5 about ${Math.round(slot.pm25)} · ${pm25Band(slot.pm25).name}` };
 }
 
 /** The lowest PM2.5 of each NEA 1-hr band (I to IV), to read the ratings off. */

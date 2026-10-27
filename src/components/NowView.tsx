@@ -4,7 +4,6 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { tips } from "@/lib/advice";
 import { trend3h } from "@/lib/format";
-import { fromHour } from "@/lib/forecast";
 import { adviceStep, psiLevel } from "@/lib/bands";
 import { currentReading, islandMax } from "@/lib/situation";
 import type { AqiStation, DayOutlook, ForecastPoint, NeaNow, NeaPm25History, Sensor, Station, WeatherHour } from "@/lib/types";
@@ -16,6 +15,7 @@ import HazeOutlook from "./HazeOutlook";
 import Hero from "./Hero";
 import LiveViews from "./LiveViews";
 import PlanDay from "./PlanDay";
+import PollCard from "./PollCard";
 import RegionChips from "./RegionChips";
 import { useCameras } from "./useCameras";
 import { useNow } from "./useNow";
@@ -68,8 +68,11 @@ export default function NowView({ generatedAt, history, nea, hourly, weather, da
             trend={trend3h(history?.regions[region])}
             group={group}
             onGroup={setGroup}
-            next={fromHour(hourly, now).slice(0, 6)}
+            hourly={hourly}
           />
+        </div>
+        <div className="order-3">
+          <PollCard />
         </div>
         <div className="order-4 mt-6">
           <HazeOutlook days={days} psiNow={nea ? (islandMax(nea.psi24)?.psi ?? null) : null} />

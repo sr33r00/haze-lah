@@ -12,7 +12,6 @@ import { fetchAccuracy } from "@/lib/accuracy";
 import { CIGARETTE_NOTES, CIGARETTE_SOURCES } from "@/lib/cigarettes";
 import { getHazeData } from "@/lib/data";
 import { FORECAST_METHOD } from "@/lib/forecast";
-import { RELEASE_LABEL } from "@/lib/releases";
 
 export const metadata = pageMeta(
   "About Haze Lah: data sources, forecast method and accuracy",
@@ -289,7 +288,6 @@ export default async function About() {
 
             <section id="whats-new" className="scroll-mt-20 space-y-3">
               <h2 className={H2}>What&apos;s new</h2>
-              <p className="text-label text-muted">{RELEASE_LABEL}</p>
               <ReleaseList on="page" />
             </section>
 

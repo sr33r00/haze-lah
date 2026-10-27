@@ -4,18 +4,15 @@ import { ChevronDown, TriangleAlert } from "lucide-react";
 import { PM25_BANDS, TONE_COLOR, type Group } from "@/lib/bands";
 import { BREATH_SOURCES, fmtDust } from "@/lib/breath";
 import { CIGARETTE_SOURCES } from "@/lib/cigarettes";
-import { ACTIVITIES, ACTIVITY, DURATIONS, PLAN_NOTES, RAIN_TEXT, bestSlots, isOk, planStrip, ratingLegend, slotReason, type Activity, type Slot } from "@/lib/exercise";
-import { cap, fmtHour, fmtHourRange, fmtTimeRange } from "@/lib/format";
+import { ACTIVITIES, ACTIVITY, DURATIONS, PLAN_NOTES, RAIN_TEXT, fmtSlot, isOk, planSlot, planStrip, ratingLegend, slotReason, type Activity, type Slot } from "@/lib/exercise";
+import { cap, fmtHour } from "@/lib/format";
 import { UV_SOURCES } from "@/lib/outdoor";
 import type { ForecastPoint, WeatherHour } from "@/lib/types";
 import { sgHour } from "@/lib/util";
 import InfoNote from "./InfoNote";
-import { useStored } from "./usePrefs";
+import { usePlanChoice } from "./usePrefs";
 
-const DURATION_KEYS = DURATIONS.map(String);
 const durationLabel = (h: number) => (h < 1 ? `${h * 60} min` : `${h} h`);
-// SGT is a whole-hour offset, so UTC minutes are local minutes: a 1.5 h session ends on the half hour.
-const fmtSlot = (s: Slot) => (new Date(s.end).getUTCMinutes() ? fmtTimeRange : fmtHourRange)(s.start, s.end);
 
 /** "0.7 cigarettes", or "under 0.1" when it rounds to nothing. */
 const cigText = (n: number) => (n < 0.1 ? "under 0.1" : `${n} ${n === 1 ? "cigarette" : "cigarettes"}`);
@@ -93,16 +90,11 @@ const MIN_TOP = 60;
  * the coming hours as a strip with it outlined, the numbers behind it and a forecast caveat. `now` (see `useNow`) is the time to plan from.
  */
 export default function PlanDay({ hourly, weather, group, now }: { hourly: ForecastPoint[]; weather: WeatherHour[]; group: Group; now: number }) {
-  const [activity, choose] = useStored<Activity>("activity", ACTIVITIES, "out");
-  const usual = ACTIVITY[activity].hours;
-  const [chosen, chooseLength] = useStored(`duration-${activity}`, DURATION_KEYS, String(usual));
-  const len = Number(chosen);
+  const { activity, setActivity: choose, hours: len, setHours: chooseLength, usual } = usePlanChoice();
 
   if (!hourly.length) return <p className="px-4 text-label text-muted">Forecast unavailable.</p>;
   const hours = planStrip(hourly, activity, group, now, weather);
-  // Only the next window, and only inside the strip's hours: further ahead the forecast is less sure.
-  const until = hours.length ? Date.parse(hours[0].time) + hours.length * 3600_000 : 0;
-  const slot = bestSlots(hourly.filter((p) => Date.parse(p.time) < until), activity, group, now, len, weather)[0];
+  const slot = planSlot(hourly, hours, activity, group, now, len, weather);
   const n = hours.length;
   const pct = (i: number) => `${(i / n) * 100}%`;
   // Bar height is PM2.5, on a scale that fits the tallest bar (never below MIN_TOP); NEA band I's top is marked when in range.

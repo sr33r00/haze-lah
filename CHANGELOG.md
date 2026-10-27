@@ -2,9 +2,24 @@
 
 All notable changes to Haze Lah are listed here. The format follows [Keep a Changelog 1.1.0](https://keepachangelog.com/en/1.1.0/), and the project uses [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-The in-app "What's new" sheet shows the highlights of the current release. Data-only commits by the archive jobs are not listed.
+The in-app "What's new" sheet shows the highlights of the last three releases. Data-only commits by the archive jobs are not listed.
 
 ## [Unreleased]
+
+## [1.14.0] - 2026-10-27
+
+### Added
+
+- A best-time line in the haze card: when the air is cleanest for the activity chosen in Plan your day.
+- A one-question poll, "Tell me when it's clean": would you use an opt-in Telegram alert for your area. Votes are anonymous counts (no IP, no user agent), with a limit on repeat votes from one connection.
+- A daily poll tally to the owner: one private Telegram message at the first hourly run from 08:00 SGT when the counts changed, sent to the feedback chat and not the public channel.
+
+### Changed
+
+- Settings (such as the activity and group) stay in step across the page and between open tabs.
+- The feedback form's rate limit uses the Cloudflare client IP.
+- Both Telegram senders (alerts and feedback) share one helper.
+- The "What's new" sheet and the About page list the last three releases, and the sheet keeps "Got it" in view while the list scrolls.
 
 ## [1.13.0] - 2026-10-27
 

@@ -2,31 +2,21 @@ import { caption, detect, quietHours, type AlertState, type Triggers } from "../
 import { getHazeData } from "../data";
 import { readJsonStrict, writeJson } from "../dataStore";
 import { SITE_URL } from "../links";
+import { sendText, telegram } from "../telegram";
 
 const STATE = "alert-state.json";
 
 /** What the alerts step did: `sent` is how many posts went out. */
 export type AlertsResult = { sent: number; psiLevel: number | null; note?: string };
 
-async function tg(method: string, body: object) {
-  const { TELEGRAM_BOT_TOKEN: token, TELEGRAM_CHAT_ID: chat } = process.env;
-  const res = await fetch(`https://api.telegram.org/bot${token}/${method}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ chat_id: chat, ...body }),
-    signal: AbortSignal.timeout(20_000),
-  });
-  if (!res.ok) throw new Error(`Telegram ${method} ${res.status}: ${(await res.text()).replaceAll(token!, "***")}`);
-}
-
 /** The card as a photo; if Telegram cannot fetch it, the caption alone. Silent at night. */
 async function send(text: string) {
   const disable_notification = quietHours();
   try {
-    await tg("sendPhoto", { photo: `${SITE_URL}/alert-card?t=${Date.now()}`, caption: text, disable_notification });
+    await telegram("sendPhoto", process.env.TELEGRAM_CHAT_ID!, { photo: `${SITE_URL}/alert-card?t=${Date.now()}`, caption: text, disable_notification });
   } catch (e) {
     console.warn("alerts: sendPhoto failed, sending text:", (e as Error).message);
-    await tg("sendMessage", { text, disable_web_page_preview: true, disable_notification });
+    await sendText(process.env.TELEGRAM_CHAT_ID!, text, { disable_notification });
   }
 }
 

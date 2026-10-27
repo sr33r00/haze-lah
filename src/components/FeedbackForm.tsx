@@ -2,6 +2,7 @@
 
 import { MessageSquare } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { FEEDBACK_ID, FEEDBACK_URL } from "@/lib/links";
 
 // Shown if sending fails, so the message is never lost.
 const ISSUE_URL = "https://github.com/sr33r00/haze-lah/issues/new?template=feedback.yml";
@@ -14,6 +15,23 @@ export default function FeedbackForm({ pill }: { pill: string }) {
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState("");
   const messageRef = useRef<HTMLTextAreaElement>(null);
+
+  // A link to the form (FEEDBACK_URL) opens it, and clearing the hash on Cancel lets the same link work again.
+  useEffect(() => {
+    const fromHash = () => {
+      if (location.hash !== FEEDBACK_URL) return;
+      setOpen(true);
+      requestAnimationFrame(() => document.getElementById(FEEDBACK_ID)?.scrollIntoView({ block: "center" }));
+    };
+    fromHash();
+    addEventListener("hashchange", fromHash);
+    return () => removeEventListener("hashchange", fromHash);
+  }, []);
+
+  const cancel = () => {
+    setOpen(false);
+    if (location.hash === FEEDBACK_URL) history.replaceState(null, "", location.pathname + location.search);
+  };
 
   // Only where there is a hardware keyboard; on phones it would pop the keyboard open.
   useEffect(() => {
@@ -36,7 +54,7 @@ export default function FeedbackForm({ pill }: { pill: string }) {
 
   if (!open) {
     return (
-      <button className={pill} onClick={() => setOpen(true)} aria-expanded={false}>
+      <button id={FEEDBACK_ID} className={pill} onClick={() => setOpen(true)} aria-expanded={false}>
         <MessageSquare size={16} aria-hidden />
         Send feedback
       </button>
@@ -44,7 +62,7 @@ export default function FeedbackForm({ pill }: { pill: string }) {
   }
 
   return (
-    <div className="w-full basis-full animate-rise rounded-3xl bg-surface p-4 text-left text-fg">
+    <div id={FEEDBACK_ID} className="w-full basis-full scroll-mt-20 animate-rise rounded-3xl bg-surface p-4 text-left text-fg">
       {status === "sent" ? (
         <p className="text-label font-semibold">Thanks, your message was sent.</p>
       ) : (
@@ -83,7 +101,7 @@ export default function FeedbackForm({ pill }: { pill: string }) {
             >
               {status === "sending" ? "Sending…" : "Send"}
             </button>
-            <button type="button" onClick={() => setOpen(false)} className="text-label text-muted">
+            <button type="button" onClick={cancel} className="text-label text-muted">
               Cancel
             </button>
           </div>

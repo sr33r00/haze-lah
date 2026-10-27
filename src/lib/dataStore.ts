@@ -3,6 +3,9 @@ import { env } from "cloudflare:workers";
 // The site's private data in the R2 bucket `DATA` (wrangler.jsonc). Server only, and the one place that touches the bucket.
 // Keys are paths without a leading slash: `history/index.json`, `archive/2026-10.jsonl`, `accuracy.json`.
 
+/** Whether the bucket is bound (it is not in some local runs). */
+export const hasStore = () => Boolean(env.DATA);
+
 /** The text at `key`; null when there is none. Throws when the bucket cannot be read. */
 export async function readText(key: string): Promise<string | null> {
   const obj = await env.DATA.get(key);

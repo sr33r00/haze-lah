@@ -1,6 +1,7 @@
 import { sendAlerts } from "./alerts";
 import { archiveForecast } from "./archive";
 import { buildHistory } from "./history";
+import { sendPollTally } from "./pollTally";
 import { buildReadings, captureApims } from "./readings";
 
 // The scheduled jobs of the site Worker. The Cloudflare Worker in `workers/nea-refresh` starts each with `POST /api/jobs/<job>`.
@@ -12,9 +13,9 @@ type Steps = Record<string, () => Promise<object>>;
 
 /** The jobs, each a list of steps. */
 const JOBS: Record<JobName, (q: URLSearchParams) => Steps> = {
-  /** After each NEA hour (and again as a safety net): archive and score the forecast, send the alerts, keep the latest APIMS hour. */
+  /** After each NEA hour (and again as a safety net): archive and score the forecast, send the alerts, keep the latest APIMS hour, tell the owner the poll counts once a day. */
   hourly: (q) => {
-    const steps: Steps = q.get("test") === "1" ? { alerts: () => sendAlerts(true) } : { archive: archiveForecast, alerts: () => sendAlerts(), readingsCapture: captureApims };
+    const steps: Steps = q.get("test") === "1" ? { alerts: () => sendAlerts(true) } : { archive: archiveForecast, alerts: () => sendAlerts(), readingsCapture: captureApims, pollTally: () => sendPollTally() };
     return steps;
   },
   /** Daily: the air globe's history for `from`..`to` (default yesterday, SGT). */

@@ -42,3 +42,7 @@ export const US_AQI_NOTE = "US AQI reads higher than Singapore's PSI for the sam
 /** URA Master Plan 2019 Region Boundary (No Sea) on data.gov.sg: the source of Singapore's outline on the maps. */
 export const SG_OUTLINE_URL = "https://data.gov.sg/datasets/d_bf4d24df9129d5a8ff8cf82e20959ee0/view";
 export const SG_OUTLINE_NAME = "URA Master Plan 2019";
+
+/** The id of the footer's feedback form, and the link that opens it from anywhere on the page. */
+export const FEEDBACK_ID = "feedback";
+export const FEEDBACK_URL = `#${FEEDBACK_ID}`;
