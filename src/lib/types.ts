@@ -80,7 +80,7 @@ export type WeatherHour = {
   feelsLike: number | null; // apparent temperature, °C
 };
 
-// NEA real-time weather feeds (data.gov.sg), trimmed to the fields the Outdoor conditions card uses.
+// NEA real-time weather feeds (data.gov.sg), trimmed to the fields the weather tiles in the hero use.
 /** One town of NEA's 2-hour forecast. */
 export type RainArea = { name: string; lat: number; lon: number; forecast: string };
 /** NEA's 2-hour weather forecast: the period it covers and a forecast per town. */
@@ -89,6 +89,8 @@ export type RainFeed = { start: string; end: string; areas: RainArea[] };
 export type HeatStation = { id: string; town: string; lat: number; lon: number; wbgt: number; stress: string };
 /** NEA's measured WBGT (°C) and heat stress band at its stations, at `time`. */
 export type HeatFeed = { time: string; stations: HeatStation[] };
+/** NEA's measured air temperature (°C) at its stations, at `time` (one reading a minute). */
+export type TempFeed = { time: string; stations: { name: string; lat: number; lon: number; temp: number }[] };
 /** One hour of NEA's UV index. */
 export type UvReading = { hour: string; value: number };
 /** NEA's UV index readings, newest first (empty before the first reading of a day). */
@@ -98,7 +100,7 @@ export type Strike = { t: number; lat: number; lon: number };
 /** NEA's lightning observations: `time` is the newest record's time (a record is two minutes), `strikes` the strikes in them. */
 export type LightningFeed = { time: string; strikes: Strike[] };
 /** What `/api/outdoor` serves: each feed is null when its source failed. */
-export type OutdoorFeeds = { rain: RainFeed | null; heat: HeatFeed | null; uv: UvFeed | null; lightning: LightningFeed | null };
+export type OutdoorFeeds = { rain: RainFeed | null; heat: HeatFeed | null; temp: TempFeed | null; uv: UvFeed | null; lightning: LightningFeed | null };
 
 /** The last live forecast, written hourly to `forecast-latest.json` in the data bucket and read back when CAMS is down. */
 export type SavedForecast = { issued: string; hourly: ForecastPoint[]; biasFactor: number | null; sigma: number | null };

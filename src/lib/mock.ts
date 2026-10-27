@@ -216,7 +216,7 @@ export function mockReplay(now = Date.now()): Replay {
   return buildReplay(frames, fires, now);
 }
 
-/** Synthetic NEA weather feeds: thundery showers, moderate heat stress, daytime UV, and two lightning strikes near the centre of the island. */
+/** Synthetic NEA weather feeds: thundery showers, moderate heat stress, air temperature, daytime UV, and two lightning strikes near the centre of the island. */
 export function mockOutdoor(now = Date.now()): OutdoorFeeds {
   const H = 3600_000;
   const iso = (t: number) => new Date(t).toISOString();
@@ -249,6 +249,16 @@ export function mockOutdoor(now = Date.now()): OutdoorFeeds {
         station("S129", "Bedok Stadium", 1.3257, 103.9397, 33.2, "High"),
         station("S132", "Jurong West Stadium", 1.3379, 103.6954, 30.8, "Moderate"),
         station("S127", "Kallang Practice Track", 1.3057, 103.8782, 31.9, "Moderate"),
+      ],
+    },
+    temp: {
+      time: iso(now - 90_000),
+      stations: [
+        { name: "Woodlands Avenue 9", lat: 1.4442, lon: 103.7855, temp: 30.6 },
+        { name: "Ang Mo Kio Avenue 5", lat: 1.3764, lon: 103.8492, temp: 31.4 },
+        { name: "East Coast Parkway", lat: 1.3135, lon: 103.9625, temp: 31.9 },
+        { name: "Jurong Pier", lat: 1.3047, lon: 103.7512, temp: 30.9 },
+        { name: "Marina Barrage", lat: 1.2806, lon: 103.8715, temp: 32.1 },
       ],
     },
     uv: { readings: uv },

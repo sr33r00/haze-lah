@@ -1,8 +1,8 @@
-import type { HeatFeed, HeatStation, LightningFeed, OutdoorFeeds, RainFeed, Strike, UvFeed } from "../types";
+import type { HeatFeed, HeatStation, LightningFeed, OutdoorFeeds, RainFeed, Strike, TempFeed, UvFeed } from "../types";
 import { getJson, num, sgDate } from "../util";
 import { BASE, headers } from "./nea";
 
-// NEA real-time weather via data.gov.sg (Singapore Open Data Licence): 2-hour forecast, WBGT heat stress, UV index and lightning.
+// NEA real-time weather via data.gov.sg (Singapore Open Data Licence): 2-hour forecast, WBGT heat stress, air temperature, UV index and lightning.
 // The parse functions are pure and throw when a feed has nothing usable, so one failed source never shows a wrong value.
 
 type Obj = Record<string, unknown>;
@@ -65,6 +65,30 @@ export function parseHeat(json: unknown): HeatFeed {
   return { time, stations };
 }
 
+/** NEA's measured air temperature: the newest minute's readings joined to their stations' positions. */
+export function parseTemp(json: unknown): TempFeed {
+  const data = obj(obj(json)?.data);
+  const rec = obj(arr(data?.readings)[0]);
+  const time = str(rec?.timestamp);
+  if (!time || ms(time) == null) throw new Error("NEA air temperature: no time");
+  const places = new Map<string, { name: string; lat: number; lon: number }>();
+  for (const s of arr(data?.stations).map(obj)) {
+    const id = str(s?.id);
+    const at = obj(s?.location);
+    const lat = num(at?.latitude);
+    const lon = num(at?.longitude);
+    if (id && lat != null && lon != null) places.set(id, { name: str(s?.name) ?? id, lat, lon });
+  }
+  const stations = arr(rec?.data).flatMap((r) => {
+    const o = obj(r);
+    const place = places.get(str(o?.stationId) ?? "");
+    const temp = num(o?.value);
+    return place && temp != null ? [{ ...place, temp }] : [];
+  });
+  if (!stations.length) throw new Error("NEA air temperature: no stations");
+  return { time, stations };
+}
+
 /** NEA's UV index readings, newest first. Empty before the first reading of a day. */
 export function parseUv(json: unknown): UvFeed {
   const recs = records(json);
@@ -124,20 +148,21 @@ async function source<T>(name: string, go: () => Promise<T>): Promise<T | null> 
 }
 
 /**
- * The four feeds, each null when it failed. Lightning is read from the dated feed, which holds the last 25 records (about 50
+ * The five feeds, each null when it failed. Lightning is read from the dated feed, which holds the last 25 records (about 50
  * minutes); the undated one holds only the newest. In the first 40 minutes of the SGT day, yesterday's is read as well.
  */
 export async function fetchOutdoor(now = Date.now()): Promise<OutdoorFeeds> {
   const today = sgDate(0, new Date(now));
   const early = sgDate(0, new Date(now - KEEP_STRIKES_MS)) !== today;
-  const [rain, heat, uv, lightning] = await Promise.all([
+  const [rain, heat, temp, uv, lightning] = await Promise.all([
     source("NEA 2-hour forecast", async () => parseRain(await getJson<unknown>(`${BASE}/two-hr-forecast`, { headers: headers() }))),
     source("NEA WBGT", async () => parseHeat(await weather("wbgt"))),
+    source("NEA air temperature", async () => parseTemp(await getJson<unknown>(`${BASE}/air-temperature`, { headers: headers() }))),
     source("NEA UV", async () => parseUv(await getJson<unknown>(`${BASE}/uv`, { headers: headers() }))),
     source("NEA lightning", async () => {
       const [day, before] = await Promise.all([weather("lightning", today), early ? weather("lightning", sgDate(-1, new Date(now))).catch(() => null) : null]);
       return parseLightning([day, before], now - KEEP_STRIKES_MS);
     }),
   ]);
-  return { rain, heat, uv, lightning };
+  return { rain, heat, temp, uv, lightning };
 }

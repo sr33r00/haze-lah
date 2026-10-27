@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { parseHeat, parseLightning, parseRain, parseUv } from "@/lib/sources/neaWeather";
+import { parseHeat, parseLightning, parseRain, parseTemp, parseUv } from "@/lib/sources/neaWeather";
 
 const rainJson = {
   code: 0,
@@ -55,6 +55,40 @@ test("heat reads text numbers and skips stations without a position, a reading o
   assert.equal(feed.time, "2026-10-26T22:45:00+08:00");
   assert.deepEqual(feed.stations, [{ id: "S125", town: "Woodlands Stadium", lat: 1.433789, lon: 103.780731, wbgt: 25.2, stress: "Low" }]);
   assert.throws(() => parseHeat({ data: { records: [] } }));
+});
+
+const tempJson = {
+  code: 0,
+  data: {
+    stations: [
+      { id: "S109", deviceId: "S109", name: "Ang Mo Kio Avenue 5", location: { latitude: 1.3764, longitude: 103.8492 } },
+      { id: "S107", name: "East Coast Parkway", location: { latitude: 1.3135, longitude: 103.9625 } },
+      { id: "S111", name: "No position", location: { latitude: "x", longitude: 103.8 } },
+    ],
+    readings: [
+      {
+        timestamp: "2026-10-27T11:54:00+08:00",
+        data: [
+          { stationId: "S109", value: 31.4 },
+          { stationId: "S107", value: "32.1" },
+          { stationId: "S111", value: 30 },
+          { stationId: "S999", value: 30 },
+          { stationId: "S109", value: null },
+        ],
+      },
+    ],
+  },
+};
+
+test("temperature joins the newest minute's readings to their stations and skips the rest", () => {
+  const feed = parseTemp(tempJson);
+  assert.equal(feed.time, "2026-10-27T11:54:00+08:00");
+  assert.deepEqual(feed.stations, [
+    { name: "Ang Mo Kio Avenue 5", lat: 1.3764, lon: 103.8492, temp: 31.4 },
+    { name: "East Coast Parkway", lat: 1.3135, lon: 103.9625, temp: 32.1 },
+  ]);
+  assert.throws(() => parseTemp({ data: { stations: [], readings: [] } }));
+  assert.throws(() => parseTemp({ data: { ...tempJson.data, readings: [{ timestamp: "2026-10-27T11:54:00+08:00", data: [] }] } }));
 });
 
 test("uv lists the readings newest first, and may be empty before the first hour of a day", () => {

@@ -44,7 +44,7 @@ const SOURCE_GROUPS = [
     title: "Live air readings",
     icon: Activity,
     items: [
-      ["NEA via data.gov.sg", "Live 1-hour PM2.5 and 24-hour PSI for the five regions, updated hourly, and the rain forecast, heat stress, UV and lightning on the Now page", "https://data.gov.sg"],
+      ["NEA via data.gov.sg", "Live 1-hour PM2.5 and 24-hour PSI for the five regions, updated hourly, and the rain forecast, air temperature, heat stress, UV and lightning on the Now page", "https://data.gov.sg"],
       ["Malaysia DOE APIMS", "Live Air Pollutant Index for Malaysian stations", "https://eqms.doe.gov.my/APIMS/main"],
       ["OpenAQ", "Low-cost community air sensors on the map, mainly AirGradient", "https://openaq.org"],
       [WAQI_NAME, "Air quality stations in Singapore on the map's US AQI view, from the agencies behind it. Not fully verified.", WAQI_URL],
@@ -59,7 +59,7 @@ const SOURCE_GROUPS = [
         "The EU's atmosphere model, run by ECMWF. It forecasts smoke particles (PM2.5) up to 5 days ahead. Haze Lah corrects it with NEA's live readings. Also used for the smoke map and Indonesian city estimates.",
         "https://open-meteo.com/en/docs/air-quality-api",
       ],
-      ["ECMWF via Open-Meteo", "Wind at 850 hPa (about 1.5 km up) and rain forecast", "https://open-meteo.com"],
+      ["ECMWF via Open-Meteo", "Wind at 850 hPa (about 1.5 km up), rain forecast and the feels-like temperature", "https://open-meteo.com"],
       ["Meteorological Service Singapore", "24-hour weather forecast", "https://www.weather.gov.sg/weather-forecast-24hrs/"],
     ],
   },

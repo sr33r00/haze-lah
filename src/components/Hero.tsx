@@ -1,13 +1,14 @@
 import { Info, Maximize2 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
-import { GROUP_LABEL, LEVEL_COLOR, LEVEL_NAME, STEP_TEXT, adviceStep, heroPaint, pm25Band, pm25Color, pm25ToUsAqi, psiLevel, verdictFor, type Group } from "@/lib/bands";
+import { LEVEL_COLOR, LEVEL_NAME, adviceStep, heroPaint, pm25Band, pm25Color, pm25ToUsAqi, psiLevel, verdictFor, type Group, type Region } from "@/lib/bands";
 import { fmtHour } from "@/lib/format";
 import { GUIDE_AQICN_URL } from "@/lib/links";
-import type { ForecastPoint } from "@/lib/types";
+import type { ForecastPoint, WeatherHour } from "@/lib/types";
 import { cap } from "./ui";
 import Counter from "./bits/Counter";
 import { PuffStage } from "./PuffScene";
+import WeatherTiles from "./WeatherTiles";
 
 const GROUPS: Group[] = ["healthy", "sensitive", "chronic"];
 const GROUP_SHORT: Record<Group, string> = { healthy: "Healthy adult", sensitive: "Child, elderly, pregnant", chronic: "Heart or lung condition" };
@@ -19,7 +20,9 @@ const EXPLAIN = {
 } as const;
 
 export default function Hero(props: {
-  region: string;
+  region: Region;
+  now: number;
+  weather: WeatherHour[];
   readingTime: string | null;
   pm25: number | null;
   psi: number | null;
@@ -52,20 +55,6 @@ export default function Hero(props: {
           <p className="mt-2 max-w-[34ch] text-[17px] leading-snug">{v ? v.detail : "NEA data is temporarily unavailable."}</p>
         </div>
         <PuffStage step={step} />
-      </div>
-
-      <div role="group" aria-label="Advice for" className="mt-5 grid grid-cols-3 gap-1 rounded-2xl p-1" style={{ background: `color-mix(in srgb, ${ink} 14%, transparent)` }}>
-        {GROUPS.map((g) => (
-          <button
-            key={g}
-            aria-pressed={g === group}
-            onClick={() => props.onGroup(g)}
-            className="rounded-xl px-1 py-2 text-label font-semibold leading-tight transition-colors"
-            style={g === group ? { background: ink, color: tone ? tone.bg : "var(--surface)" } : { color: soft }}
-          >
-            {GROUP_SHORT[g]}
-          </button>
-        ))}
       </div>
 
       <dl className="mt-6 grid grid-cols-2 gap-4">
@@ -119,17 +108,30 @@ export default function Hero(props: {
         </div>
       </dl>
       {pm25 != null && (
-        // A neutral panel with its own tag, so the AQICN number reads as another site's scale, not as NEA's reading.
-        <div className="mt-4 flex items-start gap-2.5 rounded-2xl bg-surface px-3 py-2.5 text-fg">
-          <span className="mt-px shrink-0 rounded-md bg-fg px-1.5 py-0.5 text-fine font-bold tracking-wide text-bg">ON AQICN</span>
-          <p className="text-label leading-snug">
-            This PM2.5 of <span className="tabular">{Math.round(pm25)}</span> shows as <b className="tabular font-bold">{pm25ToUsAqi(pm25)}</b>. AQICN uses a US scale, not the PSI.{" "}
-            <Link href={GUIDE_AQICN_URL} className="-my-3.5 inline-block py-3.5 font-semibold text-accent underline">
-              Why?
-            </Link>
-          </p>
-        </div>
+        // One small line, so the AQICN number reads as another site's scale, not as NEA's reading.
+        <p className="mt-3 text-label" style={{ color: soft }}>
+          <span className="tabular font-semibold">{pm25ToUsAqi(pm25)}</span> on AQICN (US scale) ·{" "}
+          <Link href={GUIDE_AQICN_URL} className="-my-3.5 inline-block py-3.5 font-semibold underline">
+            Why?
+          </Link>
+        </p>
       )}
+      <WeatherTiles region={props.region} now={props.now} weather={props.weather} />
+
+      <div role="group" aria-label="Advice for" className="mt-4 grid grid-cols-3 gap-1 rounded-2xl p-1" style={{ background: `color-mix(in srgb, ${ink} 14%, transparent)` }}>
+        {GROUPS.map((g) => (
+          <button
+            key={g}
+            aria-pressed={g === group}
+            onClick={() => props.onGroup(g)}
+            className="rounded-xl px-1 py-2 text-label font-semibold leading-tight transition-colors"
+            style={g === group ? { background: ink, color: tone ? tone.bg : "var(--surface)" } : { color: soft }}
+          >
+            {GROUP_SHORT[g]}
+          </button>
+        ))}
+      </div>
+
       <p id="explain" hidden={!open} className="mt-3 text-label leading-snug" style={{ color: soft }}>
         {open && EXPLAIN[open]}
       </p>
@@ -151,12 +153,6 @@ export default function Hero(props: {
             ))}
           </ol>
         </div>
-      )}
-
-      {step != null && (
-        <p className="mt-5 text-label leading-snug" style={{ color: soft }}>
-          NEA advice for {GROUP_LABEL[group].toLowerCase()}: {STEP_TEXT[step].toLowerCase()}.
-        </p>
       )}
     </section>
   );

@@ -44,7 +44,7 @@ Canonical site: ${SITE_URL}
 - The forecast is the Copernicus CAMS PM2.5 model calibrated against live NEA readings; accuracy is measured and published on the About page.
 
 ## Data sources
-- [NEA via data.gov.sg](https://data.gov.sg): live 1-hr PM2.5 and 24-hr PSI, 2-hour rain forecast, heat stress (WBGT), UV and lightning
+- [NEA via data.gov.sg](https://data.gov.sg): live 1-hr PM2.5 and 24-hr PSI, 2-hour rain forecast, air temperature, heat stress (WBGT), UV and lightning
 - [NEA advisories](https://www.nea.gov.sg/media/news/advisories): haze news
 - [Malaysia DOE APIMS](https://eqms.doe.gov.my/APIMS/main): Malaysian Air Pollutant Index
 - [NASA FIRMS](https://firms.modaps.eosdis.nasa.gov): satellite fire detections

@@ -15,7 +15,6 @@ import HazeOrigin from "./HazeOrigin";
 import HazeOutlook from "./HazeOutlook";
 import Hero from "./Hero";
 import LiveViews from "./LiveViews";
-import OutdoorNow from "./OutdoorNow";
 import PlanDay from "./PlanDay";
 import RegionChips from "./RegionChips";
 import { useCameras } from "./useCameras";
@@ -61,6 +60,8 @@ export default function NowView({ generatedAt, history, nea, hourly, weather, da
         <div className="order-2">
           <Hero
             region={region}
+            now={now}
+            weather={weather}
             readingTime={latest?.time ?? null}
             pm25={latest?.value ?? null}
             psi={psi}
@@ -70,9 +71,6 @@ export default function NowView({ generatedAt, history, nea, hourly, weather, da
             next={fromHour(hourly, now).slice(0, 6)}
           />
         </div>
-        <Section id="outdoor" className="order-3 !mt-8" title="Outdoor conditions">
-          <OutdoorNow region={region} now={now} />
-        </Section>
         <div className="order-4 mt-6">
           <HazeOutlook days={days} psiNow={nea ? (islandMax(nea.psi24)?.psi ?? null) : null} />
         </div>

@@ -6,6 +6,17 @@ The in-app "What's new" sheet shows the highlights of the current release. Data-
 
 ## [Unreleased]
 
+## [1.13.0] - 2026-10-27
+
+### Changed
+
+- The weather moved from its own "Outdoor conditions" section into the haze card on the Now page: a compact row of tiles under the PM2.5 and PSI numbers with the measured NEA air temperature (and what it feels like), the last UV reading, the 2-hour rain forecast and lightning. Tap a tile to see what the reading means and where and when it was measured.
+- The AQICN note under the readings is one line.
+
+### Removed
+
+- The NEA advice line at the bottom of the haze card. What to do already covers it.
+
 ## [1.12.0] - 2026-10-27
 
 ### Added

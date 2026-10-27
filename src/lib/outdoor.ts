@@ -1,15 +1,17 @@
 import { REGION_POINT, type Region } from "./bands";
+import { fromHour } from "./forecast";
 import { fmtHour, fmtTime } from "./format";
-import { WHO_UV_URL } from "./links";
-import type { LightningFeed, OutdoorFeeds, Strike, UvFeed } from "./types";
+import { HEAT_STRESS_URL, WHO_UV_URL } from "./links";
+import type { LightningFeed, OutdoorFeeds, Strike, UvFeed, WeatherHour } from "./types";
 import { haversineKm, sgNight } from "./util";
 
 /** Lightning counts strikes this close to the region's point (km), within this long (ms). */
 export const LIGHTNING_RADIUS_KM = 15;
 export const LIGHTNING_WINDOW_MS = 30 * 60_000;
-/** A lightning observation older than this (ms) is a stalled feed, and "none nearby" would not be true; likewise heat (WBGT is every 15 minutes). */
+/** A lightning observation older than this (ms) is a stalled feed, and "none nearby" would not be true; likewise heat (WBGT is every 15 minutes) and air temperature (every minute). */
 const LIGHTNING_MAX_AGE_MS = 20 * 60_000;
 const HEAT_MAX_AGE_MS = 60 * 60_000;
+const TEMP_MAX_AGE_MS = 30 * 60_000;
 
 /** The first UV index WHO calls Very high. */
 export const UV_VERY_HIGH = 8;
@@ -42,36 +44,105 @@ export function lightningNear(strikes: Strike[], point: readonly [number, number
   return { count: near.length, nearestKm: near.length ? Math.min(...near.map((s) => s.km)) : null, latest: near.length ? Math.max(...near.map((s) => s.t)) : null };
 }
 
-/** One cell of the card: the main text and a muted line, or null when its source has no usable answer. `warn` marks lightning nearby. */
-export type OutdoorCell = { value: string; sub: string; warn?: boolean } | null;
+/** The sources a tile's detail line links to: [name, url]. */
+type Links = readonly (readonly [string, string])[];
+
+/**
+ * One tile of the weather panel: a big `value` and a one-line `sub`, the `detail` shown when it is tapped, and links for it. `warn` says what
+ * turns the warning colour: the `value` (and icon), only the `sub`, or the whole `tile`. `big` marks a number, set larger than a word.
+ * Null when its source has no usable answer.
+ */
+export type OutdoorCell = { value: string; sub: string; detail: string; big?: boolean; warn?: "value" | "sub" | "tile"; links?: Links } | null;
+
+const deg = (n: number) => `${Math.round(n)}°`;
+
+/** NEA's 2-hour forecast text in a word or two that fits a small tile: by keyword, else the text without its bracket. */
+export function shortForecast(text: string): string {
+  const t = text.toLowerCase();
+  if (t.includes("thunder")) return t.includes("heavy") ? "Heavy storms" : "Storms";
+  if (t.includes("heavy")) return "Heavy rain";
+  if (/rain|shower|drizzle/.test(t)) return t.includes("light") ? "Light rain" : "Rain";
+  if (t.includes("cloud")) return t.includes("partly") ? "Partly cloudy" : "Cloudy";
+  if (t.includes("haz")) return "Hazy";
+  if (/mist|fog/.test(t)) return "Misty";
+  if (t.includes("wind")) return "Windy";
+  if (/fair|sun|clear/.test(t)) return "Fair";
+  return text.replace(/\s*\(.*?\)/g, "").trim();
+}
+
+/** The feels-like temperature (°C) of the forecast hour that holds `now`, or null without one. */
+export function feelsLikeNow(weather: WeatherHour[], now: number): number | null {
+  const hour = fromHour(weather, now)[0];
+  return hour && Date.parse(hour.time) <= now ? hour.feelsLike : null;
+}
 
 const rainCell = (feed: OutdoorFeeds["rain"], point: readonly [number, number], now: number): OutdoorCell => {
   const area = feed && now <= Date.parse(feed.end) ? nearest(feed.areas, point) : null;
-  return area && feed ? { value: area.forecast, sub: `${area.name} · till ${fmtHour(feed.end)}` } : null;
+  if (!area || !feed) return null;
+  const till = fmtHour(feed.end);
+  return { value: shortForecast(area.forecast), sub: `till ${till}`, detail: `${area.forecast} in ${area.name} till ${till}. NEA's 2-hour forecast for the town nearest the middle of the region.` };
 };
 
-const heatCell = (feed: OutdoorFeeds["heat"], point: readonly [number, number], now: number): OutdoorCell => {
-  const st = feed && now - Date.parse(feed.time) <= HEAT_MAX_AGE_MS ? nearest(feed.stations, point) : null;
-  return st && feed ? { value: `${st.stress} · ${st.wbgt.toFixed(1)}°`, sub: `${st.town} · ${fmtTime(feed.time)}` } : null;
+const heatStation = (feed: OutdoorFeeds["heat"], point: readonly [number, number], now: number) =>
+  feed && now - Date.parse(feed.time) <= HEAT_MAX_AGE_MS ? nearest(feed.stations, point) : null;
+
+/**
+ * The measured air temperature, with the feels-like of the hour from the forecast. The sub line is the feels-like, or "Heat high" when NEA's
+ * WBGT band is High. With no measurement the feels-like stands in as the value; with neither, null.
+ */
+const tempCell = (feeds: OutdoorFeeds, point: readonly [number, number], now: number, feelsLike: number | null): OutdoorCell => {
+  const st = feeds.temp && now - Date.parse(feeds.temp.time) <= TEMP_MAX_AGE_MS ? nearest(feeds.temp.stations, point) : null;
+  const heat = heatStation(feeds.heat, point, now);
+  const value = st?.temp ?? feelsLike;
+  if (value == null) return null;
+  const hot = heat != null && /^high/i.test(heat.stress);
+  const detail = [
+    st && feeds.temp ? `${st.temp.toFixed(1)} °C measured at ${st.name} at ${fmtTime(feeds.temp.time)}.` : null,
+    feelsLike != null ? `Feels like ${Math.round(feelsLike)} °C (Open-Meteo model).` : null,
+    heat && feeds.heat ? `Heat stress ${heat.stress} · WBGT ${heat.wbgt.toFixed(1)} °C at ${heat.town}. WBGT adds humidity, wind and sun to the air temperature.` : null,
+  ]
+    .filter(Boolean)
+    .join(" ");
+  const sub = hot ? "Heat high" : !st ? "Feels like" : feelsLike != null ? `Feels ${deg(feelsLike)}` : "Measured";
+  return { value: deg(value), sub, detail, big: true, warn: hot ? "sub" : undefined, links: heat ? [["NEA, Heat stress", HEAT_STRESS_URL]] : undefined };
 };
+
+const UV_DETAIL = "WHO categories: 0 to 2 Low, 3 to 5 Moderate, 6 to 7 High, 8 to 10 Very high, 11 and over Extreme.";
 
 /** The newest UV reading with its WHO category; at night, when the last reading is 0 or there is none yet, just "Night". */
 const uvCell = (feed: UvFeed | null, now: number): OutdoorCell => {
   if (!feed) return null;
   const last = feed.readings[0];
-  if (sgNight(now) && (!last || last.value === 0)) return { value: "Night", sub: last ? `Last reading ${fmtHour(last.hour)}` : "No reading until morning" };
-  return last ? { value: `${Math.round(last.value)} · ${uvCategory(last.value)}`, sub: `Island-wide · ${fmtHour(last.hour)}` } : null;
+  if (sgNight(now) && (!last || last.value === 0)) return { value: "Night", sub: last ? `Last ${fmtHour(last.hour)}` : "Till morning", detail: `${last ? `The last reading, at ${fmtHour(last.hour)}, was 0.` : "No reading until morning."} ${UV_DETAIL}`, links: UV_SOURCES };
+  if (!last) return null;
+  return {
+    value: String(Math.round(last.value)),
+    sub: uvCategory(last.value),
+    detail: `UV ${Math.round(last.value)}, ${uvCategory(last.value)}. Island-wide · ${fmtHour(last.hour)}. ${UV_DETAIL}`,
+    big: true,
+    warn: Math.round(last.value) >= UV_VERY_HIGH ? "value" : undefined,
+    links: UV_SOURCES,
+  };
 };
 
 const lightningCell = (feed: LightningFeed | null, point: readonly [number, number], now: number): OutdoorCell => {
   if (!feed || now - Date.parse(feed.time) > LIGHTNING_MAX_AGE_MS) return null;
   const { count, nearestKm, latest } = lightningNear(feed.strikes, point, now);
-  if (!count || nearestKm == null || latest == null) return { value: "None nearby", sub: `Within ${LIGHTNING_RADIUS_KM} km · last 30 min` };
-  return { value: `${count} ${count === 1 ? "strike" : "strikes"} nearby`, sub: `Nearest ${Math.max(1, Math.round(nearestKm))} km · ${fmtTime(latest)}`, warn: true };
+  const where = `within ${LIGHTNING_RADIUS_KM} km of the middle of the region in the last 30 minutes`;
+  if (!count || nearestKm == null || latest == null) return { value: "None", sub: `${LIGHTNING_RADIUS_KM} km`, detail: `NEA detected no strikes ${where}. Checked ${fmtTime(feed.time)}.` };
+  const km = Math.max(1, Math.round(nearestKm));
+  const strikes = `${count} ${count === 1 ? "strike" : "strikes"}`;
+  return { value: strikes, sub: `${km} km`, detail: `NEA detected ${strikes} ${where}. Nearest ${km} km, latest ${fmtTime(latest)}.`, warn: "tile" };
 };
 
-/** The four cells of the Outdoor conditions card for a region, as of `now` (ms). A feed that is missing or stale gives null. */
-export function outdoorCells(feeds: OutdoorFeeds, region: Region, now: number) {
+const NO_FEEDS: OutdoorFeeds = { rain: null, heat: null, temp: null, uv: null, lightning: null };
+
+/**
+ * The four tiles of the hero's weather panel for a region, as of `now` (ms), with the forecast's `feelsLike` for this hour. A feed that is
+ * missing or stale gives null for its tile; `feeds` null (all failed) still shows the feels-like.
+ */
+export function outdoorCells(feeds: OutdoorFeeds | null, region: Region, now: number, feelsLike: number | null = null) {
+  const f = feeds ?? NO_FEEDS;
   const point = REGION_POINT[region];
-  return { rain: rainCell(feeds.rain, point, now), heat: heatCell(feeds.heat, point, now), uv: uvCell(feeds.uv, now), lightning: lightningCell(feeds.lightning, point, now) };
+  return { temp: tempCell(f, point, now, feelsLike), uv: uvCell(f.uv, now), rain: rainCell(f.rain, point, now), lightning: lightningCell(f.lightning, point, now) };
 }
