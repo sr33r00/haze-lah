@@ -36,7 +36,7 @@ function Tile({ label, icon: Icon, cell, open, onToggle }: { label: string; icon
         style={cell?.warn === "tile" ? { background: `color-mix(in srgb, ${WARN} 10%, transparent)` } : undefined}
       >
         <span className="flex w-full items-center gap-1 text-fine text-muted">
-          <Icon aria-hidden size={14} className="shrink-0" style={cell?.warn === "tile" || cell?.warn === "value" ? { color: WARN } : undefined} />
+          <Icon aria-hidden size={14} className="shrink-0" style={cell?.warn === "tile" || cell?.warn === "value" || cell?.warn === "icon" ? { color: WARN } : undefined} />
           {label}
         </span>
         <span

@@ -5,7 +5,7 @@ import { HEAT_STRESS_URL, WHO_UV_URL } from "./links";
 import type { LightningFeed, OutdoorFeeds, Strike, UvFeed, WeatherHour } from "./types";
 import { haversineKm, sgNight } from "./util";
 
-/** Lightning counts strikes this close to the region's point (km), within this long (ms). */
+/** Lightning counts strikes (and, apart, cloud lightning) this close to the region's point (km), within this long (ms). */
 export const LIGHTNING_RADIUS_KM = 15;
 export const LIGHTNING_WINDOW_MS = 30 * 60_000;
 /** A lightning observation older than this (ms) is a stalled feed, and "none nearby" would not be true; likewise heat (WBGT is every 15 minutes) and air temperature (every minute). */
@@ -35,13 +35,22 @@ export function nearest<T extends { lat: number; lon: number }>(items: T[], poin
   return best;
 }
 
-/** Strikes within the radius of a point and the window before `now`: how many, the nearest (km) and the latest (ms). */
+/**
+ * Lightning within the radius of a point and the window before `now`. Only cloud-to-ground strikes count: `count`, the nearest (km) and the
+ * latest (ms). `cloud` says whether any cloud-to-cloud lightning was also seen there (a storm nearby that has not reached the ground).
+ */
 export function lightningNear(strikes: Strike[], point: readonly [number, number], now: number) {
   const near = strikes
     .filter((s) => s.t <= now + 60_000 && now - s.t <= LIGHTNING_WINDOW_MS)
-    .map((s) => ({ t: s.t, km: haversineKm(point[0], point[1], s.lat, s.lon) }))
+    .map((s) => ({ t: s.t, ground: s.ground, km: haversineKm(point[0], point[1], s.lat, s.lon) }))
     .filter((s) => s.km <= LIGHTNING_RADIUS_KM);
-  return { count: near.length, nearestKm: near.length ? Math.min(...near.map((s) => s.km)) : null, latest: near.length ? Math.max(...near.map((s) => s.t)) : null };
+  const ground = near.filter((s) => s.ground);
+  return {
+    count: ground.length,
+    nearestKm: ground.length ? Math.min(...ground.map((s) => s.km)) : null,
+    latest: ground.length ? Math.max(...ground.map((s) => s.t)) : null,
+    cloud: near.some((s) => !s.ground),
+  };
 }
 
 /** The sources a tile's detail line links to: [name, url]. */
@@ -49,10 +58,10 @@ type Links = readonly (readonly [string, string])[];
 
 /**
  * One tile of the weather panel: a big `value` and a one-line `sub`, the `detail` shown when it is tapped, and links for it. `warn` says what
- * turns the warning colour: the `value` (and icon), only the `sub`, or the whole `tile`. `big` marks a number, set larger than a word.
+ * turns the warning colour: the `value` (and icon), only the `sub`, only the `icon`, or the whole `tile`. `big` marks a number, set larger than a word.
  * Null when its source has no usable answer.
  */
-export type OutdoorCell = { value: string; sub: string; detail: string; big?: boolean; warn?: "value" | "sub" | "tile"; links?: Links } | null;
+export type OutdoorCell = { value: string; sub: string; detail: string; big?: boolean; warn?: "value" | "sub" | "icon" | "tile"; links?: Links } | null;
 
 const deg = (n: number) => `${Math.round(n)}°`;
 
@@ -127,12 +136,16 @@ const uvCell = (feed: UvFeed | null, now: number): OutdoorCell => {
 
 const lightningCell = (feed: LightningFeed | null, point: readonly [number, number], now: number): OutdoorCell => {
   if (!feed || now - Date.parse(feed.time) > LIGHTNING_MAX_AGE_MS) return null;
-  const { count, nearestKm, latest } = lightningNear(feed.strikes, point, now);
-  const where = `within ${LIGHTNING_RADIUS_KM} km of the middle of the region in the last 30 minutes`;
-  if (!count || nearestKm == null || latest == null) return { value: "None", sub: `${LIGHTNING_RADIUS_KM} km`, detail: `NEA detected no strikes ${where}. Checked ${fmtTime(feed.time)}.` };
-  const km = Math.max(1, Math.round(nearestKm));
-  const strikes = `${count} ${count === 1 ? "strike" : "strikes"}`;
-  return { value: strikes, sub: `${km} km`, detail: `NEA detected ${strikes} ${where}. Nearest ${km} km, latest ${fmtTime(latest)}.`, warn: "tile" };
+  const { count, nearestKm, latest, cloud } = lightningNear(feed.strikes, point, now);
+  const within = `within ${LIGHTNING_RADIUS_KM} km`;
+  const where = `${within} of the middle of the region in the last 30 minutes`;
+  if (count && nearestKm != null && latest != null) {
+    const km = Math.max(1, Math.round(nearestKm));
+    const strikes = `${count} ${count === 1 ? "strike" : "strikes"}`;
+    return { value: strikes, sub: `${km} km`, detail: `${count} cloud-to-ground ${count === 1 ? "strike" : "strikes"} ${where}. Nearest ${km} km at ${fmtTime(latest)}.`, warn: "tile" };
+  }
+  if (cloud) return { value: "In clouds", sub: "Storm nearby", detail: `No lightning reached the ground ${within} in the last 30 minutes, but NEA detected lightning inside the clouds nearby: a storm is close.`, warn: "icon" };
+  return { value: "None", sub: `${LIGHTNING_RADIUS_KM} km`, detail: `NEA detected no lightning ${where}. Checked ${fmtTime(feed.time)}.` };
 };
 
 const NO_FEEDS: OutdoorFeeds = { rain: null, heat: null, temp: null, uv: null, lightning: null };

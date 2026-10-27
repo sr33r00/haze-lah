@@ -114,7 +114,13 @@ const lightning = (readings: unknown[], datetime = T) => ({ data: { records: [{ 
 test("lightning reads the observed shape: location with text coordinates and its own time", () => {
   const feed = parseLightning([lightning([{ location: { latitude: "1.5150", longitude: "103.6388" }, type: "G", text: "Cloud to Ground", datetime: "2026-10-26T23:09:02.968+08:00" }])]);
   assert.equal(feed.time, new Date(T).toISOString());
-  assert.deepEqual(feed.strikes, [{ t: Date.parse("2026-10-26T23:09:02.968+08:00"), lat: 1.515, lon: 103.6388 }]);
+  assert.deepEqual(feed.strikes, [{ t: Date.parse("2026-10-26T23:09:02.968+08:00"), lat: 1.515, lon: 103.6388, ground: true }]);
+});
+
+test("lightning keeps the type: C is cloud-to-cloud, G or a missing or unknown type is cloud-to-ground", () => {
+  const at = (type?: unknown) => ({ location: { latitude: "1.3", longitude: "103.8" }, ...(type === undefined ? {} : { type }) });
+  const feed = parseLightning([lightning([{ ...at("C"), datetime: "2026-10-26T23:01:00+08:00" }, { ...at("G"), datetime: "2026-10-26T23:02:00+08:00" }, { ...at(), datetime: "2026-10-26T23:03:00+08:00" }, { ...at("X"), datetime: "2026-10-26T23:04:00+08:00" }])]);
+  assert.deepEqual(feed.strikes.map((s) => s.ground).reverse(), [false, true, true, true]);
 });
 
 test("lightning also accepts plain latitude and longitude, numbers, and falls back to the record's time", () => {

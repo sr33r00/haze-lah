@@ -95,9 +95,9 @@ export type TempFeed = { time: string; stations: { name: string; lat: number; lo
 export type UvReading = { hour: string; value: number };
 /** NEA's UV index readings, newest first (empty before the first reading of a day). */
 export type UvFeed = { readings: UvReading[] };
-/** One lightning strike NEA detected: `t` in ms. */
-export type Strike = { t: number; lat: number; lon: number };
-/** NEA's lightning observations: `time` is the newest record's time (a record is two minutes), `strikes` the strikes in them. */
+/** One lightning point NEA detected: `t` in ms. `ground` is cloud-to-ground (NEA type "G"); false is cloud-to-cloud ("C"), which never reaches the ground. */
+export type Strike = { t: number; lat: number; lon: number; ground: boolean };
+/** NEA's lightning observations: `time` is the newest record's time (a record is two minutes), `strikes` the points in them. */
 export type LightningFeed = { time: string; strikes: Strike[] };
 /** What `/api/outdoor` serves: each feed is null when its source failed. */
 export type OutdoorFeeds = { rain: RainFeed | null; heat: HeatFeed | null; temp: TempFeed | null; uv: UvFeed | null; lightning: LightningFeed | null };

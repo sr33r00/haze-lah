@@ -71,7 +71,7 @@ export function TopNav({ newest }: { newest: number | null }) {
   );
 }
 
-/** Thumb-reach tabs for phones; News shows a dot when something is newer than the last visit. */
+/** Thumb-reach tabs for phones (64 px tall, the active one in a pill; the height and bottom padding are `--nav-h` and `--nav-pad` in globals.css); News shows a dot when something is newer than the last visit. */
 export default function BottomNav({ newest }: { newest: number | null }) {
   const path = usePathname();
   const fresh = useFresh(newest, path);
@@ -79,7 +79,7 @@ export default function BottomNav({ newest }: { newest: number | null }) {
   return (
     <nav
       aria-label="Sections"
-      className="fixed inset-x-0 bottom-0 z-[1000] border-t border-line bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden"
+      className="fixed inset-x-0 bottom-0 z-[1000] border-t border-line bg-surface/95 pb-[var(--nav-pad)] backdrop-blur lg:hidden"
     >
       <ul className="mx-auto grid max-w-lg grid-cols-6">
         {ITEMS.map(({ href, label, icon: Icon }) => {
@@ -90,14 +90,15 @@ export default function BottomNav({ newest }: { newest: number | null }) {
                 href={href}
                 prefetch
                 aria-current={on ? "page" : undefined}
-                className={`flex min-h-[56px] flex-col items-center justify-center gap-0.5 text-fine font-semibold ${on ? "text-fg" : "text-muted"}`}
+                className={`group flex min-h-[var(--nav-h)] w-full flex-col items-center justify-center gap-0.5 whitespace-nowrap text-fine font-semibold ${on ? "text-fg" : "text-muted"}`}
               >
-                <span className="relative">
-                  <Icon size={20} aria-hidden />
-                  {href === "/news" && fresh && <NewDot className="-right-1 -top-0.5" />}
+                <span
+                  className={`relative flex h-[30px] w-14 max-w-full items-center justify-center rounded-full transition-colors duration-100 motion-reduce:transition-none ${on ? "bg-line group-active:bg-muted/40" : "bg-transparent group-active:bg-line"}`}
+                >
+                  <Icon size={24} aria-hidden />
+                  {href === "/news" && fresh && <NewDot className="right-3.5 top-0.5" />}
                 </span>
                 {label}
-                <span aria-hidden className={`h-0.5 w-5 rounded-full ${on ? "bg-fg" : "bg-transparent"}`} />
               </Link>
             </li>
           );

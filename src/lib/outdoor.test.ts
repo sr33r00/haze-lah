@@ -23,19 +23,24 @@ test("nearest picks the closest item to a point", () => {
   assert.equal(nearest([], REGION_POINT.north), null);
 });
 
-test("lightning counts strikes within 15 km and 30 minutes of now", () => {
+test("lightning counts ground strikes within 15 km and 30 minutes of now, and flags cloud lightning apart", () => {
   const [lat, lon] = REGION_POINT.central;
   const strikes = [
-    { t: NOW - 5 * MIN, lat: lat + 0.05, lon }, // about 5.6 km
-    { t: NOW - 29 * MIN, lat, lon }, // 0 km
-    { t: NOW - 31 * MIN, lat, lon }, // too old
-    { t: NOW - 2 * MIN, lat: lat + 0.2, lon }, // about 22 km
+    { t: NOW - 5 * MIN, lat: lat + 0.05, lon, ground: true }, // about 5.6 km
+    { t: NOW - 29 * MIN, lat, lon, ground: true }, // 0 km
+    { t: NOW - 31 * MIN, lat, lon, ground: true }, // too old
+    { t: NOW - 2 * MIN, lat: lat + 0.2, lon, ground: true }, // about 22 km
+    { t: NOW - 1 * MIN, lat: lat + 0.01, lon, ground: false }, // cloud-to-cloud: not counted, not the nearest or latest
   ];
   const r = lightningNear(strikes, REGION_POINT.central, NOW);
   assert.equal(r.count, 2);
   assert.equal(r.nearestKm, 0);
   assert.equal(r.latest, NOW - 5 * MIN);
-  assert.deepEqual(lightningNear([], REGION_POINT.central, NOW), { count: 0, nearestKm: null, latest: null });
+  assert.equal(r.cloud, true);
+  assert.deepEqual(lightningNear([], REGION_POINT.central, NOW), { count: 0, nearestKm: null, latest: null, cloud: false });
+  // cloud lightning too old or too far is not a storm nearby
+  const far = [{ t: NOW - 31 * MIN, lat, lon, ground: false }, { t: NOW - MIN, lat: lat + 0.2, lon, ground: false }];
+  assert.equal(lightningNear(far, REGION_POINT.central, NOW).cloud, false);
 });
 
 const feeds = (over: Partial<OutdoorFeeds> = {}): OutdoorFeeds => ({
@@ -103,15 +108,29 @@ test("the feels-like is that of the forecast hour holding now", () => {
   assert.equal(feelsLikeNow([], NOW), null);
 });
 
-test("a strike nearby is a warning with the nearest distance", () => {
+test("a ground strike nearby is a warning with the nearest distance", () => {
   const [lat, lon] = REGION_POINT.east;
-  const lightning = { time: iso(NOW - 2 * MIN), strikes: [{ t: NOW - 4 * MIN, lat: lat + 0.045, lon }, { t: NOW - 8 * MIN, lat: lat + 0.09, lon }] };
+  const lightning = { time: iso(NOW - 2 * MIN), strikes: [{ t: NOW - 4 * MIN, lat: lat + 0.045, lon, ground: true }, { t: NOW - 8 * MIN, lat: lat + 0.09, lon, ground: true }] };
   const c = outdoorCells(feeds({ lightning }), "east", NOW).lightning;
   assert.equal(c?.warn, "tile");
   assert.equal(c?.value, "2 strikes");
   assert.equal(c?.sub, "5 km");
-  assert.match(c?.detail ?? "", /Nearest 5 km, latest 1:56pm\.$/);
+  assert.equal(c?.detail, "2 cloud-to-ground strikes within 15 km of the middle of the region in the last 30 minutes. Nearest 5 km at 1:56pm.");
   assert.equal(outdoorCells(feeds({ lightning: { ...lightning, strikes: lightning.strikes.slice(0, 1) } }), "east", NOW).lightning?.value, "1 strike");
+});
+
+test("cloud lightning alone is a softer warning on the icon only, and many cloud points never become strikes", () => {
+  const [lat, lon] = REGION_POINT.east;
+  const cloud = Array.from({ length: 50 }, (_, i) => ({ t: NOW - 3 * MIN, lat: lat + 0.001 * i, lon, ground: false }));
+  const c = outdoorCells(feeds({ lightning: { time: iso(NOW - 2 * MIN), strikes: cloud } }), "east", NOW).lightning;
+  assert.deepEqual([c?.value, c?.sub, c?.warn], ["In clouds", "Storm nearby", "icon"]);
+  assert.equal(c?.detail, "No lightning reached the ground within 15 km in the last 30 minutes, but NEA detected lightning inside the clouds nearby: a storm is close.");
+  // one ground strike among them: the ground state wins
+  const both = outdoorCells(feeds({ lightning: { time: iso(NOW - 2 * MIN), strikes: [...cloud, { t: NOW - 3 * MIN, lat, lon, ground: true }] } }), "east", NOW).lightning;
+  assert.deepEqual([both?.value, both?.warn], ["1 strike", "tile"]);
+  // cloud lightning out of range is a quiet sky
+  const out = outdoorCells(feeds({ lightning: { time: iso(NOW - 2 * MIN), strikes: [{ t: NOW - MIN, lat: lat + 0.3, lon, ground: false }] } }), "east", NOW).lightning;
+  assert.deepEqual([out?.value, out?.sub, out?.warn], ["None", "15 km", undefined]);
 });
 
 test("a failed or stale source is unavailable, never a value", () => {

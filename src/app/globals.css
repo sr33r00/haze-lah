@@ -15,6 +15,9 @@
   --lv2: #8f6a06;
   --lv3: #b4511c;
   --lv4: #9e2b35;
+  --nav-h: 64px; /* phone tab bar: link height */
+  --nav-pad: max(env(safe-area-inset-bottom), 8px); /* its padding below the links, clear of the home indicator */
+  --nav-space: calc(var(--nav-h) + var(--nav-pad) + 1px); /* its whole height (1px top border): what fixed things above it and page padding reserve */
   color-scheme: light dark;
 }
 

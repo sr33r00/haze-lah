@@ -6,6 +6,16 @@ The in-app "What's new" sheet shows the highlights of the last three releases. D
 
 ## [Unreleased]
 
+## [1.14.3] - 2026-10-27
+
+### Changed
+
+- The phone tab bar is bigger and easier to tap: 64 px tabs with 24 px icons, a pill behind the active tab, a pressed state and room above the home indicator.
+
+### Fixed
+
+- The lightning tile counts only cloud-to-ground strikes. Lightning inside the clouds nearby shows as "In clouds, Storm nearby" instead of hundreds of "strikes" (NEA logs most of it as cloud-to-cloud, and one flash as many points).
+
 ## [1.14.2] - 2026-10-27
 
 ### Changed

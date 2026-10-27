@@ -216,7 +216,7 @@ export function mockReplay(now = Date.now()): Replay {
   return buildReplay(frames, fires, now);
 }
 
-/** Synthetic NEA weather feeds: thundery showers, moderate heat stress, air temperature, daytime UV, and two lightning strikes near the centre of the island. */
+/** Synthetic NEA weather feeds: thundery showers, moderate heat stress, air temperature, daytime UV, and two cloud-to-ground strikes and some cloud-to-cloud lightning near the centre of the island. */
 export function mockOutdoor(now = Date.now()): OutdoorFeeds {
   const H = 3600_000;
   const iso = (t: number) => new Date(t).toISOString();
@@ -265,8 +265,10 @@ export function mockOutdoor(now = Date.now()): OutdoorFeeds {
     lightning: {
       time: iso(now - 2 * 60_000),
       strikes: [
-        { t: now - 5 * 60_000, lat: 1.3612, lon: 103.8211 },
-        { t: now - 12 * 60_000, lat: 1.3745, lon: 103.8403 },
+        { t: now - 5 * 60_000, lat: 1.3612, lon: 103.8211, ground: true },
+        { t: now - 12 * 60_000, lat: 1.3745, lon: 103.8403, ground: true },
+        { t: now - 5 * 60_000, lat: 1.3655, lon: 103.8302, ground: false },
+        { t: now - 9 * 60_000, lat: 1.3801, lon: 103.8157, ground: false },
       ],
     },
   };

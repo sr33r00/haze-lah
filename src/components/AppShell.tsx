@@ -20,7 +20,7 @@ export default function AppShell({ data, title, wide = false, children }: { data
   const width = wide ? WIDE : WIDTH;
   const newest = data ? newestTime(data) : null;
   return (
-    <div className="pb-24 lg:pb-0">
+    <div className="pb-[calc(var(--nav-space)+1rem)] lg:pb-0">
       <WhatsNew />
       <a
         href="#main"

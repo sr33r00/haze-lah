@@ -108,7 +108,8 @@ export function parseUv(json: unknown): UvFeed {
 /**
  * NEA's lightning observations from one or more answers (several when the window spans midnight). Each record is two minutes; a
  * reading carries a position (`location.latitude` and `longitude`, or `latitude` and `longitude`, text or number) and its own time,
- * else its record's. Anything that cannot be read is skipped, strikes before `since` (ms) dropped and repeats counted once.
+ * else its record's. `type` "C" is cloud-to-cloud; anything else (G, or missing) counts as cloud-to-ground, so no strike is hidden. Anything that
+ * cannot be read is skipped, strikes before `since` (ms) dropped and repeats counted once.
  */
 export function parseLightning(resps: unknown[], since = 0): LightningFeed {
   const recs = resps.flatMap(records);
@@ -127,7 +128,7 @@ export function parseLightning(resps: unknown[], since = 0): LightningFeed {
       const key = `${t}|${lat}|${lon}`;
       if (seen.has(key)) continue;
       seen.add(key);
-      strikes.push({ t, lat, lon });
+      strikes.push({ t, lat, lon, ground: str(o?.type)?.trim().toUpperCase() !== "C" });
     }
   return { time: new Date(Math.max(...times)).toISOString(), strikes: strikes.sort((a, b) => b.t - a.t) };
 }

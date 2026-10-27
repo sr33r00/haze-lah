@@ -69,7 +69,7 @@ export default function InstallPrompt() {
     <div
       role="dialog"
       aria-label="Add Haze Lah to your home screen"
-      className="fixed inset-x-3 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-[999] mx-auto flex max-w-md animate-rise items-center gap-3 rounded-3xl bg-fg p-3 pl-4 text-bg shadow-xl ring-1 ring-black/10 lg:inset-x-auto lg:bottom-6 lg:right-6 lg:w-[380px]"
+      className="fixed inset-x-3 bottom-[calc(var(--nav-space)+0.5rem)] z-[999] mx-auto flex max-w-md animate-rise items-center gap-3 rounded-3xl bg-fg p-3 pl-4 text-bg shadow-xl ring-1 ring-black/10 lg:inset-x-auto lg:bottom-6 lg:right-6 lg:w-[380px]"
     >
       <Smartphone size={22} aria-hidden className="shrink-0" />
       <div className="min-w-0 flex-1 text-label leading-snug">
