@@ -29,9 +29,25 @@
     // Everything runs the Worker except the hashed build files and the static icons (public/icons, apple-icon.png, icon.svg; headers in public/_headers).
     "run_worker_first": ["/*", "!/_next/static/*", "!/*/_next/static/*", "!/icons/*.png", "!/apple-icon.png", "!/icon.svg"]
   },
-  // The data cache (ISR pages, unstable_cache and revalidateTag) behind kvDataAdapter() in vite.config.ts: namespace haze-lah-cache.
+  // The shared cache behind responseStoreAdapter() in vite.config.ts (pages, ISR, unstable_cache, revalidateTag).
+  // Workers Cache is off for the Worker and the default entrypoint; only ResponseStoreBinding turns it on (a location's copy of the store).
+  // CacheMetadata is declared here, so it has no "migrations" entry. Create the bucket once: npx wrangler r2 bucket create haze-lah-cache
+  "cache": { "enabled": false },
+  "exports": {
+    "default": { "type": "worker", "cache": { "enabled": false } },
+    "ResponseStoreBinding": { "type": "worker", "cache": { "enabled": true } },
+    "CacheMetadata": { "type": "durable-object", "storage": "sqlite" }
+  },
+  "durable_objects": { "bindings": [{ "name": "CACHE_METADATA", "class_name": "CacheMetadata" }] },
+  // Lets the store keep each deployed version's entries apart.
+  "version_metadata": { "binding": "CF_VERSION_METADATA" },
+  // Old data cache (kvDataAdapter), unused now; kept only so a rollback to the KV cache needs no config change: namespace haze-lah-cache.
   "kv_namespaces": [{ "binding": "VINEXT_KV_CACHE", "id": "48f28b2a5e24498fb3fe8091c06e5594" }],
   // The site's private data (globe history, readings archive, forecast archive, accuracy, alert state): bucket haze-lah-data, not public.
   // src/lib/dataStore.ts is the only code that touches it; the browser gets the globe's history files through /data/history/.
-  "r2_buckets": [{ "binding": "DATA", "bucket_name": "haze-lah-data" }]
+  "r2_buckets": [
+    { "binding": "DATA", "bucket_name": "haze-lah-data" },
+    // Page and data cache bodies for the response store.
+    { "binding": "CACHE_BODIES", "bucket_name": "haze-lah-cache" }
+  ]
 }

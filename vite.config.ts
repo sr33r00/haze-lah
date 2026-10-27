@@ -1,15 +1,15 @@
 import { defineConfig } from "vite";
 import vinext from "vinext";
 import { cloudflare } from "@cloudflare/vite-plugin";
-import { kvDataAdapter } from "@vinext/cloudflare/cache/kv-data-adapter";
-import { workersCacheCdnAdapter } from "@vinext/cloudflare/cache/workers-cache-cdn-adapter";
+import { responseStoreAdapter } from "@vinext/cloudflare/cache/response-store-adapter";
 
 export default defineConfig({
   plugins: [
     vinext({
-      // Pages and cacheable responses are served from Cloudflare's edge (Workers Cache); KV holds the data cache underneath.
-      // Each location keeps a KV read for 5 minutes (KV's default is 60 s), so a page rebuilt there does not wait on the central store.
-      cache: { data: kvDataAdapter({ entryCacheTtlSeconds: 300 }), cdn: workersCacheCdnAdapter() },
+      // One shared cache for pages and data (Workers Response Store, self-contained): bodies in R2, a Durable Object for tags and freshness.
+      // A page is rendered once per period for the whole world; each location's Workers Cache then reads the stored copy instead of rendering again.
+      // The Durable Object is created near Singapore, where most visitors are. Bindings are in wrangler.jsonc.
+      cache: responseStoreAdapter({ mode: "self-contained", locationHint: "apac" }),
     }),
     cloudflare({
       viteEnvironment: {
