@@ -24,6 +24,17 @@ export async function readTextFresh(key: string, maxAgeMs: number): Promise<stri
   }
 }
 
+/** Whether `key` was stored within `maxAgeMs`; false when there is none, it is older, the bucket is unbound or on any error (the caller builds it). Reads no body. */
+export async function isStoredFresh(key: string, maxAgeMs: number): Promise<boolean> {
+  try {
+    if (!hasStore()) return false;
+    const obj = await env.DATA.head(key);
+    return obj !== null && isFresh(obj.uploaded.getTime(), maxAgeMs);
+  } catch {
+    return false;
+  }
+}
+
 /** The JSON at `key`; null when there is none. Throws when the bucket cannot be read or the text is not JSON (what a job needs, so it never overwrites a file it failed to read). */
 export async function readJsonStrict<T>(key: string): Promise<T | null> {
   const text = await readText(key);

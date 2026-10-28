@@ -1,14 +1,14 @@
 import { mockReplay } from "./mock";
 import { buildReplay } from "./replay";
 import { fetchFirePoints } from "./sources/firms";
-import { fetchWindFrames } from "./sources/openmeteo";
 import { storedJson, storedText } from "./stored";
 import type { Replay } from "./types";
+import { readWind } from "./windData";
 
-/** The replay, built on the server from the wind (past and forecast) and the fires. What the hourly job stores; pages and routes read it with `readReplay` or `replayText`. */
+/** The replay, built on the server from the stored wind (past and forecast) and the fires. What the hourly job stores; pages and routes read it with `readReplay` or `replayText`. */
 export async function getReplay(): Promise<Replay> {
   if (process.env.HAZE_MOCK === "1") return mockReplay();
-  const [wind, fires] = await Promise.all([fetchWindFrames(), fetchFirePoints()]);
+  const [wind, fires] = await Promise.all([readWind(), fetchFirePoints()]);
   return buildReplay(wind, fires ?? []);
 }
 

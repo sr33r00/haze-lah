@@ -17,6 +17,7 @@ import AirGlobeLoader from "./AirGlobeLoader";
 import { captionOf } from "./caption";
 import { DIM_DAYS, globeDay, type GlobeDay, type LayerChoice } from "./frame";
 import GlobeCard from "./GlobeCard";
+import GlobeSpinner from "./GlobeSpinner";
 import Timeline from "./Timeline";
 
 type Props = {
@@ -66,6 +67,7 @@ export default function MapScreen({ dots: dotData, psiDaily, summary }: Props) {
   const [layer, setLayer] = useState<LayerChoice>("pm25");
   const [view, setView] = useState<"default" | "path">("default");
   const [failed, setFailed] = useState<"webgl" | "map" | null>(null);
+  const [globeDrawn, setGlobeDrawn] = useState(false);
   const [open, setOpen] = useState(false);
   const [replay, setReplay] = useState<Replay | null>(null);
   const [smoke, setSmoke] = useState<SmokeGrid | null>(null);
@@ -272,7 +274,8 @@ export default function MapScreen({ dots: dotData, psiDaily, summary }: Props) {
 
           <main id="main" tabIndex={-1} className="absolute inset-0 outline-none">
             {summaryBlock}
-            <AirGlobeLoader day={day} layer={drawn} satDate={sel?.date ?? today} dots={dots} view={view} onFail={setFailed} />
+            <AirGlobeLoader day={day} layer={drawn} satDate={sel?.date ?? today} dots={dots} view={view} onFail={setFailed} onReady={() => setGlobeDrawn(true)} />
+            <GlobeSpinner done={globeDrawn} />
             {bars.length > 0 && sel && (
               <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 min-[700px]:p-4">
                 <div className={`pointer-events-auto rounded-t-3xl border-t border-white/10 pb-[env(safe-area-inset-bottom)] ${PANEL} min-[700px]:pointer-events-none min-[700px]:flex min-[700px]:items-end min-[700px]:gap-3 min-[700px]:border-0 min-[700px]:bg-transparent min-[700px]:pb-0 min-[700px]:backdrop-blur-none`}>

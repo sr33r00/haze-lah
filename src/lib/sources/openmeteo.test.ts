@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { dayAQ, fetchSmokeGrid, gridFrames, gasFrames } from "@/lib/sources/openmeteo";
+import type { WindFrame } from "@/lib/wind";
 
 // Two grid points, six hourly steps; the frames used are every third hour (indexes 0 and 3).
 const time = ["2026-10-23T00:00", "2026-10-23T01:00", "2026-10-23T02:00", "2026-10-23T03:00", "2026-10-23T04:00", "2026-10-23T05:00"];
@@ -43,19 +44,46 @@ test("dayAQ throws when the answer does not cover the SGT day", () => {
   assert.throws(() => dayAQ(points, [0], [100], "2026-10-20"), /cover/);
 });
 
-test("a PM2.5 outage gives no PM2.5 frames, not a grid of zeros that reads as clean air; the gases still come", async () => {
+/** Runs `fetchSmokeGrid` against a fake CAMS answer of 96 hourly steps from this hour (one grid point, PM2.5 null when `pm25Null`), and fails on any other request. */
+async function smokeWith(wind: WindFrame[] | null, pm25Null = false) {
   const start = Math.floor(Date.now() / 3600_000) * 3600_000;
   const hours = Array.from({ length: 96 }, (_, h) => new Date(start + h * 3600_000).toISOString().slice(0, 16));
-  const body = [{ hourly: { time: hours, pm2_5: hours.map(() => null), ozone: hours.map(() => 80) } }];
+  const body = [{ hourly: { time: hours, pm2_5: hours.map(() => (pm25Null ? null : 12)), ozone: hours.map(() => 80) } }];
+  const requested: string[] = [];
   const real = globalThis.fetch;
-  globalThis.fetch = (async (url: string) => (String(url).includes("air-quality") ? new Response(JSON.stringify(body)) : new Response("", { status: 500 }))) as typeof fetch;
+  globalThis.fetch = (async (url: string) => {
+    requested.push(String(url));
+    return String(url).includes("air-quality") ? new Response(JSON.stringify(body)) : new Response("", { status: 500 });
+  }) as typeof fetch;
   try {
-    const grid = await fetchSmokeGrid();
-    assert.deepEqual(grid.values, []);
-    assert.ok(grid.times.length > 0);
-    assert.equal(grid.gases.o3?.length, grid.times.length);
-    assert.equal(grid.wind, null);
+    return { grid: await fetchSmokeGrid(wind), requested };
   } finally {
     globalThis.fetch = real;
   }
+}
+
+test("a PM2.5 outage gives no PM2.5 frames, not a grid of zeros that reads as clean air; the gases still come", async () => {
+  const { grid, requested } = await smokeWith(null, true);
+  assert.deepEqual(grid.values, []);
+  assert.ok(grid.times.length > 0);
+  assert.equal(grid.gases.o3?.length, grid.times.length);
+  assert.equal(grid.wind, null);
+  assert.equal(requested.length, 1); // the wind is never asked for here: it comes from the stored frames
+});
+
+test("the smoke grid takes its wind from the frames of the same times, and holds the last frame past their end", async () => {
+  const H = 3600_000;
+  const first = Math.ceil((Date.now() - H) / (3 * H)) * 3 * H; // the first smoke step (a 3-hourly UTC hour)
+  const frame = (t: number, u: number, v: number): WindFrame => ({ t, u: { lats: [0], lons: [100], data: [u] }, v: { lats: [0], lons: [100], data: [v] } });
+  // Two frames only: the first two steps match, every later step holds the second.
+  const { grid } = await smokeWith([frame(first, 1.04, -2), frame(first + 3 * H, 3, 4.26)]);
+  assert.equal(grid.wind?.u.length, grid.times.length);
+  assert.deepEqual(grid.wind?.u[0], [1]);
+  assert.deepEqual(grid.wind?.v[0], [-2]);
+  assert.deepEqual(grid.wind?.u[1], [3]);
+  assert.deepEqual(grid.wind?.v.at(-1), [4.3]);
+});
+
+test("the smoke grid has no wind, not zeros, when there are no wind frames", async () => {
+  assert.equal((await smokeWith([])).grid.wind, null);
 });

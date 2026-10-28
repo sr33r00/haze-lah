@@ -6,6 +6,14 @@ The in-app "What's new" sheet shows the highlights of the last three releases. D
 
 ## [Unreleased]
 
+## [1.15.1] - 2026-10-28
+
+### Fixed
+
+- The weather card no longer blanks and reloads each time you come back to Now: it keeps its last reading in the browser, and the server now caches NEA's feeds for 5 minutes as intended, instead of asking data.gov.sg on every visit (which ran into its rate limit and left tiles "Unavailable"). The camera list is cached the same way.
+- The air globe shows a quiet "Loading globe" spinner until it has drawn, instead of a blank black screen.
+- The air globe no longer loses its wind, and the CAMS and upwind forecasts stop failing, when Open-Meteo's 10,000 calls a day run out (they failed overnight until 08:00 SGT, when the limit resets). The wind is fetched once every 3 hours and kept; the smoke grid and the replay both use it, the smoke grid is rebuilt at most every 3 hours instead of on every job run, and a failed rebuild keeps serving the last good copy for a day instead of every data centre asking Open-Meteo again.
+
 ## [1.15.0] - 2026-10-28
 
 ### Changed

@@ -35,6 +35,8 @@ type Props = {
   view: "default" | "path";
   /** Called once when the globe cannot run: "webgl" for no WebGL or a lost context, "map" for a basemap that will not load. */
   onFail?: (reason: "webgl" | "map") => void;
+  /** Called once when the globe has drawn its first frame (the fly-in, if any, is only starting). */
+  onReady?: () => void;
 };
 
 const CENTER: [number, number] = [108.5, -1]; // between Sumatra and Borneo
@@ -235,7 +237,7 @@ const INTRO = ["first", "seen"] as const;
  * The air globe: NASA night lights and relief, a pollutant's CAMS field or NASA's smoke picture, fires, wind and the air's path,
  * for the day it is given. Meant to fill its parent; the parent decides the size. Client only: load it through AirGlobeLoader.
  */
-export default function AirGlobe({ day, layer, satDate, dots, view, onFail }: Props) {
+export default function AirGlobe({ day, layer, satDate, dots, view, onFail, onReady }: Props) {
   const box = useRef<HTMLDivElement>(null);
   const map = useRef<MapLibre>(undefined);
   const field = useRef<HTMLCanvasElement>(undefined);
@@ -246,6 +248,7 @@ export default function AirGlobe({ day, layer, satDate, dots, view, onFail }: Pr
   const landedOn = useRef<string>(undefined);
   const closePopup = useRef<() => void>(undefined);
   const failRef = useRef(onFail);
+  const readyRef = useRef(onReady);
   const [ready, setReady] = useState(false);
   const [landed, setLanded] = useState(false);
   const [started, setStarted] = useState(false);
@@ -257,7 +260,8 @@ export default function AirGlobe({ day, layer, satDate, dots, view, onFail }: Pr
 
   useEffect(() => {
     failRef.current = onFail;
-  }, [onFail]);
+    readyRef.current = onReady;
+  }, [onFail, onReady]);
 
   useEffect(() => {
     introRef.current = intro;
@@ -323,6 +327,7 @@ export default function AirGlobe({ day, layer, satDate, dots, view, onFail }: Pr
         windVeil.current = veil;
         setWindView({ ...globeView(m), container: veil });
         setReady(true);
+        readyRef.current?.(); // "load" comes after the first frame is drawn, with the style's sources and the tiles in view in
       });
     }).catch(() => fail("map")); // the basemap style would not load
     return () => {

@@ -107,12 +107,6 @@ async function withRetry<T>(go: () => Promise<T>, waits: number[]): Promise<T> {
   return go();
 }
 
-/** 850 hPa wind for many points. Open-Meteo sometimes answers a large request with 503 "overloaded", so it is tried twice. */
-function fetchGridWind(where: string): Promise<GridWind[]> {
-  const url = `https://api.open-meteo.com/v1/forecast?${where}&hourly=wind_speed_850hPa,wind_direction_850hPa&wind_speed_unit=ms&timezone=GMT&forecast_days=4`;
-  return withRetry(() => getJson<GridWind[]>(url, { revalidate: 10800 }), [3000]);
-}
-
 /** The CAMS variables of every pollutant, as an `hourly=` list. */
 const CAMS_VARS = POLLUTANTS.map((p) => p.camsVar).join(",");
 
@@ -137,13 +131,12 @@ function windFramesOf(w: GridWind[], lats: number[], lons: number[]): WindFrame[
   });
 }
 
-/** 850 hPa wind over the grid for the past week and the next 3 days, every 3 hours (ECMWF analysis and forecast). */
+/** 850 hPa wind over the grid for the past week and the next 3 days, every 3 hours (ECMWF analysis and forecast). One request of 364 locations: the hourly job fetches it every 3 hours and stores it (`windData.ts`). */
 export async function fetchWindFrames(): Promise<WindFrame[]> {
   const { lats, lons, where } = gridQuery();
-  const w = await getJson<GridWind[]>(
-    `https://api.open-meteo.com/v1/forecast?${where}&hourly=wind_speed_850hPa,wind_direction_850hPa&wind_speed_unit=ms&timezone=GMT&past_days=7&forecast_days=4&temporal_resolution=hourly_3`,
-    { revalidate: 10800 },
-  );
+  const url = `https://api.open-meteo.com/v1/forecast?${where}&hourly=wind_speed_850hPa,wind_direction_850hPa&wind_speed_unit=ms&timezone=GMT&past_days=7&forecast_days=4&temporal_resolution=hourly_3`;
+  // Open-Meteo sometimes answers a large request with 503 "overloaded", so it is tried twice.
+  const w = await withRetry(() => getJson<GridWind[]>(url, { revalidate: 10800 }), [3000]);
   return windFramesOf(w, lats, lons);
 }
 
@@ -203,42 +196,36 @@ export function dayAQ(aq: AQPoint[], lats: number[], lons: number[], date: strin
   return { times: idx.map((i) => new Date(hours[i]).toISOString()), lats, lons, values };
 }
 
-/** Regional CAMS forecast (PM2.5 and the gases) on a 1° grid, sampled every 3 h for the next 72 h. */
-export async function fetchSmokeGrid(): Promise<SmokeGrid> {
+/**
+ * The wind of the smoke grid's steps from the stored wind frames (same grid, 3-hourly on the same UTC hours): u and v in m/s to 0.1 for each time in `times`
+ * (ms). A step the frames end before holds the last frame rather than show calm air. Null when there are no frames, so missing wind never looks like calm air.
+ */
+function smokeWind(frames: WindFrame[] | null, times: number[]): SmokeGrid["wind"] {
+  if (!frames?.length) return null;
+  const byTime = new Map(frames.map((f) => [f.t, f]));
+  const steps = times.map((t) => byTime.get(t) ?? frames[frames.length - 1]);
+  const round = (data: number[]) => data.map((x) => Math.round(x * 10) / 10);
+  return { u: steps.map((f) => round(f.u.data)), v: steps.map((f) => round(f.v.data)) };
+}
+
+/** Regional CAMS forecast (PM2.5 and the gases) on a 1° grid, sampled every 3 h for the next 72 h, with the 850 hPa wind from `wind` (see `fetchWindFrames`; null for none). */
+export async function fetchSmokeGrid(wind: WindFrame[] | null): Promise<SmokeGrid> {
   const { lats, lons, where } = gridQuery();
-  // The air-quality API has no wind, so the same points are asked of the weather API (same level as the wind dial).
-  const [j, w] = await Promise.all([
-    getJson<AQPoint[]>(`https://air-quality-api.open-meteo.com/v1/air-quality?${where}&hourly=${CAMS_VARS}&domains=cams_global&timezone=GMT&forecast_days=4`, {
-      revalidate: 10800,
-    }),
-    fetchGridWind(where).catch(() => null), // smoke is still useful without wind
-  ]);
-  const times0 = j[0].hourly.time;
+  // The air-quality API has no wind; the caller gives the weather API's wind (fetched once for all, same level as the wind dial).
+  const j = await getJson<AQPoint[]>(`https://air-quality-api.open-meteo.com/v1/air-quality?${where}&hourly=${CAMS_VARS}&domains=cams_global&timezone=GMT&forecast_days=4`, {
+    revalidate: 10800,
+  });
   const now = Date.now() - 3600_000;
-  const idx = times0
+  const idx = j[0].hourly.time
     .map((t, i) => ({ t: Date.parse(z(t)), i }))
     .filter(({ t }) => t >= now && new Date(t).getUTCHours() % 3 === 0)
     .slice(0, 25);
-  const wIdx = new Map(w?.[0].hourly.time.map((t, i) => [Date.parse(z(t)), i]));
-  // Wind comes "from" a direction; u and v point where it blows to.
-  const comp = (t: number, c: 0 | 1) =>
-    j.map((_, k) => {
-      const h = w?.[k]?.hourly;
-      // An older cached copy may not reach the last frames: hold its last hour rather than show calm air.
-      const i = wIdx.get(t) ?? (h ? h.time.length - 1 : undefined);
-      const s = h && i != null ? h.wind_speed_850hPa[i] : null;
-      const d = h && i != null ? h.wind_direction_850hPa[i] : null;
-      return s == null || d == null ? 0 : Math.round(toUV(s, d)[c] * 10) / 10;
-    });
   return {
     lats,
     lons,
     times: idx.map(({ t }) => new Date(t).toISOString()),
     values: gridFrames(j, idx.map(({ i }) => i), "pm2_5") ?? [], // no PM2.5 at all is no model, never a grid of zeros that reads as clean air
     gases: gasFrames(j, idx.map(({ i }) => i)),
-    // No wind rather than zero wind, so a failed request never looks like calm air.
-    wind: w
-      ? { u: idx.map(({ t }) => comp(t, 0)), v: idx.map(({ t }) => comp(t, 1)) }
-      : null,
+    wind: smokeWind(wind, idx.map(({ t }) => t)),
   };
 }
