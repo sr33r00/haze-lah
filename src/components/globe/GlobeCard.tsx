@@ -21,16 +21,18 @@ type Props = {
   dots: Dot[];
   /** Whether a change of headline is announced to a screen reader (off while the timeline plays). */
   live: boolean;
-  /** Phone only: whether the card is open. */
+  /** Whether the card is open (on a phone, and in a page's panel; elsewhere it is always open from the tablet width up). */
   expanded: boolean;
   onToggle: (open?: boolean) => void;
+  /** In a page's panel: the grip and the closed card of a phone at any width, with the card and timeline still side by side from the tablet width up. */
+  embedded?: boolean;
   className?: string;
 };
 
 /** Pixels a drag on the grip must travel to open or close the card; less is a tap. */
 const DRAG = 24;
-/** Shown when the card is open on a phone, and always from the tablet width up. */
-const EXTRAS = "min-[700px]:block";
+/** Shown when the card is open on a phone, and always from the tablet width up (except in a page's panel, where the card opens as on a phone). */
+const extrasOf = (embedded: boolean) => (embedded ? "" : "@min-[700px]:block");
 
 const swatch = {
   fire: <span className="size-2.5 rounded-full" style={{ background: INK.fireCore, boxShadow: `0 0 6px 1px ${INK.fireGlow}` }} />,
@@ -55,7 +57,7 @@ function keyOf(day: GlobeDay, dots: Dot[]): [keyof typeof swatch, string][] {
 }
 
 /** The colour bar of the layer with its band names; the band limits are for the open card. */
-function Legend({ layer, expanded }: { layer: LayerChoice; expanded: boolean }) {
+function Legend({ layer, expanded, extras }: { layer: LayerChoice; expanded: boolean; extras: string }) {
   if (layer === "off") return null;
   const p = layer === "smoke" ? null : pollutant(layer);
   const { ramp } = GLOBE_LAYERS.smoke;
@@ -64,10 +66,10 @@ function Legend({ layer, expanded }: { layer: LayerChoice; expanded: boolean }) 
   const limits = p?.tracer ? null : (p?.bands ?? null);
   return (
     <div className="mt-2">
-      <p className={`text-label leading-5 text-white/65 ${expanded ? "" : "hidden"} ${EXTRAS}`}>{title}</p>
+      <p className={`text-label leading-5 text-white/65 ${expanded ? "" : "hidden"} ${extras}`}>{title}</p>
       <RampBar background={p ? rampCss(p) : satelliteRampCss(ramp)} names={names} bar="border-white/20 bg-black/50" text="text-white/85" />
       {limits && (
-        <div className={`relative h-4 text-fine leading-4 text-white/65 tabular ${expanded ? "block" : "hidden"} ${EXTRAS}`}>
+        <div className={`relative h-4 text-fine leading-4 text-white/65 tabular ${expanded ? "block" : "hidden"} ${extras}`}>
           {limits.map((v, i) => (
             <span key={v} className="absolute -translate-x-1/2" style={{ left: `${(i + 1) * 25}%` }}>
               {v.toLocaleString("en-SG")}
@@ -76,7 +78,7 @@ function Legend({ layer, expanded }: { layer: LayerChoice; expanded: boolean }) 
         </div>
       )}
       {p?.tracer && (
-        <p className={`mt-1 text-label leading-5 text-white/65 ${expanded ? "block" : "hidden"} ${EXTRAS}`}>
+        <p className={`mt-1 text-label leading-5 text-white/65 ${expanded ? "block" : "hidden"} ${extras}`}>
           {p.tracer.note}{" "}
           <a href={NEA_PSI_URL} target="_blank" rel="noreferrer" className="link">
             NEA PSI method
@@ -91,7 +93,8 @@ function Legend({ layer, expanded }: { layer: LayerChoice; expanded: boolean }) 
  * The card at the bottom of the globe: a headline for the day, the colour legend, and (open on a phone, always on a laptop) the
  * day's facts, the key to the symbols and the credits. On a phone a grip opens it: tap it, or drag it up or down.
  */
-export default function GlobeCard({ headline, facts, layer, day, dots, live, expanded, onToggle, className = "" }: Props) {
+export default function GlobeCard({ headline, facts, layer, day, dots, live, expanded, onToggle, embedded = false, className = "" }: Props) {
+  const extras = extrasOf(embedded);
   const start = useRef<number | null>(null);
   const dragged = useRef(false);
   const items = keyOf(day, dots);
@@ -123,20 +126,20 @@ export default function GlobeCard({ headline, facts, layer, day, dots, live, exp
         onPointerUp={up}
         onPointerCancel={() => (start.current = null)}
         onClick={() => (dragged.current ? (dragged.current = false) : onToggle())}
-        className="absolute inset-x-0 top-0 z-10 flex h-11 touch-none justify-center pt-1 min-[700px]:hidden"
+        className={`absolute inset-x-0 top-0 z-10 flex h-11 touch-none justify-center pt-1 ${embedded ? "" : "@min-[700px]:hidden"}`}
       >
         <span aria-hidden className="grid place-items-center">
           <ChevronUp size={20} className={`text-white/70 transition-transform motion-reduce:transition-none ${expanded ? "rotate-180" : ""}`} />
         </span>
       </button>
 
-      <div className="px-4 pb-1 pt-7 min-[700px]:px-5 min-[700px]:pb-4 min-[700px]:pt-4">
-        <h2 aria-live={live ? "polite" : "off"} className="line-clamp-2 text-balance text-label font-bold leading-5 min-[700px]:line-clamp-none min-[700px]:text-[17px] min-[700px]:leading-[22px]">
+      <div className={`px-4 pb-1 pt-7 @min-[700px]:px-5 @min-[700px]:pb-4 ${embedded ? "" : "@min-[700px]:pt-4"}`}>
+        <h2 aria-live={live ? "polite" : "off"} className="line-clamp-2 text-balance text-label font-bold leading-5 @min-[700px]:line-clamp-none @min-[700px]:text-[17px] @min-[700px]:leading-[22px]">
           {headline}
         </h2>
-        <Legend layer={layer} expanded={expanded} />
+        <Legend layer={layer} expanded={expanded} extras={extras} />
 
-        <div id="globe-more" className={`${expanded ? "block" : "hidden"} ${EXTRAS} mt-3 max-h-[42dvh] overflow-y-auto overscroll-contain min-[700px]:max-h-none min-[700px]:overflow-visible`}>
+        <div id="globe-more" className={`${expanded ? "block" : "hidden"} ${extras} mt-3 max-h-[42dvh] overflow-y-auto overscroll-contain @min-[700px]:max-h-none @min-[700px]:overflow-visible`}>
           {facts.length > 0 && <p className="text-label leading-5 text-white/90">{facts.join(" · ")}</p>}
           {items.length > 0 && (
             <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 border-t border-white/10 pt-3">

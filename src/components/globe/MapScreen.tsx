@@ -1,12 +1,13 @@
 "use client";
 
-import { ArrowLeft, Spline } from "lucide-react";
+import { ArrowLeft, Maximize2, Spline } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { fetchBasemap } from "@/lib/basemap";
 import { fmtDateShort, fmtFullDate, fmtHour, fmtTime, fmtWeekday } from "@/lib/format";
 import type { HistoryDay, HistoryIndex } from "@/lib/historyTypes";
 import { loadDay, loadIndex, prefetchAround } from "@/lib/historyClient";
+import { MAP_HREF } from "@/lib/links";
 import { POLLUTANTS } from "@/lib/pollutants";
 import { readingDots, type DotData } from "@/lib/readings";
 import { fetchReplay, fetchSmoke } from "@/lib/replay";
@@ -25,6 +26,8 @@ type Props = {
   psiDaily: DayPsi[];
   /** Today in a few sentences: read by screen readers and crawlers, and shown if the globe cannot run. */
   summary: string[];
+  /** Sits inside a page (filling its parent, with a link to the full screen) instead of being the page: no skip link, no `main`, a `h2`, and the URL's `?view=` is left to /map. */
+  embedded?: boolean;
 };
 
 /** The layers a viewer can pick, in order: each CAMS pollutant, NASA's smoke picture, none. */
@@ -42,8 +45,8 @@ const STEP_MS = 650;
 const SETTLE_MS = 120;
 /** The globe's panels: dark whatever the site theme, glass over the picture. */
 const PANEL = "bg-[#070b16]/85 backdrop-blur-md";
-/** From the tablet width up the card and the timeline are two panels side by side (Tailwind needs these class names whole). */
-const SIDE_PANEL = "min-[700px]:rounded-2xl min-[700px]:border min-[700px]:border-white/10 min-[700px]:bg-[#070b16]/85 min-[700px]:backdrop-blur-md";
+/** From the tablet width (of the globe's own box, see the root's `@container`) up the card and the timeline are two panels side by side (Tailwind needs these class names whole). */
+const SIDE_PANEL = "@min-[700px]:rounded-2xl @min-[700px]:border @min-[700px]:border-white/10 @min-[700px]:bg-[#070b16]/85 @min-[700px]:backdrop-blur-md";
 
 const chip = "grid h-11 shrink-0 place-items-center rounded-full border px-4 text-label font-semibold transition-colors";
 
@@ -61,8 +64,9 @@ async function loadHistory(date: string, indexed: ReadonlySet<string>): Promise<
 /**
  * The /map screen: the air globe with the layer picker on top and the card and timeline at the bottom. It loads the live replay and
  * smoke forecast (shared with the rest of the site) and the history index, then a past day's file only when that day is shown.
+ * Its layout follows its own width, not the window's, so `embedded` in a page's panel it adapts as it would on a screen of that size.
  */
-export default function MapScreen({ dots: dotData, psiDaily, summary }: Props) {
+export default function MapScreen({ dots: dotData, psiDaily, summary, embedded = false }: Props) {
   const [today] = useState(() => sgDate());
   const [layer, setLayer] = useState<LayerChoice>("pm25");
   const [view, setView] = useState<"default" | "path">("default");
@@ -88,12 +92,12 @@ export default function MapScreen({ dots: dotData, psiDaily, summary }: Props) {
 
   useEffect(() => {
     // "?view=path" (the link from Now) frames the air's path; any other query, and the old "#space" anchor, the default view.
-    if (new URLSearchParams(location.search).get("view") === "path") setView("path");
+    if (!embedded && new URLSearchParams(location.search).get("view") === "path") setView("path");
     fetchBasemap().catch(() => {}); // the globe's style, asked for while the globe's code is still on its way (the globe reports a failure itself)
     fetchReplay().then(setReplay, () => setReplay(EMPTY_REPLAY));
     fetchSmoke().then(setSmoke, () => setSmoke(EMPTY_SMOKE));
     loadIndex().then(setIndex);
-  }, []);
+  }, [embedded]);
 
   // The days. A past day that the index lists has a history file, and with it 8 steps.
   const bars = useMemo(() => (replay && smoke ? buildBars(index, replay, smoke, today) : []), [index, replay, smoke, today]);
@@ -198,9 +202,12 @@ export default function MapScreen({ dots: dotData, psiDaily, summary }: Props) {
     tag: !ready ? "Loading" : wantFile && hist != null && hist.date === date && !hist.day ? "No data" : bar?.kind === "forecast" ? "Forecast" : null,
   };
 
+  const Heading = embedded ? "h2" : "h1"; // the page that embeds the globe has its own h1
+  const Main = embedded ? "div" : "main"; // and its own main landmark
+  const main = embedded ? {} : { id: "main", tabIndex: -1 };
   const summaryBlock = (
     <section aria-label="Summary" className={failed ? "mx-auto max-w-xl space-y-3 px-6 pb-12 pt-6 text-body leading-6" : "sr-only"}>
-      <h1 className={failed ? "text-[26px] font-extrabold leading-8" : ""}>Air over Singapore and the region today</h1>
+      <Heading className={failed ? "text-[26px] font-extrabold leading-8" : ""}>Air over Singapore and the region today</Heading>
       {failed && <p className="text-white/70">{failed === "map" ? "The map could not be loaded." : "The globe needs WebGL, which this device or browser does not give."} Here is the air today in words.</p>}
       {summary.map((line) => (
         <p key={line}>{line}</p>
@@ -210,31 +217,38 @@ export default function MapScreen({ dots: dotData, psiDaily, summary }: Props) {
   );
 
   const back = (
-    <Link href="/" aria-label="Back to Haze Lah" className={`${chip} ${PANEL} min-[700px]:gap-2 min-[700px]:px-4 w-11 border-white/15 text-white hover:bg-white/10 min-[700px]:w-auto`}>
+    <Link href="/" aria-label="Back to Haze Lah" className={`${chip} ${PANEL} @min-[700px]:gap-2 @min-[700px]:px-4 w-11 border-white/15 text-white hover:bg-white/10 @min-[700px]:w-auto`}>
       <span className="flex items-center gap-2">
         <ArrowLeft size={18} aria-hidden />
-        <span className="hidden min-[700px]:inline">Haze Lah</span>
+        <span className="hidden @min-[700px]:inline">Haze Lah</span>
       </span>
+    </Link>
+  );
+  const fullScreen = (
+    <Link href={MAP_HREF} aria-label="Open the globe full screen" className={`${chip} ${PANEL} pointer-events-auto w-11 border-white/15 text-white hover:bg-white/10`}>
+      <Maximize2 size={18} aria-hidden />
     </Link>
   );
 
   return (
-    <div className="fixed inset-0 overflow-hidden bg-[#02030a] text-white [--focus:#fff]">
-      <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-2 focus:top-2 focus:z-[1100] focus:rounded-full focus:bg-white focus:px-4 focus:py-2 focus:text-label focus:font-semibold focus:text-[#02030a]">
-        Skip to content
-      </a>
+    <div className={`@container ${embedded ? "relative isolate size-full rounded-3xl" : "fixed inset-0"} overflow-hidden bg-[#02030a] text-white [--focus:#fff]`}>
+      {!embedded && (
+        <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-2 focus:top-2 focus:z-[1100] focus:rounded-full focus:bg-white focus:px-4 focus:py-2 focus:text-label focus:font-semibold focus:text-[#02030a]">
+          Skip to content
+        </a>
+      )}
       {failed ? (
         <>
-          <div className="px-3 pt-[max(0.75rem,env(safe-area-inset-top))]">{back}</div>
-          <main id="main" tabIndex={-1} className="size-full overflow-y-auto outline-none">
+          {!embedded && <div className="px-3 pt-[max(0.75rem,env(safe-area-inset-top))]">{back}</div>}
+          <Main {...main} className="size-full overflow-y-auto outline-none">
             {summaryBlock}
-          </main>
+          </Main>
         </>
       ) : (
         <>
           <header className="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-center gap-2 bg-gradient-to-b from-[#02030a]/70 to-transparent px-3 pb-4 pt-[max(0.75rem,env(safe-area-inset-top))]">
-            <div className="pointer-events-auto">{back}</div>
-            <div role="group" aria-label="Colour layer" className={`no-scrollbar pointer-events-auto flex min-w-0 gap-1.5 overflow-x-auto rounded-full ${PANEL} border border-white/15 p-0.5 max-[699px]:[mask-image:linear-gradient(to_right,#000_85%,transparent)]`}>
+            {!embedded && <div className="pointer-events-auto">{back}</div>}
+            <div role="group" aria-label="Colour layer" className={`no-scrollbar pointer-events-auto flex min-w-0 gap-1.5 overflow-x-auto rounded-full ${PANEL} border border-white/15 p-0.5 @max-[699px]:[mask-image:linear-gradient(to_right,#000_85%,transparent)]`}>
               {LAYERS.map(({ id, label, name }) => {
                 const off = gone(id);
                 return (
@@ -257,13 +271,14 @@ export default function MapScreen({ dots: dotData, psiDaily, summary }: Props) {
               aria-pressed={view === "path"}
               aria-label="Frame the air's path"
               onClick={() => setView((v) => (v === "path" ? "default" : "path"))}
-              className={`${chip} pointer-events-auto w-11 min-[700px]:w-auto min-[700px]:gap-2 min-[700px]:px-4 ${view === "path" ? "border-white bg-white text-[#02030a]" : `${PANEL} border-white/15 text-white hover:bg-white/10`}`}
+              className={`${chip} pointer-events-auto w-11 @min-[700px]:w-auto @min-[700px]:gap-2 @min-[700px]:px-4 ${view === "path" ? "border-white bg-white text-[#02030a]" : `${PANEL} border-white/15 text-white hover:bg-white/10`}`}
             >
               <span className="flex items-center gap-2">
                 <Spline size={18} aria-hidden />
-                <span className="hidden min-[700px]:inline">Air&apos;s path</span>
+                <span className="hidden @min-[700px]:inline">Air&apos;s path</span>
               </span>
             </button>
+            {embedded && fullScreen}
           </header>
 
           {note && (
@@ -272,13 +287,13 @@ export default function MapScreen({ dots: dotData, psiDaily, summary }: Props) {
             </p>
           )}
 
-          <main id="main" tabIndex={-1} className="absolute inset-0 outline-none">
+          <Main {...main} className="absolute inset-0 outline-none">
             {summaryBlock}
-            <AirGlobeLoader day={day} layer={drawn} satDate={sel?.date ?? today} dots={dots} view={view} onFail={setFailed} onReady={() => setGlobeDrawn(true)} />
+            <AirGlobeLoader day={day} layer={drawn} satDate={sel?.date ?? today} dots={dots} view={view} onFail={setFailed} onReady={() => setGlobeDrawn(true)} embedded={embedded} />
             <GlobeSpinner done={globeDrawn} />
             {bars.length > 0 && sel && (
-              <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 min-[700px]:p-4">
-                <div className={`pointer-events-auto rounded-t-3xl border-t border-white/10 pb-[env(safe-area-inset-bottom)] ${PANEL} min-[700px]:pointer-events-none min-[700px]:flex min-[700px]:items-end min-[700px]:gap-3 min-[700px]:border-0 min-[700px]:bg-transparent min-[700px]:pb-0 min-[700px]:backdrop-blur-none`}>
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 @min-[700px]:p-4">
+                <div className={`pointer-events-auto rounded-t-3xl border-t border-white/10 pb-[env(safe-area-inset-bottom)] ${PANEL} @min-[700px]:pointer-events-none @min-[700px]:flex @min-[700px]:items-end @min-[700px]:gap-3 @min-[700px]:border-0 @min-[700px]:bg-transparent @min-[700px]:pb-0 @min-[700px]:backdrop-blur-none`}>
                   <GlobeCard
                     headline={headline}
                     facts={facts}
@@ -287,8 +302,9 @@ export default function MapScreen({ dots: dotData, psiDaily, summary }: Props) {
                     dots={dots}
                     live={!quiet}
                     expanded={open}
+                    embedded={embedded}
                     onToggle={(to) => setOpen((o) => to ?? !o)}
-                    className={`min-[700px]:pointer-events-auto min-[700px]:w-[440px] min-[700px]:shrink-0 ${SIDE_PANEL}`}
+                    className={`@min-[700px]:pointer-events-auto @min-[700px]:w-[440px] @min-[700px]:shrink-0 ${SIDE_PANEL}`}
                   />
                   <Timeline
                     bars={bars}
@@ -307,12 +323,12 @@ export default function MapScreen({ dots: dotData, psiDaily, summary }: Props) {
                       if (b) go(selectAt(b, stepsFor(b), hour));
                     }}
                     onPlay={play}
-                    className={`min-[700px]:pointer-events-auto min-[700px]:min-w-0 min-[700px]:flex-1 min-[700px]:pt-3 ${SIDE_PANEL}`}
+                    className={`@min-[700px]:pointer-events-auto @min-[700px]:min-w-0 @min-[700px]:flex-1 @min-[700px]:pt-3 ${SIDE_PANEL}`}
                   />
                 </div>
               </div>
             )}
-          </main>
+          </Main>
         </>
       )}
     </div>

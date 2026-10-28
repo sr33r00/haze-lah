@@ -1,14 +1,11 @@
 import type { Viewport } from "next";
 import MapScreen from "@/components/globe/MapScreen";
-import { LEVEL_NAME, psiLevel } from "@/lib/bands";
-import { mapContext } from "@/lib/context";
 import { getHazeData } from "@/lib/data";
+import { summaryOf } from "@/lib/mapSummary";
 import { dotData } from "@/lib/readings";
-import { REPLAY_URL, SMOKE_URL, aheadParts, trailCaption } from "@/lib/replay";
+import { REPLAY_URL, SMOKE_URL } from "@/lib/replay";
 import { readReplay } from "@/lib/replayData";
 import { pageMeta } from "@/lib/seo";
-import { islandMax } from "@/lib/situation";
-import type { HazeData, Replay } from "@/lib/types";
 
 export const metadata = pageMeta(
   "Haze globe: fires, wind and air quality across Singapore and the region",
@@ -18,22 +15,6 @@ export const metadata = pageMeta(
 // The globe is dark whatever the site's theme, so the browser's bar is too.
 export const viewport: Viewport = { themeColor: "#02030a", colorScheme: "dark" };
 export const revalidate = 1800;
-
-/** Today in a few sentences, for screen readers, crawlers and a device that cannot run the globe. */
-function summaryOf(data: HazeData, replay: Replay | null): string[] {
-  const lines: string[] = [];
-  const psi = data.nea ? islandMax(data.nea.psi24) : null;
-  if (psi) lines.push(`Singapore's highest 24-hour PSI is ${psi.psi} (${LEVEL_NAME[psiLevel(psi.psi)]}), in the ${psi.region} region.`);
-  const context = mapContext(data);
-  if (context) lines.push(context);
-  const day = replay?.days.at(-1);
-  if (day) {
-    lines.push(trailCaption(day));
-    const ahead = day.ahead && aheadParts(day.ahead);
-    if (ahead) lines.push([ahead.reach, ahead.source, ahead.expected].filter(Boolean).join(" "));
-  }
-  return lines;
-}
 
 export default async function MapPage() {
   const [data, replay] = await Promise.all([getHazeData(), readReplay().catch(() => null)]);

@@ -25,7 +25,7 @@ import { Section } from "./ui";
 import WindMotionButton, { useWindMotion } from "./WindMotion";
 
 // Leaflet needs the browser, so the map is loaded on the client only.
-const OriginMap = dynamic(() => import("./OriginMap"), { ssr: false, loading: () => <div className="size-full animate-pulse bg-line lg:absolute lg:inset-0" /> });
+const OriginMap = dynamic(() => import("./OriginMap"), { ssr: false, loading: () => <div className="size-full animate-pulse bg-line" /> });
 
 const MARK_H = 24; // the trail is marked at every 24 h back
 const KEY_STEP = 0.5; // degrees an arrow key moves the reading spot
@@ -177,9 +177,8 @@ export default function HazeOrigin({
   const hasSensors = dots.some((d) => d.rank === 2);
 
   return (
-    <Section id="origin" className={className} headClass="lg:sr-only" title="Where today's air came from" aside={replay ? <span className="hidden whitespace-nowrap sm:inline">{`Past ${today} days to next ${AHEAD_DAYS}`}</span> : undefined}>
-      {/* From lg up the figure fills the Now page's map panel: the map is a fixed, tall share of the screen (the slider row stays above the fold) and the rest scrolls inside the panel. */}
-      <figure ref={setFigure} className="px-4 lg:flex lg:min-h-0 lg:flex-1 lg:flex-col lg:overflow-y-auto">
+    <Section id="origin" className={className} title="Where today's air came from" aside={replay ? <span className="hidden whitespace-nowrap sm:inline">{`Past ${today} days to next ${AHEAD_DAYS}`}</span> : undefined}>
+      <figure ref={setFigure} className="px-4">
         <div
           onKeyDown={onKey}
           onFocus={() => setFocused(true)}
@@ -187,7 +186,7 @@ export default function HazeOrigin({
           role="group"
           tabIndex={0}
           aria-label="Smoke map. Tap to read the smoke level at a spot, or use the arrow keys."
-          className="relative isolate h-[23rem] overflow-hidden rounded-2xl bg-line outline-offset-2 lg:h-[calc(100dvh-14rem)] lg:min-h-[420px] lg:flex-none"
+          className="relative isolate h-[23rem] overflow-hidden rounded-2xl bg-line outline-offset-2"
         >
           <OriginMap layers={layers} onTap={(at) => tap(...at)} />
           {day && step && (
@@ -207,7 +206,7 @@ export default function HazeOrigin({
           {reduced && winds && <WindMotionButton motion={motion} onToggle={toggle} className="absolute right-3 top-3 z-[500]" />}
         </div>
 
-        <div className="mt-3 min-h-[15rem] lg:shrink-0">
+        <div className="mt-3 min-h-[15rem]">
           {day && step && (
             <>
               <div className="flex items-center gap-3">
@@ -326,7 +325,7 @@ export default function HazeOrigin({
           )}
         </div>
 
-        <figcaption className="mt-3 min-h-[16rem] text-label text-muted lg:shrink-0">
+        <figcaption className="mt-3 min-h-[16rem] text-label text-muted">
           {day && step && (
             <>
               {day.journey ? <AirJourney day={day} shareable={step.kind !== "past"} /> : <p className="text-label font-bold text-fg">{trailCaption(day)}</p>}

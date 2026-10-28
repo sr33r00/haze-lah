@@ -2,7 +2,7 @@
 
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
-import { LocateFixed } from "lucide-react";
+import { Info, LocateFixed } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { CircleMarker, MapContainer, Marker, TileLayer, Tooltip, useMap, useMapEvents } from "react-leaflet";
 import { LEVEL_COLOR, LEVEL_NAME, LEVEL_TEXT, PM25_BANDS, PM25_COLORS, REGIONS, REGION_POINT, US_AQI_BANDS, nearestRegion, pm25Color, pm25ToUsAqi, psiLevel, stationLevel, textOn, usAqiColor, type Region } from "@/lib/bands";
@@ -142,6 +142,7 @@ export default function SgMap(props: {
   const aqi = unit === "aqi";
   const [spot, setSpot] = useState<Spot | null>(null);
   const [note, setNote] = useState<string | null>(null);
+  const [keyOpen, setKeyOpen] = useState(false); // from lg up the legend is a card on the map, opened from the "Map key" button
   const me = useMyPosition(true);
   const touch = useMemo(() => window.matchMedia("(pointer: coarse)").matches, []);
   const fresh = useMemo(() => props.sensors.filter((s) => Date.now() - new Date(s.time).getTime() < MAX_SENSOR_AGE_MS), [props.sensors]);
@@ -168,128 +169,146 @@ export default function SgMap(props: {
   };
   const tone = (n: number) => (aqi ? usAqiColor(n) : pm25Color(n));
 
-  // From lg up the map is a fixed, tall share of the screen (the page's header, the map tabs and this tray stay above its bottom edge) and the legend below it scrolls inside the panel.
+  useEffect(() => {
+    if (!keyOpen) return;
+    const close = (e: KeyboardEvent) => e.key === "Escape" && setKeyOpen(false);
+    document.addEventListener("keydown", close);
+    return () => document.removeEventListener("keydown", close);
+  }, [keyOpen]);
+
+  // From lg up this fills the Now page's map panel without scrolling: a grid whose map row takes what the tray and the spot card leave, and the legend (one element) is a card laid over the map's corner, shown by the "Map key" button; it is out of the grid's flow, so opening it moves nothing. Below lg the map's frame is `contents` and everything stacks, the legend last and always there.
   return (
-    <div className="px-4 lg:flex lg:min-h-0 lg:flex-1 lg:flex-col lg:overflow-y-auto">
+    <div className="flex flex-col px-4 lg:grid lg:min-h-0 lg:flex-1 lg:grid-rows-[auto_minmax(0,1fr)] lg:pb-3">
       <Segmented label="Map shows" options={UNIT_OPTIONS} on={(id) => id === unit} onSelect={setUnit} className="mb-3" />
-      <div className="relative isolate h-[300px] overflow-hidden rounded-3xl lg:h-[calc(100dvh-12rem)] lg:min-h-[420px] lg:flex-none">
-        <button
-          onClick={locate}
-          className="absolute right-3 top-3 z-[500] flex min-h-[40px] items-center gap-1.5 rounded-full bg-surface px-3 text-label font-semibold shadow"
-        >
-          <LocateFixed size={16} aria-hidden />
-          My location
-        </button>
-        <MapContainer bounds={BOUNDS} minZoom={10} maxZoom={14} scrollWheelZoom={false} dragging={!touch} className="h-full w-full lg:absolute lg:inset-0">
-          <Resize />
-          <SgOutline />
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-            maxZoom={19}
-          />
-          {!aqi &&
-            nearMy.map((s) => {
-              const text = `${s.name}: API ${s.api ?? "n/a"} (Malaysia)`;
+      <div className="contents lg:relative lg:col-start-1 lg:row-start-2 lg:block">
+        <div className="relative isolate h-[300px] overflow-hidden rounded-3xl lg:h-full">
+          <div className="absolute right-3 top-3 z-[500] flex gap-2">
+            <button
+              type="button"
+              aria-expanded={keyOpen}
+              aria-controls="map-key"
+              onClick={() => setKeyOpen((o) => !o)}
+              className="hidden min-h-[44px] items-center gap-1.5 whitespace-nowrap rounded-full bg-surface px-3 text-label font-semibold shadow lg:flex"
+            >
+              <Info size={16} aria-hidden />
+              Map key
+            </button>
+            <button onClick={locate} className="flex min-h-[40px] items-center gap-1.5 whitespace-nowrap rounded-full bg-surface px-3 text-label font-semibold shadow lg:min-h-[44px]">
+              <LocateFixed size={16} aria-hidden />
+              My location
+            </button>
+          </div>
+          <MapContainer bounds={BOUNDS} minZoom={10} maxZoom={14} scrollWheelZoom={false} dragging={!touch} className="h-full w-full lg:absolute lg:inset-0">
+            <Resize />
+            <SgOutline />
+            <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+              maxZoom={19}
+            />
+            {!aqi &&
+              nearMy.map((s) => {
+                const text = `${s.name}: API ${s.api ?? "n/a"} (Malaysia)`;
+                return (
+                  <Marker key={s.id} position={[s.lat, s.lon]} icon={badge("my", s.api, LEVEL_COLOR[stationLevel(s) ?? 0])} title={text} zIndexOffset={BADGE.my.z}>
+                    <Tooltip direction="top">{text}</Tooltip>
+                  </Marker>
+                );
+              })}
+            {aqi &&
+              freshAqi.map((s) => {
+                const text = `${s.name}: US AQI ${s.aqi} (AQICN, ${fmtTime(s.time)})`;
+                const t = tone(s.aqi);
+                return (
+                  <Marker key={s.uid} position={[s.lat, s.lon]} icon={badge("aqicn", s.aqi, t)} title={text} zIndexOffset={BADGE.aqicn.z}>
+                    <Tooltip direction="top">{text}</Tooltip>
+                  </Marker>
+                );
+              })}
+            {fresh.map((s) => {
+              const n = aqi ? pm25ToUsAqi(s.pm25) : s.pm25;
+              const text = aqi ? `${s.name}: US AQI ${n} (community sensor)` : `${s.name}: PM2.5 ${n} µg/m³ (community sensor)`;
+              const t = tone(n);
               return (
-                <Marker key={s.id} position={[s.lat, s.lon]} icon={badge("my", s.api, LEVEL_COLOR[stationLevel(s) ?? 0])} title={text} zIndexOffset={BADGE.my.z}>
+                <Marker key={`${s.name}${s.lat}${s.lon}`} position={[s.lat, s.lon]} icon={badge("sensor", Math.round(n), t)} title={text} keyboard={false} zIndexOffset={BADGE.sensor.z}>
                   <Tooltip direction="top">{text}</Tooltip>
                 </Marker>
               );
             })}
-          {aqi &&
-            freshAqi.map((s) => {
-              const text = `${s.name}: US AQI ${s.aqi} (AQICN, ${fmtTime(s.time)})`;
-              const t = tone(s.aqi);
-              return (
-                <Marker key={s.uid} position={[s.lat, s.lon]} icon={badge("aqicn", s.aqi, t)} title={text} zIndexOffset={BADGE.aqicn.z}>
-                  <Tooltip direction="top">{text}</Tooltip>
-                </Marker>
-              );
-            })}
-          {fresh.map((s) => {
-            const n = aqi ? pm25ToUsAqi(s.pm25) : s.pm25;
-            const text = aqi ? `${s.name}: US AQI ${n} (community sensor)` : `${s.name}: PM2.5 ${n} µg/m³ (community sensor)`;
-            const t = tone(n);
-            return (
-              <Marker key={`${s.name}${s.lat}${s.lon}`} position={[s.lat, s.lon]} icon={badge("sensor", Math.round(n), t)} title={text} keyboard={false} zIndexOffset={BADGE.sensor.z}>
-                <Tooltip direction="top">{text}</Tooltip>
-              </Marker>
-            );
-          })}
-          {props.cameras.map((c) => (
-            <Marker
-              key={c.id}
-              position={[c.lat, c.lon]}
-              icon={CAMERA_ICON}
-              title={`Camera: ${c.name}`}
-              eventHandlers={{ click: () => (location.href = `/photos?cam=${c.id}#ground`) }}
-            />
-          ))}
-          <SpotControl spot={spot} onSpot={pickSpot} />
-          {spot && !spot.mine && (
-            <CircleMarker
-              center={[spot.lat, spot.lon]}
-              radius={6}
-              pathOptions={{ color: "#13232e", weight: 3, fillColor: "#fff", fillOpacity: 1 }}
-              interactive={false}
-            />
-          )}
-          {me && <Marker position={[me.lat, me.lon]} icon={ME_ICON} interactive={false} keyboard={false} zIndexOffset={ME_Z} />}
-          {REGIONS.map((r) => {
-            const v = history?.regions[r].at(-1)?.value;
-            const n = v == null ? null : aqi ? pm25ToUsAqi(v) : Math.round(v);
-            return (
+            {props.cameras.map((c) => (
               <Marker
-                key={r}
-                position={REGION_POINT[r]}
-                icon={n == null ? badge("nea", null, "", r === region) : badge("nea", n, tone(n), r === region)}
-                title={`${cap(r)}, ${aqi ? "US AQI" : "PM2.5"} ${n ?? "n/a"}`}
-                zIndexOffset={BADGE.nea.z + (r === region ? 10000 : 0)}
-                eventHandlers={{ click: () => onPick(r) }}
+                key={c.id}
+                position={[c.lat, c.lon]}
+                icon={CAMERA_ICON}
+                title={`Camera: ${c.name}`}
+                eventHandlers={{ click: () => (location.href = `/photos?cam=${c.id}#ground`) }}
               />
-            );
-          })}
-        </MapContainer>
+            ))}
+            <SpotControl spot={spot} onSpot={pickSpot} />
+            {spot && !spot.mine && (
+              <CircleMarker
+                center={[spot.lat, spot.lon]}
+                radius={6}
+                pathOptions={{ color: "#13232e", weight: 3, fillColor: "#fff", fillOpacity: 1 }}
+                interactive={false}
+              />
+            )}
+            {me && <Marker position={[me.lat, me.lon]} icon={ME_ICON} interactive={false} keyboard={false} zIndexOffset={ME_Z} />}
+            {REGIONS.map((r) => {
+              const v = history?.regions[r].at(-1)?.value;
+              const n = v == null ? null : aqi ? pm25ToUsAqi(v) : Math.round(v);
+              return (
+                <Marker
+                  key={r}
+                  position={REGION_POINT[r]}
+                  icon={n == null ? badge("nea", null, "", r === region) : badge("nea", n, tone(n), r === region)}
+                  title={`${cap(r)}, ${aqi ? "US AQI" : "PM2.5"} ${n ?? "n/a"}`}
+                  zIndexOffset={BADGE.nea.z + (r === region ? 10000 : 0)}
+                  eventHandlers={{ click: () => onPick(r) }}
+                />
+              );
+            })}
+          </MapContainer>
+        </div>
+        <div id="map-key" className={`order-last mt-3 space-y-2 text-label text-muted lg:absolute lg:bottom-3 lg:left-3 lg:z-[500] lg:order-none lg:m-0 lg:w-max lg:min-w-[16rem] lg:max-w-[22rem] lg:rounded-2xl lg:bg-surface lg:p-3 lg:shadow ${keyOpen ? "" : "lg:hidden"}`}>
+          <LegendRow>
+            <Key swatch={<span className="h-2.5 w-4 rounded-full bg-muted" />}>NEA regions</Key>
+            <Key swatch={<span className="h-2.5 w-2.5 rounded-full border border-white bg-muted ring-1 ring-black/20" />}>Sensors</Key>
+            {aqi && freshAqi.length > 0 && <Key swatch={<span className="h-3.5 w-3.5 rounded-full border-2 border-white bg-muted ring-1 ring-black/20" />}>AQICN</Key>}
+            {!aqi && <Key swatch={<span className="h-3 w-3 rounded-[3px] border-2 border-white bg-muted ring-1 ring-black/20" />}>Malaysia API</Key>}
+            {props.cameras.length > 0 && <Key swatch={<span className="h-2.5 w-2.5 rounded-[3px] bg-[#13232e] ring-1 ring-white" />}>Cameras</Key>}
+            {/* Hidden, not removed, until the position is known, so the legend never changes height (from lg it is removed). */}
+            <span className={me ? "" : "invisible lg:hidden"}>
+              <Key swatch={<span className="h-3 w-3 rounded-full border-2 border-white bg-[#13232e] ring-1 ring-black/20" />}>You</Key>
+            </span>
+          </LegendRow>
+          <div className="pb-0.5">
+            <RampBar {...(aqi ? AQI_SCALE : PM25_SCALE)} bar="border-fg/50" text="text-muted" />
+          </div>
+          {/* Below lg both captions share one grid cell, so the legend is as tall in either view; the other one is only hidden (from lg, where it is a card on the map, it is not there at all). */}
+          <div className="grid">
+            <div className={`[grid-area:1/1] ${aqi ? "invisible lg:hidden" : ""}`}>
+              <p>NEA 1-hr PM2.5, µg/m³.</p>
+            </div>
+            <div className={`space-y-1 [grid-area:1/1] ${aqi ? "" : "invisible lg:hidden"}`}>
+              <p className="font-semibold">{US_AQI_SCALE}</p>
+              <p>{US_AQI_NOTE}</p>
+              <p className={freshAqi.length > 0 ? "" : "invisible lg:hidden"}>
+                AQI stations: {WAQI_NAME} (
+                <a href={WAQI_URL} target="_blank" rel="noreferrer" className="link">
+                  waqi.info
+                </a>
+                ) and the originating agencies. Not fully verified.
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
       <div aria-live="polite">
         {note && <p className="mt-3 text-label text-muted">{note}</p>}
         {spot && !note && <SpotCard spot={spot} psi24={props.psi24} history={history} sensors={fresh} />}
       </div>
       {!spot && !note && <p className="mt-3 text-label text-muted">Tap the map or use your location to see the reading there.</p>}
-      <div className="mt-3 space-y-2 text-label text-muted">
-        <LegendRow>
-          <Key swatch={<span className="h-2.5 w-4 rounded-full bg-muted" />}>NEA regions</Key>
-          <Key swatch={<span className="h-2.5 w-2.5 rounded-full border border-white bg-muted ring-1 ring-black/20" />}>Sensors</Key>
-          {aqi && freshAqi.length > 0 && <Key swatch={<span className="h-3.5 w-3.5 rounded-full border-2 border-white bg-muted ring-1 ring-black/20" />}>AQICN</Key>}
-          {!aqi && <Key swatch={<span className="h-3 w-3 rounded-[3px] border-2 border-white bg-muted ring-1 ring-black/20" />}>Malaysia API</Key>}
-          {props.cameras.length > 0 && <Key swatch={<span className="h-2.5 w-2.5 rounded-[3px] bg-[#13232e] ring-1 ring-white" />}>Cameras</Key>}
-          {/* Hidden, not removed, until the position is known, so the legend never changes height. */}
-          <span className={me ? "" : "invisible"}>
-            <Key swatch={<span className="h-3 w-3 rounded-full border-2 border-white bg-[#13232e] ring-1 ring-black/20" />}>You</Key>
-          </span>
-        </LegendRow>
-        <div className="pb-0.5">
-          <RampBar {...(aqi ? AQI_SCALE : PM25_SCALE)} bar="border-fg/50" text="text-muted" />
-        </div>
-        {/* Both captions share one grid cell, so the legend is as tall in either view; the other one is only hidden. */}
-        <div className="grid">
-          <div className={`[grid-area:1/1] ${aqi ? "invisible" : ""}`}>
-            <p>NEA 1-hr PM2.5, µg/m³.</p>
-          </div>
-          <div className={`space-y-1 [grid-area:1/1] ${aqi ? "" : "invisible"}`}>
-            <p className="font-semibold">{US_AQI_SCALE}</p>
-            <p>{US_AQI_NOTE}</p>
-            <p className={freshAqi.length > 0 ? "" : "invisible"}>
-              AQI stations: {WAQI_NAME} (
-              <a href={WAQI_URL} target="_blank" rel="noreferrer" className="link">
-                waqi.info
-              </a>
-              ) and the originating agencies. Not fully verified.
-            </p>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }

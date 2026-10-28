@@ -5,7 +5,6 @@ import L from "leaflet";
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { CircleMarker, ImageOverlay, MapContainer, Marker, Pane, Polyline, TileLayer, Tooltip, useMap, useMapEvents } from "react-leaflet";
 import { FIRE_COLOR, NEW_FIRE_COLOR, TRAIL_COLOR } from "@/lib/replay";
-import { GRID_BOX, coverZoom } from "@/lib/modelGrid";
 import { bandColor, type Dot } from "@/lib/readings";
 import type { SmokeGrid } from "@/lib/types";
 import { SG } from "@/lib/util";
@@ -25,8 +24,6 @@ const START: [[number, number], [number, number]] = [
 
 const MIN_ZOOM = 4;
 const SNAP = 0.5;
-const LG = "(min-width: 1024px)"; // Tailwind's lg, where the map is the Now page's big panel
-
 type Pt = [number, number];
 
 /** What the map draws for one step of the slider. */
@@ -56,32 +53,9 @@ function Tap({ onTap }: { onTap: (at: Pt) => void }) {
   return null;
 }
 
-/** Lifts the limits of `keepInBox`. */
-function release(map: L.Map) {
-  if (!map.options.maxBounds) return;
-  map.setMaxBounds(L.latLngBounds([]));
-  map.setMinZoom(MIN_ZOOM);
-}
-
-/**
- * From lg up the PM2.5 veil and the wind only exist inside the model's grid, so the view is kept inside that box: it cannot be
- * dragged out of it, and cannot zoom out until the box stops covering the map. Below lg the map is as free as ever.
- * Called again whenever the container changes size, as the cover zoom depends on it.
- */
-function keepInBox(map: L.Map) {
-  if (!matchMedia(LG).matches) return release(map);
-  const { x, y } = map.getSize();
-  if (!x || !y) return;
-  const min = Math.min(map.getMaxZoom(), coverZoom(GRID_BOX, x, y, SNAP));
-  map.options.maxBoundsViscosity = 1;
-  map.setMaxBounds(GRID_BOX);
-  map.setView(map.getCenter(), Math.max(map.getZoom(), min), { animate: false }); // zooms in first, so that raising the minimum does not animate
-  map.setMinZoom(min);
-}
-
 /**
  * Fits the first view: START, widened to take in the whole air path (its start included) once the path is known, and never zoomed out
- * past START or, from lg up, past the model's box. Also keeps the map in step with its container (see `keepInBox`, `useMapResize`).
+ * past START. Also keeps the map in step with its container (see `useMapResize`).
  */
 function ViewFit({ trail }: { trail: Pt[] }) {
   const map = useMap();
@@ -93,18 +67,11 @@ function ViewFit({ trail }: { trail: Pt[] }) {
       frame.extend(L.latLngBounds(path.current));
       done.current = true;
     }
-    // Fitted without the box's limits first, to see how close the frame wants to be; if the box makes the map zoom in further than that,
-    // fitBounds' centre (the middle of a frame that reaches far south) would leave Singapore at the top edge, so it sits a third down instead.
-    release(m);
     m.fitBounds(frame, { padding: [8, 8], animate: false });
-    const wanted = m.getZoom();
-    keepInBox(m);
-    if (matchMedia(LG).matches && m.getZoom() > wanted) {
-      const below = m.getSize().y / 6; // the centre is this far below Singapore when Singapore is a third down
-      m.setView(m.unproject(m.project([SG.lat, SG.lon], m.getZoom()).add([0, below]), m.getZoom()), m.getZoom(), { animate: false });
-    }
   };
-  useMapResize((m, blind) => (blind ? fit(m) : keepInBox(m)));
+  useMapResize((m, blind) => {
+    if (blind) fit(m);
+  });
   useEffect(() => {
     path.current = trail;
     const { x, y } = map.getSize();
@@ -179,7 +146,7 @@ export default function OriginMap({ layers, onTap }: { layers: OriginLayers; onT
       dragging={!touch}
       keyboard={false} // arrow keys move the reading spot, see HazeOrigin
       preferCanvas
-      className="origin-map h-full w-full lg:absolute lg:inset-0"
+      className="origin-map h-full w-full"
     >
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'

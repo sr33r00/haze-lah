@@ -6,6 +6,13 @@ The in-app "What's new" sheet shows the highlights of the last three releases. D
 
 ## [Unreleased]
 
+## [1.16.0] - 2026-10-28
+
+### Changed
+
+- On laptops and monitors, the Now page's "Where the air came from" panel is the air globe from the Map tab (layers, air's path, day slider and a short card that opens for more), with a button to open it full screen. The mouse wheel zooms it. Phones keep the flat smoke map.
+- The Now page's map panel fits the screen on desktop, so the page has one scrollbar instead of a second one inside the panel. The "Readings now" map fills the panel and its legend opens from a "Map key" button on the map.
+
 ## [1.15.2] - 2026-10-28
 
 ### Changed

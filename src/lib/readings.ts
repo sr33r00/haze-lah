@@ -30,7 +30,7 @@ export type DotData = {
 };
 
 /** `data` cut down to `DotData`. */
-export function dotData({ nea, history, stations, sensors }: HazeData): DotData {
+export function dotData({ nea, history, stations, sensors }: Pick<HazeData, "nea" | "history" | "stations" | "sensors">): DotData {
   return {
     nea: nea && { sub: nea.sub, no2_1h_max: nea.no2_1h_max },
     history: history && { regions: Object.fromEntries(REGIONS.map((r) => [r, history.regions[r].slice(-1)])) as unknown as Record<Region, { value: number }[]> },

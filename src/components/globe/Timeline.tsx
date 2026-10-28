@@ -167,7 +167,7 @@ export default function Timeline({ bars, marks, selected, readout, busy, playing
             })}
           </div>
           {/* Bars */}
-          <div aria-hidden className="flex h-12 items-end min-[700px]:h-16">
+          <div aria-hidden className="flex h-12 items-end @min-[700px]:h-16">
             {bars.map((b, k) => {
               const forecast = b.kind === "forecast";
               const gap = b.source === "none";

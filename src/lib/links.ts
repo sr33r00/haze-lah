@@ -9,6 +9,9 @@ export const SITE_URL = process.env.SITE_URL || "https://hazelah.app";
 /** OpenStreetMap page centred on a point, with a pin. */
 export const mapLink = (lat: number, lon: number) => `https://www.openstreetmap.org/?mlat=${lat.toFixed(5)}&mlon=${lon.toFixed(5)}#map=16/${lat.toFixed(5)}/${lon.toFixed(5)}`;
 
+/** The full-screen air globe. */
+export const MAP_HREF = "/map";
+
 export const OPEN_DATA_LICENCE = "https://data.gov.sg/open-data-licence";
 
 /** The height of the wind the site shows (the 850 hPa level), as a phrase. */

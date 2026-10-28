@@ -37,6 +37,8 @@ type Props = {
   onFail?: (reason: "webgl" | "map") => void;
   /** Called once when the globe has drawn its first frame (the fly-in, if any, is only starting). */
   onReady?: () => void;
+  /** In a page's panel: frames as on a phone (closer in, room kept at the bottom for the card). The wheel zooms the globe, as on /map. */
+  embedded?: boolean;
 };
 
 const CENTER: [number, number] = [108.5, -1]; // between Sumatra and Borneo
@@ -44,11 +46,13 @@ const SPAN_X = 29; // degrees across the screen's width
 const SPAN_Y = 20;
 /** Under this width (px) the screen is a phone: closer in, less tilt, room kept for the card at the bottom. */
 const NARROW = 700;
+/** Whether the globe is framed as on a phone: its box is narrow, or it sits in a page's panel, where the card and timeline cover as much of the bottom as on a phone. */
+const isNarrow = (w: number, embedded: boolean) => embedded || w < NARROW;
 type Padding = Required<PaddingOptions>;
 type Camera = { zoom: number; pitch: number; center: LngLatLike; padding: Padding };
 /** Where the default camera ends up: tipped so that the globe's edge and its atmosphere show. */
-function homeCamera(w: number, h: number): Camera {
-  const narrow = w < NARROW;
+function homeCamera(w: number, h: number, embedded: boolean): Camera {
+  const narrow = isNarrow(w, embedded);
   const fit = Math.log2(Math.min(w / SPAN_X, h / SPAN_Y) * (360 / 512));
   return { zoom: fit + (narrow ? 0.4 : -0.3), pitch: narrow ? 40 : 48, center: CENTER, padding: { top: 0, left: 0, right: 0, bottom: narrow ? 90 : 0 } };
 }
@@ -213,9 +217,9 @@ function setSatellite(m: MapLibre, date: string | null) {
 }
 
 /** The camera that frames the air's path (Singapore to where the air came from), or null for a path too short to frame. */
-function pathCamera(m: MapLibre, trail: GlobeDay["trail"], w: number): Camera | null {
+function pathCamera(m: MapLibre, trail: GlobeDay["trail"], w: number, embedded: boolean): Camera | null {
   if (trail.length < 2) return null;
-  const narrow = w < NARROW;
+  const narrow = isNarrow(w, embedded);
   const bounds = trail.reduce((b, [lat, lon]) => b.extend([lon, lat]), new LngLatBounds([SG.lon, SG.lat], [SG.lon, SG.lat]));
   const padding: Padding = { top: 90, left: 40, right: 40, bottom: narrow ? 300 : 280 }; // the card and timeline cover the bottom: about 280 px on a phone, the timeline panel on a laptop
   const cam = m.cameraForBounds(bounds, { padding, maxZoom: 6 });
@@ -225,7 +229,7 @@ function pathCamera(m: MapLibre, trail: GlobeDay["trail"], w: number): Camera | 
 type View = Props["view"];
 
 /** The camera for the view: the air's path when it is known, else the tilted view of the region. */
-const viewCamera = (m: MapLibre, view: View, trail: GlobeDay["trail"], w: number, h: number) => (view === "path" && pathCamera(m, trail, w)) || homeCamera(w, h);
+const viewCamera = (m: MapLibre, view: View, trail: GlobeDay["trail"], w: number, h: number, embedded: boolean) => (view === "path" && pathCamera(m, trail, w, embedded)) || homeCamera(w, h, embedded);
 
 /** What the camera frames: the view, and in the path view the path (the camera moves when it changes, not for each new array). */
 const frameKey = (view: View, trail: GlobeDay["trail"]) => (view === "path" ? `path/${trail.length}/${trail[0]?.join(",")}/${trail.at(-1)?.join(",")}` : view);
@@ -237,7 +241,7 @@ const INTRO = ["first", "seen"] as const;
  * The air globe: NASA night lights and relief, a pollutant's CAMS field or NASA's smoke picture, fires, wind and the air's path,
  * for the day it is given. Meant to fill its parent; the parent decides the size. Client only: load it through AirGlobeLoader.
  */
-export default function AirGlobe({ day, layer, satDate, dots, view, onFail, onReady }: Props) {
+export default function AirGlobe({ day, layer, satDate, dots, view, onFail, onReady, embedded = false }: Props) {
   const box = useRef<HTMLDivElement>(null);
   const map = useRef<MapLibre>(undefined);
   const field = useRef<HTMLCanvasElement>(undefined);
@@ -254,7 +258,7 @@ export default function AirGlobe({ day, layer, satDate, dots, view, onFail, onRe
   const [started, setStarted] = useState(false);
   const [intro, setIntro] = useStored("globe-intro", INTRO, "first");
   const introRef = useRef(intro);
-  const latest = useRef({ view, trail: day.trail });
+  const latest = useRef({ view, trail: day.trail, embedded });
   const [windView, setWindView] = useState<WindView>();
   const { reduced, motion, toggle } = useWindMotion();
 
@@ -265,7 +269,7 @@ export default function AirGlobe({ day, layer, satDate, dots, view, onFail, onRe
 
   useEffect(() => {
     introRef.current = intro;
-    latest.current = { view, trail: day.trail };
+    latest.current = { view, trail: day.trail, embedded };
   });
 
   // The remembered intro is read in an effect: the globe is made on the render after it, with the answer in hand.
@@ -285,7 +289,7 @@ export default function AirGlobe({ day, layer, satDate, dots, view, onFail, onRe
       if (!live) return;
       const { clientWidth: w, clientHeight: h } = el;
       // The globe opens far out and flies in; for a viewer who asked for less motion it opens on its place.
-      const home = homeCamera(w, h);
+      const home = homeCamera(w, h, latest.current.embedded);
       const far = !matchMedia("(prefers-reduced-motion: reduce)").matches;
       trip.current = far ? (introRef.current === "first" ? "first" : "back") : undefined;
       const from = startPose(introRef.current === "first");
@@ -406,8 +410,8 @@ export default function AirGlobe({ day, layer, satDate, dots, view, onFail, onRe
       clearTimeout(timer);
       m.off("idle", go);
       const { clientWidth: w, clientHeight: h } = box.current!;
-      const { view, trail } = latest.current;
-      const cam = viewCamera(m, view, trail, w, h);
+      const { view, trail, embedded } = latest.current;
+      const cam = viewCamera(m, view, trail, w, h, embedded);
       const { lng, lat } = LngLat.convert(cam.center);
       const landing: Landing = { lng, lat, zoom: cam.zoom, pitch: cam.pitch, padding: cam.padding };
       // NASA's tiles for the landing view start now, so that they are there when the camera is.
@@ -443,7 +447,7 @@ export default function AirGlobe({ day, layer, satDate, dots, view, onFail, onRe
     if (same) return;
     const { clientWidth: w, clientHeight: h } = box.current!;
     const quiet = matchMedia("(prefers-reduced-motion: reduce)").matches;
-    m.easeTo({ ...viewCamera(m, view, trail, w, h), duration: quiet ? 0 : MOVE_MS, easing: easeOut });
+    m.easeTo({ ...viewCamera(m, view, trail, w, h, latest.current.embedded), duration: quiet ? 0 : MOVE_MS, easing: easeOut });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- frame stands for the view and the path: the camera moves when it changes, not for each new array
   }, [ready, landed, frame]);
 

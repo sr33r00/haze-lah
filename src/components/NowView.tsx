@@ -2,11 +2,13 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
+import { useEffect, useMemo } from "react";
 import { tips } from "@/lib/advice";
 import { trend3h } from "@/lib/format";
 import { adviceStep, psiLevel } from "@/lib/bands";
 import { currentReading, islandMax } from "@/lib/situation";
-import type { AqiStation, DayOutlook, ForecastPoint, NeaNow, NeaPm25History, Sensor, Station, WeatherHour } from "@/lib/types";
+import { dotData } from "@/lib/readings";
+import type { AqiStation, DayOutlook, DayPsi, ForecastPoint, NeaNow, NeaPm25History, Sensor, Station, WeatherHour } from "@/lib/types";
 import AirDetail from "./AirDetail";
 import Advice from "./Advice";
 import CigaretteCard from "./CigaretteCard";
@@ -21,11 +23,14 @@ import { useCameras } from "./useCameras";
 import { useNow } from "./useNow";
 import { Section, cap } from "./ui";
 import { usePrefs, useStored } from "./usePrefs";
+import { useWide } from "./useWide";
 
 const SgMap = dynamic(() => import("./SgMap"), {
   ssr: false,
-  loading: () => <div className="mx-4 h-[300px] animate-pulse rounded-3xl bg-line lg:h-[calc(100dvh-12rem)] lg:min-h-[420px] lg:flex-none" />,
+  loading: () => <div className="mx-4 h-[300px] animate-pulse rounded-3xl bg-line lg:mb-3 lg:h-auto lg:min-h-0 lg:flex-1" />,
 });
+// The air globe (MapLibre) is the origin tab's map from lg up; phones never load it.
+const Globe = dynamic(() => import("./globe/MapScreen"), { ssr: false, loading: () => <div className="size-full rounded-3xl bg-[#02030a]" /> });
 
 /** The two maps of the panel that shows one at a time from lg up. */
 type MapView = "readings" | "origin";
@@ -34,11 +39,11 @@ const MAP_OPTIONS = [
   { id: "readings", label: "Readings now" },
   { id: "origin", label: "Where the air came from" },
 ] as const;
-/** From lg up: the shown map fills the panel, the other is hidden. */
+/** From lg up: the shown map fills the panel, the other is hidden. The origin tab's own slot (the globe) is hidden below lg, where HazeOrigin takes its place. */
 const panel = (on: boolean) => (on ? "lg:mt-0 lg:flex lg:min-h-0 lg:flex-1 lg:flex-col" : "lg:hidden");
 
 /** The Now tab: the answer for the chosen region, what to do, what is in the air and where it came from. */
-export default function NowView({ generatedAt, history, nea, hourly, weather, days, sensors, aqiStations, stations }: { generatedAt: string; history: NeaPm25History | null; nea: NeaNow | null; hourly: ForecastPoint[]; weather: WeatherHour[]; days: DayOutlook[]; sensors: Sensor[]; aqiStations: AqiStation[]; stations: Station[] }) {
+export default function NowView({ generatedAt, history, nea, hourly, weather, days, sensors, aqiStations, stations, psiDaily, summary }: { generatedAt: string; history: NeaPm25History | null; nea: NeaNow | null; hourly: ForecastPoint[]; weather: WeatherHour[]; days: DayOutlook[]; sensors: Sensor[]; aqiStations: AqiStation[]; stations: Station[]; psiDaily: DayPsi[]; summary: string[] }) {
   const cameras = useCameras() ?? [];
   const now = useNow(generatedAt);
   const { region, setRegion, group, setGroup, locating, locate } = usePrefs(nea ? islandMax(nea.psi24)?.region : undefined);
@@ -47,6 +52,16 @@ export default function NowView({ generatedAt, history, nea, hourly, weather, da
   const step = adviceStep(latest?.value ?? null, psi, group);
 
   const [view, setView] = useStored<MapView>("map-view", MAP_VIEWS, "origin");
+  const wide = useWide();
+  // A link to "/#origin" (the shared air journey) opens the origin tab where there are tabs, as FeedbackForm opens its form from the hash.
+  useEffect(() => {
+    if (!wide) return;
+    const fromHash = () => location.hash === "#origin" && setView("origin");
+    fromHash();
+    addEventListener("hashchange", fromHash);
+    return () => removeEventListener("hashchange", fromHash);
+  }, [wide, setView]);
+  const dots = useMemo(() => dotData({ nea, history, stations, sensors }), [nea, history, stations, sensors]); // the globe's reading dots, from the data this page already has
 
   // Phones read one column in the order below (order-*). From lg up there are two columns: everything but the maps on the left, in that same order,
   // and one tall map panel on the right that stays in view while the page scrolls. The panel's switch picks which map it shows; below lg
@@ -127,7 +142,12 @@ export default function NowView({ generatedAt, history, nea, hourly, weather, da
           <SgMap history={history} psi24={nea?.psi24 ?? null} region={region} onPick={setRegion} sensors={sensors} aqiStations={aqiStations} stations={stations} cameras={cameras} />
         </Section>
 
-        <HazeOrigin className={`order-11 ${panel(view === "origin")}`} nea={nea} history={history} stations={stations} sensors={sensors} />
+        {/* Below lg the smoke map section, mounted once the window is known to be narrow (until then a box of about its height, so the page below does not jump; it carries the id so a link to #origin lands here). From lg up the globe takes its place, and only while its tab is open. */}
+        {wide === false && <HazeOrigin className="order-11 lg:hidden" nea={nea} history={history} stations={stations} sensors={sensors} />}
+        {wide == null && <div id="origin" className="order-11 mt-10 min-h-[61rem] scroll-mt-20 lg:hidden" />}
+        <div id={wide ? "origin" : undefined} className={`order-11 hidden px-4 ${view === "origin" ? "lg:flex lg:min-h-0 lg:flex-1 lg:flex-col lg:pb-4" : ""}`}>
+          <div className="min-h-0 flex-1">{wide && view === "origin" && <Globe embedded dots={dots} psiDaily={psiDaily} summary={summary} />}</div>
+        </div>
       </div>
     </div>
   );
