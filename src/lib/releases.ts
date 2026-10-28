@@ -1,4 +1,4 @@
-import { Clock, CloudSun, Palette, type LucideIcon } from "lucide-react";
+import { Clock, Globe, Palette, RefreshCw, Wind, type LucideIcon } from "lucide-react";
 import { fmtFullDate } from "./format";
 
 /** One change in a release: a row in the "What's new" sheet and on the About page. */
@@ -9,6 +9,30 @@ export type Release = { version: string; date: string; items: ReleaseItem[] };
 
 /** The last three releases, newest first: all shown in the "What's new" sheet and on the About page. Drop the oldest when adding one. */
 export const RELEASES: Release[] = [
+  {
+    version: "1.16.0",
+    date: "2026-10-28",
+    items: [
+      {
+        title: "The air on a globe",
+        text: "On a laptop or monitor, Now shows the air and wind on a globe beside your reading. Open Haze Lah on a computer to explore it.",
+        href: "/#origin",
+        icon: Globe,
+      },
+      {
+        title: "Weather that stays",
+        text: "The weather card keeps its last reading when you come back to Now, instead of loading again.",
+        href: "/#outdoor",
+        icon: RefreshCw,
+      },
+      {
+        title: "Wind all night",
+        text: "The globe keeps its wind overnight and shows when it is still loading.",
+        href: "/map",
+        icon: Wind,
+      },
+    ],
+  },
   {
     version: "1.15.0",
     date: "2026-10-28",
@@ -30,18 +54,6 @@ export const RELEASES: Release[] = [
         text: "The haze card now tells you when the air is cleanest for what you plan to do, from Plan your day.",
         href: "/#plan",
         icon: Clock,
-      },
-    ],
-  },
-  {
-    version: "1.13.0",
-    date: "2026-10-27",
-    items: [
-      {
-        title: "Weather in the haze card",
-        text: "Temperature, UV, rain and lightning now sit under the haze reading. Tap one to see where and when it was measured.",
-        href: "/#outdoor",
-        icon: CloudSun,
       },
     ],
   },
