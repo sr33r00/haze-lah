@@ -6,6 +6,12 @@ The in-app "What's new" sheet shows the highlights of the last three releases. D
 
 ## [Unreleased]
 
+## [1.15.2] - 2026-10-28
+
+### Changed
+
+- The "good" green is back to the earlier, slightly lighter shade (`#2e7d55`) on the main card and every air mark; the card's softer labels are a touch brighter (95% instead of 90%) so they stay at 4.5:1 on it.
+
 ## [1.15.1] - 2026-10-28
 
 ### Fixed

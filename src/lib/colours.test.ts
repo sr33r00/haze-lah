@@ -99,13 +99,13 @@ test("the forecast accuracy bars (ink, softer ink, grey) are 3:1 on a card", () 
     for (const [ink, alpha] of [["fg", 1], ["fg", 0.65], ["muted", 0.8]] as const) assert.ok(contrast(over(t[ink], t.surface, alpha), t.surface) >= MARK, `${name}: ${ink} at ${alpha}`);
 });
 
-test("the hero's verdict colours carry their ink, and the softer 90% ink the labels use, at 4.5:1", () => {
+test("the hero's verdict colours carry their ink, and the softer 95% ink the labels use, at 4.5:1", () => {
   for (const [tone, { bg, fg }] of Object.entries(TONE_COLOR)) {
     assert.ok(contrast(bg, fg) >= TEXT, `${tone}: ink`);
-    assert.ok(contrast(over(fg, bg, 0.9), bg) >= TEXT, `${tone}: softer ink ${contrast(over(fg, bg, 0.9), bg).toFixed(2)}`);
+    assert.ok(contrast(over(fg, bg, 0.95), bg) >= TEXT, `${tone}: softer ink ${contrast(over(fg, bg, 0.95), bg).toFixed(2)}`);
     // The unselected group buttons: softer ink on the tray, which is 16% black (white ink) or white (dark ink) over the colour.
     const tray = over(fg === "#ffffff" ? "#000000" : "#ffffff", bg, 0.16);
-    assert.ok(contrast(over(fg, tray, 0.9), tray) >= TEXT, `${tone}: group buttons ${contrast(over(fg, tray, 0.9), tray).toFixed(2)}`);
+    assert.ok(contrast(over(fg, tray, 0.95), tray) >= TEXT, `${tone}: group buttons ${contrast(over(fg, tray, 0.95), tray).toFixed(2)}`);
   }
 });
 

@@ -40,7 +40,7 @@ export const LEVEL_NAME = ["Good", "Moderate", "Unhealthy", "Very unhealthy", "H
  * marks carry a 1 px edge (`airMark`). The PSI uses NEA's levels but this scale: Good and Moderate are both green, because "Moderate"
  * is not yet a warning (see the advice below).
  */
-export const AIR = { green: "#2b7a52", amber: "#eba21c", orange: "#b94814", red: "#a91d1d" } as const;
+export const AIR = { green: "#2e7d55", amber: "#eba21c", orange: "#b94814", red: "#a91d1d" } as const;
 
 /** The edge colour tokens (globals.css, theme-aware, clear where the fill already has 3:1) of the two marks that need one. */
 const EDGE: Record<string, string> = { [AIR.amber]: "--edge-amber", [AIR.red]: "--edge-red" };
@@ -276,7 +276,7 @@ export function verdictFor(step: Step): Verdict {
 /** Verdict for a 24-hr PSI level (forecast days, island summaries). */
 export const verdict = (level: Level, group: Group): Verdict => verdictFor(psiStep(level, group));
 
-/** The hero's colours per verdict tone: a solid card with its ink, which passes WCAG AA (4.5:1) even softened to 90%. Marks drawn on a page or card (the plan's bars) use `TONE_MARK`. */
+/** The hero's colours per verdict tone: a solid card with its ink, which passes WCAG AA (4.5:1) even softened to 95%. Marks drawn on a page or card (the plan's bars) use `TONE_MARK`. */
 export const TONE_COLOR: Record<Verdict["tone"], { bg: string; fg: string }> = {
   go: { bg: AIR.green, fg: "#ffffff" },
   easy: { bg: AIR.amber, fg: "#1d1a10" },
@@ -294,5 +294,5 @@ export function heroPaint(step: Step | null) {
   const bg = tone ? `linear-gradient(180deg, ${tone.bg}, color-mix(in srgb, ${tone.bg} 88%, black))` : "var(--surface)";
   // The group buttons' tray goes the other way from the ink (darker under white ink, lighter under dark ink), so the softer labels on it keep 4.5:1.
   const tray = `color-mix(in srgb, ${tone ? (tone.fg === "#ffffff" ? "black" : "white") : "var(--fg)"} ${tone ? 16 : 14}%, transparent)`;
-  return { tone, ink, soft: `color-mix(in srgb, ${ink} 90%, transparent)`, bg, tray };
+  return { tone, ink, soft: `color-mix(in srgb, ${ink} 95%, transparent)`, bg, tray };
 }
